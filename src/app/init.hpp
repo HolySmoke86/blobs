@@ -8,6 +8,7 @@
 
 
 namespace blobs {
+namespace app {
 
 class AlutError
 : public std::runtime_error {
@@ -195,6 +196,7 @@ struct Init {
 
 };
 
+}
 }
 
 #endif

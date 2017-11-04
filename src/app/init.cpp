@@ -43,6 +43,7 @@ std::string alut_error_append(ALenum num, std::string msg) {
 }
 
 namespace blobs {
+namespace app {
 
 AlutError::AlutError(ALenum num)
 : std::runtime_error(alutGetErrorString(num)) {
@@ -262,4 +263,5 @@ Init::Init(bool double_buffer, int sample_size)
 
 }
 
+}
 }
