@@ -1,1 +1,10 @@
 *.swp
+*.swo
+blobs
+blobs.cover
+blobs.debug
+blobs.profile
+blobs.test
+build
+cachegrind.out.*
+callgrind.out.*
