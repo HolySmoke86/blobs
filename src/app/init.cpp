@@ -1,5 +1,7 @@
 #include "init.hpp"
 
+#include "error.hpp"
+
 #include <algorithm>
 #include <iostream>
 #include <alut.h>
@@ -10,73 +12,9 @@
 #include <GL/glew.h>
 
 
-namespace {
-
-std::string sdl_error_append(std::string msg) {
-	const char *error = SDL_GetError();
-	if (*error != '\0') {
-		msg += ": ";
-		msg += error;
-		SDL_ClearError();
-	}
-	return msg;
-}
-
-std::string net_error_append(std::string msg) {
-	const char *error = SDLNet_GetError();
-	if (*error != '\0') {
-		msg += ": ";
-		msg += error;
-	}
-	return msg;
-}
-
-std::string alut_error_append(ALenum num, std::string msg) {
-	const char *error = alutGetErrorString(num);
-	if (*error != '\0') {
-		msg += ": ";
-		msg += error;
-	}
-	return msg;
-}
-
-}
 
 namespace blobs {
 namespace app {
-
-AlutError::AlutError(ALenum num)
-: std::runtime_error(alutGetErrorString(num)) {
-
-}
-
-AlutError::AlutError(ALenum num, const std::string &msg)
-: std::runtime_error(alut_error_append(num, msg)) {
-
-}
-
-
-NetError::NetError()
-: std::runtime_error(SDLNet_GetError()) {
-
-}
-
-NetError::NetError(const std::string &msg)
-: std::runtime_error(net_error_append(msg)) {
-
-}
-
-
-SDLError::SDLError()
-: std::runtime_error(SDL_GetError()) {
-
-}
-
-SDLError::SDLError(const std::string &msg)
-: std::runtime_error(sdl_error_append(msg)) {
-
-}
-
 
 InitSDL::InitSDL() {
 	if (SDL_Init(SDL_INIT_EVENTS) != 0) {
@@ -177,11 +115,11 @@ InitGL::InitGL(bool double_buffer, int sample_size) {
 }
 
 
-Window::Window()
+Window::Window(int w, int h)
 : handle(SDL_CreateWindow(
 	"blobs",
 	SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-	960, 600,
+	w, h,
 	SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
 )) {
 	if (!handle) {
@@ -246,20 +184,15 @@ InitGLEW::InitGLEW() {
 }
 
 
-InitHeadless::InitHeadless()
-: init_sdl()
-, init_net() {
-
-}
-
 Init::Init(bool double_buffer, int sample_size)
 : init_video()
 , init_img()
 , init_ttf()
 , init_gl(double_buffer, sample_size)
-, window()
+, window(960, 540)
 , ctx(window.Handle())
-, init_glew() {
+, init_glew()
+, viewport(960, 540) {
 
 }
 

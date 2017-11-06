@@ -5,14 +5,18 @@
 
 
 namespace blobs {
+namespace graphics {
+	class Viewport;
+}
 namespace app {
 
 class State;
+class Window;
 
 class Application {
 
 public:
-	Application();
+	Application(Window &, graphics::Viewport &);
 	~Application();
 
 	Application(const Application &) = delete;
@@ -36,6 +40,8 @@ public:
 	void HandleEvents();
 
 private:
+	Window &window;
+	graphics::Viewport &viewport;
 	std::stack<State *> states;
 
 };

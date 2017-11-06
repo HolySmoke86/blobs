@@ -1,42 +1,15 @@
 #ifndef BLOBS_APP_INIT_HPP_
 #define BLOBS_APP_INIT_HPP_
 
+#include "../graphics/Viewport.hpp"
+
 #include <al.h>
 #include <SDL.h>
-#include <stdexcept>
 #include <string>
 
 
 namespace blobs {
 namespace app {
-
-class AlutError
-: public std::runtime_error {
-
-public:
-	explicit AlutError(ALenum);
-	AlutError(ALenum, const std::string &);
-
-};
-
-class SDLError
-: public std::runtime_error {
-
-public:
-	SDLError();
-	explicit SDLError(const std::string &);
-
-};
-
-class NetError
-: public std::runtime_error {
-
-public:
-	NetError();
-	explicit NetError(const std::string &);
-
-};
-
 
 class InitSDL {
 
@@ -124,7 +97,7 @@ public:
 class Window {
 
 public:
-	Window();
+	Window(int w, int h);
 	~Window();
 
 	Window(const Window &) = delete;
@@ -172,15 +145,6 @@ public:
 };
 
 
-struct InitHeadless {
-
-	InitHeadless();
-
-	InitSDL init_sdl;
-	InitNet init_net;
-
-};
-
 struct Init {
 
 	Init(bool double_buffer = true, int sample_size = 1);
@@ -193,6 +157,7 @@ struct Init {
 	Window window;
 	GLContext ctx;
 	InitGLEW init_glew;
+	graphics::Viewport viewport;
 
 };
 

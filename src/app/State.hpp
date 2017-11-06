@@ -5,6 +5,9 @@
 
 
 namespace blobs {
+namespace graphics {
+	class Viewport;
+}
 namespace app {
 
 class Application;
@@ -16,7 +19,7 @@ class State {
 	void Handle(const SDL_Event &);
 	void Handle(const SDL_WindowEvent &);
 	void Update(int dt);
-	void Render();
+	void Render(graphics::Viewport &);
 
 	virtual void OnEnter() { }
 	virtual void OnResume() { }
@@ -25,13 +28,26 @@ class State {
 
 	virtual void OnFocus() { }
 	virtual void OnBlur() { }
-	virtual void OnResize() { }
+	virtual void OnResize(int w, int h) { }
 
-	virtual void OnEvent(const SDL_Event &);
-	virtual void OnUpdate(int dt);
-	virtual void OnRender();
+	virtual void OnKeyDown(const SDL_KeyboardEvent &) { }
+	virtual void OnKeyUp(const SDL_KeyboardEvent &) { }
+	virtual void OnMouseDown(const SDL_MouseButtonEvent &) { }
+	virtual void OnMouseUp(const SDL_MouseButtonEvent &) { }
+	virtual void OnMouseMotion(const SDL_MouseMotionEvent &) { }
+	virtual void OnMouseWheel(const SDL_MouseWheelEvent &) { }
+	virtual void OnQuit();
+
+	virtual void OnUpdate(int dt) { }
+	virtual void OnRender(graphics::Viewport &) { }
 
 	int ref_count = 0;
+	Application *app = nullptr;
+
+protected:
+	Application &App() {
+		return *app;
+	}
 
 };
 

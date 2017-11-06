@@ -1,16 +1,33 @@
 #include "app/Application.hpp"
+#include "app/Assets.hpp"
 #include "app/init.hpp"
+#include "app/MasterState.hpp"
 #include "world/Planet.hpp"
+#include "world/Simulation.hpp"
+#include "world/Sun.hpp"
 
-#include <exception>
-#include <iostream>
+#include <cstdint>
 
 
 using namespace blobs;
 
 int main(int argc, char *argv[]) {
 	app::Init init;
-	world::Planet planet(1); // r=1 should be a 3³
+	app::Assets assets;
 
-	app::Application app;
+	world::Sun sun;
+	world::Simulation sim(sun);
+	world::Planet planet(3);
+	world::GenerateTest(planet);
+	planet.SetParent(sun);
+
+	app::MasterState state(assets, sim);
+	state.SetReference(planet);
+	planet.BuildVAOs();
+
+	app::Application app(init.window, init.viewport);
+	app.PushState(&state);
+	app.Run();
+
+	return 0;
 }

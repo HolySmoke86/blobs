@@ -1,10 +1,15 @@
 #ifndef BLOBS_WORLD_PLANET_HPP_
 #define BLOBS_WORLD_PLANET_HPP_
 
+#include "Body.hpp"
+
 #include "Tile.hpp"
+#include "../graphics/glm.hpp"
+#include "../graphics/SimpleVAO.hpp"
 
 #include <cassert>
 #include <memory>
+#include <GL/glew.h>
 
 
 namespace blobs {
@@ -12,19 +17,20 @@ namespace world {
 
 struct Tile;
 
-/// A planet has six surfaces, numbered 0 to 5, each with tiles from
-/// +radius to -radius.
-class Planet {
+/// A planet has six surfaces, numbered 0 to 5, each filled with
+/// sidelength² tiles.
+class Planet
+: public Body {
 
 public:
-	explicit Planet(int radius);
+	explicit Planet(int sidelength);
 	~Planet();
-
-	Planet(Planet &&);
-	Planet &operator =(Planet &&);
 
 	Planet(const Planet &) = delete;
 	Planet &operator =(const Planet &) = delete;
+
+	Planet(Planet &&) = delete;
+	Planet &operator =(Planet &&) = delete;
 
 public:
 	/// Get the tile at given surface and coordinates.
@@ -38,34 +44,35 @@ public:
 	/// Convert coordinates into a tile index.
 	int IndexOf(int surface, int x, int y) const {
 		assert(0 <= surface && surface <= 5);
-		assert(-radius <= x && x <= radius);
-		assert(-radius <= y && y <= radius);
-		return surface * SurfaceArea() + ToOffset(y) * SideLength() + ToOffset(x);
-	}
-	/// Convert coordinate into offset
-	int ToOffset(int c) const {
-		return c + radius;
-	}
-	/// The "radius" of the planet.
-	int Radius() const {
-		return radius;
+		assert(0 <= x && x <= sidelength);
+		assert(0 <= y && y <= sidelength);
+		return surface * TilesPerSurface() + y * SideLength() + x;
 	}
 	/// The length of the side of each surface.
 	int SideLength() const {
-		return 2 * radius + 1;
+		return sidelength;
 	}
-	/// The area (or number of tiles) of one surface
-	int SurfaceArea() const {
+	/// The number of tiles of one surface.
+	int TilesPerSurface() const {
 		return SideLength() * SideLength();
 	}
-	/// Total area of all surfaces combined.
-	int TotalArea() const {
-		return 6 * SurfaceArea();
+	/// Total number of tiles of all surfaces combined.
+	int TilesTotal() const {
+		return 6 * TilesPerSurface();
 	}
 
+	void BuildVAOs();
+	void Draw(app::Assets &, graphics::Viewport &) override;
+
 private:
-	int radius;
+	int sidelength;
 	std::unique_ptr<Tile []> tiles;
+
+	struct Attributes {
+		glm::vec3 position;
+		glm::vec3 tex_coord;
+	};
+	graphics::SimpleVAO<Attributes, unsigned int> vao;
 
 };
 
