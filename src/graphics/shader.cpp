@@ -193,18 +193,35 @@ PlanetSurface::PlanetSurface()
 		GL_FRAGMENT_SHADER,
 		"#version 330 core\n"
 
+		"struct LightSource {\n"
+			"vec3 position;\n"
+			"vec3 color;\n"
+			"float strength;\n"
+		"};\n"
+
 		"in vec3 vtx_viewspace;\n"
 		"in vec3 frag_tex_uv;\n"
 
 		"uniform sampler2DArray tex_sampler;\n"
 		"uniform vec3 normal;\n"
+		"uniform LightSource light;\n"
 
 		"out vec3 color;\n"
 
 		"void main() {\n"
 			"vec3 tex_color = texture(tex_sampler, frag_tex_uv).rgb;\n"
-			// TODO: lighting
-			"color = tex_color;\n"
+			"vec3 to_light = light.position - vtx_viewspace;\n"
+			"float distance = length(to_light);\n"
+			"vec3 light_dir = normalize(to_light);\n"
+			"float attenuation = light.strength / (distance * distance);\n"
+			"vec3 ambient = tex_color * vec3(0.01, 0.01, 0.01);\n"
+			"vec3 diffuse = attenuation * max(0.0, dot(normal, light_dir)) * light.color * tex_color;\n"
+			"vec3 view_dir = vec3(0.0, 0.0, 1.0);\n"
+			"vec3 specular = vec3(0.0, 0.0, 0.0);\n"
+			"if (dot(normal, light_dir) >= 0.0) {\n"
+				"attenuation * light.color * pow(max(0.0, dot(reflect(-light_dir, normal), view_dir)), 25.0);\n"
+			"}\n"
+			"color = ambient + diffuse + specular;\n"
 		"}\n"
 	);
 	prog.Link();
@@ -217,6 +234,9 @@ PlanetSurface::PlanetSurface()
 	mvp_handle = prog.UniformLocation("MVP");
 	sampler_handle = prog.UniformLocation("tex_sampler");
 	normal_handle = prog.UniformLocation("normal");
+	light_position_handle = prog.UniformLocation("light.position");
+	light_color_handle = prog.UniformLocation("light.color");
+	light_strength_handle = prog.UniformLocation("light.strength");
 }
 
 PlanetSurface::~PlanetSurface() {
@@ -226,15 +246,19 @@ void PlanetSurface::Activate() noexcept {
 	prog.Use();
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
-	glDisable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);
 	glDisable(GL_BLEND);
 }
 
-void PlanetSurface::SetMVP(const glm::mat4 &m, const glm::mat4 &v, const glm::mat4 &p) noexcept {
+void PlanetSurface::SetMVP(const glm::mat4 &mm, const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
+	m = mm;
+	v = vv;
+	p = pp;
+	mv = v * m;
+	mvp = p * mv;
 	prog.Uniform(m_handle, m);
-	glm::mat4 mv(v * m);
 	prog.Uniform(mv_handle, mv);
-	prog.Uniform(mvp_handle, p * mv);
+	prog.Uniform(mvp_handle, mvp);
 }
 
 void PlanetSurface::SetNormal(const glm::vec3 &n) noexcept {
@@ -245,6 +269,12 @@ void PlanetSurface::SetTexture(ArrayTexture &tex) noexcept {
 	glActiveTexture(GL_TEXTURE0);
 	tex.Bind();
 	prog.Uniform(sampler_handle, GLint(0));
+}
+
+void PlanetSurface::SetLight(const glm::vec3 &pos, const glm::vec3 &color, float strength) noexcept {
+	prog.Uniform(light_position_handle, pos);
+	prog.Uniform(light_color_handle, color);
+	prog.Uniform(light_strength_handle, strength);
 }
 
 }

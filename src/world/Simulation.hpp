@@ -25,8 +25,11 @@ public:
 	Body &Root() { return root; }
 	const Body &Root() const { return root; }
 
+	double Time() const noexcept { return time; }
+
 private:
 	Body &root;
+	double time;
 
 };
 

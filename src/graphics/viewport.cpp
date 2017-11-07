@@ -1,7 +1,7 @@
 #include "Camera.hpp"
 #include "Viewport.hpp"
 
-#include "const.hpp"
+#include "../const.hpp"
 
 #include <GL/glew.h>
 #include <glm/gtx/transform.hpp>

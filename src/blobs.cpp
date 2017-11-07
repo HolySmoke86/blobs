@@ -1,3 +1,4 @@
+#include "const.hpp"
 #include "app/Application.hpp"
 #include "app/Assets.hpp"
 #include "app/init.hpp"
@@ -16,10 +17,14 @@ int main(int argc, char *argv[]) {
 	app::Assets assets;
 
 	world::Sun sun;
+	sun.Mass(1.0e13);
 	world::Simulation sim(sun);
 	world::Planet planet(3);
+	planet.Mass(1.0e7);
+	planet.Inclination(PI * 0.25);
 	world::GenerateTest(planet);
 	planet.SetParent(sun);
+	planet.SemiMajorAxis(10.0);
 
 	app::MasterState state(assets, sim);
 	state.SetReference(planet);

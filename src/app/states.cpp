@@ -17,7 +17,7 @@ MasterState::MasterState(Assets &assets, world::Simulation &sim) noexcept
 , cam()
 , remain(0)
 , thirds(0) {
-	cam.View(glm::translate(glm::vec3(-3.0f, -2.0f, -10.0f)));
+	cam.View(glm::lookAt(glm::vec3(2.0f, 3.0f, 10.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
 }
 
 MasterState::~MasterState() noexcept {
@@ -47,9 +47,11 @@ int MasterState::FrameMS() const noexcept {
 
 
 void MasterState::OnRender(graphics::Viewport &viewport) {
+	glm::mat4 ppos = reference->ToParent();
 	assets.shaders.planet_surface.Activate();
 	assets.shaders.planet_surface.SetMVP(glm::mat4(1.0f), cam.View(), cam.Projection());
 	assets.shaders.planet_surface.SetTexture(assets.textures.tiles);
+	assets.shaders.planet_surface.SetLight(glm::vec3(cam.View() * ppos[3]), glm::vec3(1.0f, 1.0f, 1.0f), 100.0f);
 	reference->Draw(assets, viewport);
 }
 
