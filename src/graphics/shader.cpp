@@ -1,6 +1,7 @@
 #include "PlanetSurface.hpp"
 #include "Program.hpp"
 #include "Shader.hpp"
+#include "SunSurface.hpp"
 
 #include "ArrayTexture.hpp"
 #include "../app/init.hpp"
@@ -275,6 +276,154 @@ void PlanetSurface::SetLight(const glm::vec3 &pos, const glm::vec3 &color, float
 	prog.Uniform(light_position_handle, pos);
 	prog.Uniform(light_color_handle, color);
 	prog.Uniform(light_strength_handle, strength);
+}
+
+
+SunSurface::SunSurface()
+: prog() {
+	prog.LoadShader(
+		GL_VERTEX_SHADER,
+		"#version 330 core\n"
+
+		"layout(location = 0) in vec3 vtx_position;\n"
+
+		"uniform mat4 M;\n"
+		"uniform mat4 MV;\n"
+		"uniform mat4 MVP;\n"
+
+		"out vec3 vtx_viewspace;\n"
+
+		"void main() {\n"
+			"gl_Position = MVP * vec4(vtx_position, 1);\n"
+			"vtx_viewspace = (MV * vec4(vtx_position, 1)).xyz;\n"
+		"}\n"
+	);
+	prog.LoadShader(
+		GL_FRAGMENT_SHADER,
+		"#version 330 core\n"
+
+		"in vec3 vtx_viewspace;\n"
+
+		"uniform vec3 light_color;\n"
+		"uniform float light_strength;\n"
+
+		"out vec3 color;\n"
+
+		"void main() {\n"
+			"vec3 to_light = -vtx_viewspace;\n"
+			"float distance = length(to_light);\n"
+			//"vec3 light_dir = normalize(to_light);\n"
+			"float attenuation = light_strength / (distance * distance);\n"
+			"color = attenuation * light_color;\n"
+		"}\n"
+	);
+	prog.Link();
+	if (!prog.Linked()) {
+		prog.Log(std::cerr);
+		throw std::runtime_error("link program");
+	}
+	m_handle = prog.UniformLocation("M");
+	mv_handle = prog.UniformLocation("MV");
+	mvp_handle = prog.UniformLocation("MVP");
+	light_color_handle = prog.UniformLocation("light_color");
+	light_strength_handle = prog.UniformLocation("light_strength");
+
+	vao.Bind();
+	vao.BindAttributes();
+	vao.EnableAttribute(0);
+	vao.AttributePointer<glm::vec3>(0, false, offsetof(Attributes, position));
+	vao.ReserveAttributes(8, GL_STATIC_DRAW);
+	{
+		auto attrib = vao.MapAttributes(GL_WRITE_ONLY);
+		attrib[0].position = glm::vec3(-1.0f, -1.0f, -1.0f);
+		attrib[1].position = glm::vec3(-1.0f, -1.0f,  1.0f);
+		attrib[2].position = glm::vec3(-1.0f,  1.0f, -1.0f);
+		attrib[3].position = glm::vec3(-1.0f,  1.0f,  1.0f);
+		attrib[4].position = glm::vec3( 1.0f, -1.0f, -1.0f);
+		attrib[5].position = glm::vec3( 1.0f, -1.0f,  1.0f);
+		attrib[6].position = glm::vec3( 1.0f,  1.0f, -1.0f);
+		attrib[7].position = glm::vec3( 1.0f,  1.0f,  1.0f);
+	}
+	vao.BindElements();
+	vao.ReserveElements(36, GL_STATIC_DRAW);
+	{
+		auto element = vao.MapElements(GL_WRITE_ONLY);
+		// -X
+		element[ 0] = 0;
+		element[ 1] = 1;
+		element[ 2] = 2;
+		element[ 3] = 2;
+		element[ 4] = 1;
+		element[ 5] = 3;
+		// -Y
+		element[ 6] = 0;
+		element[ 7] = 4;
+		element[ 8] = 1;
+		element[ 9] = 1;
+		element[10] = 4;
+		element[11] = 5;
+		// -Z
+		element[12] = 0;
+		element[13] = 2;
+		element[14] = 4;
+		element[15] = 4;
+		element[16] = 2;
+		element[17] = 6;
+		// +Z
+		element[18] = 1;
+		element[19] = 5;
+		element[20] = 3;
+		element[21] = 3;
+		element[22] = 5;
+		element[23] = 7;
+		// +Y
+		element[24] = 3;
+		element[25] = 7;
+		element[26] = 2;
+		element[27] = 2;
+		element[28] = 7;
+		element[29] = 6;
+		// +X
+		element[30] = 5;
+		element[31] = 4;
+		element[32] = 7;
+		element[33] = 7;
+		element[34] = 4;
+		element[35] = 6;
+	}
+	vao.Unbind();
+}
+
+SunSurface::~SunSurface() {
+}
+
+void SunSurface::Activate() noexcept {
+	prog.Use();
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glEnable(GL_CULL_FACE);
+	glDisable(GL_BLEND);
+}
+
+void SunSurface::SetMVP(const glm::mat4 &mm, const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
+	m = mm;
+	v = vv;
+	p = pp;
+	mv = v * m;
+	mvp = p * mv;
+	prog.Uniform(m_handle, m);
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
+void SunSurface::SetLight(const glm::vec3 &color, float strength) noexcept {
+	prog.Uniform(light_color_handle, color);
+	prog.Uniform(light_strength_handle, strength);
+}
+
+void SunSurface::Draw() const noexcept {
+	vao.Bind();
+	vao.DrawTriangles(36);
 }
 
 }

@@ -33,6 +33,8 @@ public:
 private:
 	void OnResize(int w, int h) override;
 
+	void OnKeyDown(const SDL_KeyboardEvent &) override;
+
 	void OnUpdate(int dt) override;
 	void OnRender(graphics::Viewport &) override;
 
@@ -48,6 +50,7 @@ private:
 
 	int remain;
 	int thirds;
+	bool paused;
 
 };
 

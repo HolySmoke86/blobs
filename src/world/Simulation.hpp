@@ -1,6 +1,8 @@
 #ifndef BLOBS_WORLD_SIMULATION_HPP_
 #define BLOBS_WORLD_SIMULATION_HPP_
 
+#include <vector>
+
 
 namespace blobs {
 namespace world {
@@ -22,6 +24,8 @@ public:
 public:
 	void Tick();
 
+	void AddBody(Body &);
+
 	Body &Root() { return root; }
 	const Body &Root() const { return root; }
 
@@ -29,6 +33,7 @@ public:
 
 private:
 	Body &root;
+	std::vector<Body *> all_bodies;
 	double time;
 
 };

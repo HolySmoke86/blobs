@@ -1,6 +1,7 @@
 #ifndef BLOBS_WORLD_BODY_HPP_
 #define BLOBS_WORLD_BODY_HPP_
 
+#include "Orbit.hpp"
 #include "../graphics/glm.hpp"
 
 #include <vector>
@@ -40,35 +41,40 @@ public:
 	void SetParent(Body &);
 	void UnsetParent();
 
-	double Mass() const noexcept;
-	void Mass(double) noexcept;
+	const std::vector<Body *> &Children() const noexcept { return children; }
 
-	double Radius() const noexcept;
-	void Radius(double) noexcept;
+	double Mass() const noexcept { return mass; }
+	void Mass(double m) noexcept { mass = m; }
 
-	double SemiMajorAxis() const noexcept;
-	void SemiMajorAxis(double) noexcept;
+	double Radius() const noexcept { return radius; }
+	void Radius(double r) noexcept { radius = r; }
 
-	double Eccentricity() const noexcept;
-	void Eccentricity(double) noexcept;
+	Orbit &GetOrbit() noexcept { return orbit; }
+	const Orbit &GetOrbit() const noexcept { return orbit; }
 
-	double Inclination() const noexcept;
-	void Inclination(double) noexcept;
+	const glm::dvec2 &SurfaceTilt() const noexcept { return surface_tilt; }
+	void SurfaceTilt(const glm::dvec2 &t) noexcept { surface_tilt = t; }
 
-	double LongitudeAscending() const noexcept;
-	void LongitudeAscending(double) noexcept;
+	const glm::dvec2 &AxialTilt() const noexcept { return axis_tilt; }
+	void AxialTilt(const glm::dvec2 &t) noexcept { axis_tilt = t; }
 
-	double ArgumentPeriapsis() const noexcept;
-	void ArgumentPeriapsis(double) noexcept;
+	double Rotation() const noexcept { return rotation; }
+	void Rotation(double r) noexcept { rotation = r; }
 
-	double MeanAnomaly() const noexcept;
-	void MeanAnomaly(double) noexcept;
+	double AngularMomentum() const noexcept { return angular; }
+	void AngularMomentum(double m) noexcept { angular = m; }
+
+	double Inertia() const noexcept;
 
 	double GravitationalParameter() const noexcept;
 	double OrbitalPeriod() const noexcept;
+	double RotationalPeriod() const noexcept;
 
-	glm::mat4 ToParent() const noexcept;
-	glm::mat4 FromParent() const noexcept;
+	glm::dmat4 LocalTransform() const noexcept;
+	glm::dmat4 InverseTransform() const noexcept;
+
+	glm::dmat4 ToParent() const noexcept;
+	glm::dmat4 FromParent() const noexcept;
 
 	virtual void Draw(app::Assets &, graphics::Viewport &) { }
 
@@ -82,14 +88,11 @@ private:
 	std::vector<Body *> children;
 	double mass;
 	double radius;
-
-	// Orbit
-	double sma; // semi-major axis
-	double ecc; // eccentricity
-	double inc; // inclination
-	double asc; // longitude of ascending node
-	double arg; // argument of periapsis
-	double mna; // mean anomaly (at t=0)
+	Orbit orbit;
+	glm::dvec2 surface_tilt;
+	glm::dvec2 axis_tilt;
+	double rotation;
+	double angular;
 
 };
 

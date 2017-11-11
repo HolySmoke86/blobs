@@ -1,4 +1,5 @@
 #include "Body.hpp"
+#include "Orbit.hpp"
 #include "Planet.hpp"
 #include "Simulation.hpp"
 #include "Sun.hpp"
@@ -10,6 +11,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/euler_angles.hpp>
 #include <glm/gtx/transform.hpp>
 
 using blobs::G;
@@ -30,12 +33,11 @@ Body::Body()
 , children()
 , mass(1.0)
 , radius(1.0)
-, sma(1.0)
-, ecc(0.0)
-, inc(0.0)
-, asc(0.0)
-, arg(0.0)
-, mna(0.0) {
+, orbit()
+, surface_tilt(0.0, 0.0)
+, axis_tilt(0.0, 0.0)
+, rotation(0.0)
+, angular(0.0) {
 }
 
 Body::~Body() {
@@ -74,68 +76,9 @@ void Body::RemoveChild(Body &c) {
 	}
 }
 
-double Body::Mass() const noexcept {
-	return mass;
-}
-
-void Body::Mass(double m) noexcept {
-	mass = m;
-}
-
-double Body::Radius() const noexcept {
-	return radius;
-}
-
-void Body::Radius(double r) noexcept {
-	radius = r;
-}
-
-double Body::SemiMajorAxis() const noexcept {
-	return sma;
-}
-
-void Body::SemiMajorAxis(double s) noexcept {
-	sma = s;
-}
-
-double Body::Eccentricity() const noexcept {
-	return ecc;
-}
-
-void Body::Eccentricity(double e) noexcept {
-	ecc = e;
-}
-
-double Body::Inclination() const noexcept {
-	return inc;
-}
-
-void Body::Inclination(double i) noexcept {
-	inc = i;
-}
-
-double Body::LongitudeAscending() const noexcept {
-	return asc;
-}
-
-void Body::LongitudeAscending(double l) noexcept {
-	asc = l;
-}
-
-double Body::ArgumentPeriapsis() const noexcept {
-	return arg;
-}
-
-void Body::ArgumentPeriapsis(double a) noexcept {
-	arg = a;
-}
-
-double Body::MeanAnomaly() const noexcept {
-	return mna;
-}
-
-void Body::MeanAnomaly(double m) noexcept {
-	mna = m;
+double Body::Inertia() const noexcept {
+	// assume solid sphere for now
+	return (2.0/5.0) * Mass() * pow(Radius(), 2);
 }
 
 double Body::GravitationalParameter() const noexcept {
@@ -144,54 +87,147 @@ double Body::GravitationalParameter() const noexcept {
 
 double Body::OrbitalPeriod() const noexcept {
 	if (parent) {
-		return PI_2p0 * sqrt((sma * sma * sma) / (G * (parent->Mass() + Mass())));
+		return PI_2p0 * sqrt(pow(orbit.SemiMajorAxis(), 3) / (G * (parent->Mass() + Mass())));
 	} else {
 		return 0.0;
 	}
 }
 
-glm::mat4 Body::ToParent() const noexcept {
-	if (!parent) {
-		return glm::mat4(1.0f);
+double Body::RotationalPeriod() const noexcept {
+	if (std::abs(angular) < std::numeric_limits<double>::epsilon()) {
+		return std::numeric_limits<double>::infinity();
+	} else {
+		return PI_2p0 * Inertia() / angular;
 	}
+}
 
-	double T = OrbitalPeriod();
+glm::dmat4 Body::LocalTransform() const noexcept {
+	glm::dmat4 srf = glm::eulerAngleXY(surface_tilt.x, surface_tilt.y);
+	glm::dmat4 rot = glm::eulerAngleY(rotation);
+	glm::dmat4 tilt = glm::eulerAngleXY(axis_tilt.x, axis_tilt.y);
+	return tilt * rot * srf;
+}
 
-	double M = mna + PI_2p0 * (GetSimulation().Time() / T); // + time
+glm::dmat4 Body::InverseTransform() const noexcept {
+	glm::dmat4 srf = glm::eulerAngleYX(-surface_tilt.y, -surface_tilt.x);
+	glm::dmat4 rot = glm::eulerAngleY(-rotation);
+	glm::dmat4 tilt = glm::eulerAngleYX(-axis_tilt.y, -axis_tilt.x);
+	return srf * rot * tilt;
+}
 
+glm::dmat4 Body::ToParent() const noexcept {
+	if (!parent) {
+		return glm::dmat4(1.0);
+	}
+	return orbit.InverseMatrix(PI_2p0 * (GetSimulation().Time() / OrbitalPeriod()));
+}
+
+glm::dmat4 Body::FromParent() const noexcept {
+	if (!parent) {
+		return glm::dmat4(1.0);
+	}
+	return orbit.Matrix(PI_2p0 * (GetSimulation().Time() / OrbitalPeriod()));
+}
+
+
+Orbit::Orbit()
+: sma(1.0)
+, ecc(0.0)
+, inc(0.0)
+, asc(0.0)
+, arg(0.0)
+, mna(0.0) {
+}
+
+Orbit::~Orbit() {
+}
+
+double Orbit::SemiMajorAxis() const noexcept {
+	return sma;
+}
+
+Orbit &Orbit::SemiMajorAxis(double s) noexcept {
+	sma = s;
+	return *this;
+}
+
+double Orbit::Eccentricity() const noexcept {
+	return ecc;
+}
+
+Orbit &Orbit::Eccentricity(double e) noexcept {
+	ecc = e;
+	return *this;
+}
+
+double Orbit::Inclination() const noexcept {
+	return inc;
+}
+
+Orbit &Orbit::Inclination(double i) noexcept {
+	inc = i;
+	return *this;
+}
+
+double Orbit::LongitudeAscending() const noexcept {
+	return asc;
+}
+
+Orbit &Orbit::LongitudeAscending(double l) noexcept {
+	asc = l;
+	return *this;
+}
+
+double Orbit::ArgumentPeriapsis() const noexcept {
+	return arg;
+}
+
+Orbit &Orbit::ArgumentPeriapsis(double a) noexcept {
+	arg = a;
+	return *this;
+}
+
+double Orbit::MeanAnomaly() const noexcept {
+	return mna;
+}
+
+Orbit &Orbit::MeanAnomaly(double m) noexcept {
+	mna = m;
+	return *this;
+}
+
+namespace {
+
+double mean2eccentric(double M, double e) {
 	double E = M; // eccentric anomaly, solve M = E - e sin E
-	while (true) {
-		double dE = (E - ecc * sin(E) - M) / (1 - ecc * cos(E));
+	// limit to 100 steps to prevent deadlocks in impossible situations
+	for (int i = 0; i < 100; ++i) {
+		double dE = (E - e * sin(E) - M) / (1 - e * cos(E));
 		E -= dE;
 		if (abs(dE) < 1.0e-6) break;
 	}
+	return E;
+}
 
-	// coordinates in orbital plane
+}
+
+glm::dmat4 Orbit::Matrix(double t) const noexcept {
+	double M = mna + t;
+	double E = mean2eccentric(M, ecc);
+
+	// coordinates in orbital plane, P=x, Q=-z
 	double P = sma * (cos(E) - ecc);
 	double Q = sma * sin(E) * sqrt(1 - (ecc * ecc));
 
-	// tile by argument of periapsis, …
-	double x = cos(arg) * P - sin(arg) * Q;
-	double y = sin(arg) * P + cos(arg) * Q;
-	// …inclination, …
-	double z = sin(inc) * x;
-	       x = cos(inc) * x;
-	// …and longitude of ascending node
-	glm::vec3 pos(
-		cos(asc) * x - sin(asc) * y,
-		sin(asc) * x + cos(asc) * y,
-		z);
-
-	// TODO: calculate complete matrix
-	return glm::translate(-pos);
+	return glm::translate(glm::yawPitchRoll(asc, inc, arg), glm::dvec3(P, 0.0, -Q));
 }
 
-glm::mat4 Body::FromParent() const noexcept {
-	if (!parent) {
-		return glm::mat4(1.0f);
-	}
-	// TODO: calculate real position
-	return glm::translate(glm::vec3(-sma, 0.0f, 0.0f));
+glm::dmat4 Orbit::InverseMatrix(double t) const noexcept {
+	double M = mna + t;
+	double E = mean2eccentric(M, ecc);
+	double P = sma * (cos(E) - ecc);
+	double Q = sma * sin(E) * sqrt(1 - (ecc * ecc));
+	return glm::transpose(glm::yawPitchRoll(asc, inc, arg)) * glm::translate(glm::dvec3(-P, 0.0, Q));
 }
 
 
@@ -200,6 +236,7 @@ Planet::Planet(int sidelength)
 , sidelength(sidelength)
 , tiles(new Tile[TilesTotal()])
 , vao() {
+	Radius(double(sidelength) / 2.0);
 }
 
 Planet::~Planet() {

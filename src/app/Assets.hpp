@@ -3,6 +3,7 @@
 
 #include "../graphics/ArrayTexture.hpp"
 #include "../graphics/PlanetSurface.hpp"
+#include "../graphics/SunSurface.hpp"
 
 
 namespace blobs {
@@ -16,6 +17,7 @@ struct Assets {
 
 	struct {
 		graphics::PlanetSurface planet_surface;
+		graphics::SunSurface sun_surface;
 	} shaders;
 
 	Assets();
