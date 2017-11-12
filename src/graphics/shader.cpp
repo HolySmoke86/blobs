@@ -142,8 +142,16 @@ GLint Program::AttributeLocation(const GLchar *name) const noexcept {
 	return glGetAttribLocation(handle, name);
 }
 
+GLint Program::AttributeLocation(const std::string &name) const noexcept {
+	return AttributeLocation(name.c_str());
+}
+
 GLint Program::UniformLocation(const GLchar *name) const noexcept {
 	return glGetUniformLocation(handle, name);
+}
+
+GLint Program::UniformLocation(const std::string &name) const noexcept {
+	return UniformLocation(name.c_str());
 }
 
 
@@ -167,6 +175,8 @@ void Program::Uniform(GLint loc, const glm::mat4 &val) noexcept {
 	glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(val));
 }
 
+
+constexpr int PlanetSurface::MAX_LIGHTS;
 
 PlanetSurface::PlanetSurface()
 : prog() {
@@ -205,24 +215,28 @@ PlanetSurface::PlanetSurface()
 
 		"uniform sampler2DArray tex_sampler;\n"
 		"uniform vec3 normal;\n"
-		"uniform LightSource light;\n"
+		"uniform int num_lights;\n"
+		"uniform LightSource light[8];\n"
 
 		"out vec3 color;\n"
 
 		"void main() {\n"
 			"vec3 tex_color = texture(tex_sampler, frag_tex_uv).rgb;\n"
-			"vec3 to_light = light.position - vtx_viewspace;\n"
-			"float distance = length(to_light);\n"
-			"vec3 light_dir = normalize(to_light);\n"
-			"float attenuation = light.strength / (distance * distance);\n"
-			"vec3 ambient = tex_color * vec3(0.01, 0.01, 0.01);\n"
-			"vec3 diffuse = attenuation * max(0.0, dot(normal, light_dir)) * light.color * tex_color;\n"
-			"vec3 view_dir = vec3(0.0, 0.0, 1.0);\n"
-			"vec3 specular = vec3(0.0, 0.0, 0.0);\n"
-			"if (dot(normal, light_dir) >= 0.0) {\n"
-				"attenuation * light.color * pow(max(0.0, dot(reflect(-light_dir, normal), view_dir)), 25.0);\n"
+			"vec3 total_light = tex_color * vec3(0.01, 0.01, 0.01);\n"
+			"for (int i = 0; i < num_lights; ++i) {\n"
+				"vec3 to_light = light[i].position - vtx_viewspace;\n"
+				"float distance = length(to_light) + length(vtx_viewspace);\n"
+				"vec3 light_dir = normalize(to_light);\n"
+				"float attenuation = light[i].strength / (distance * distance);\n"
+				"vec3 diffuse = attenuation * max(0.0, dot(normal, light_dir)) * light[i].color * tex_color;\n"
+				"vec3 view_dir = vec3(0.0, 0.0, 1.0);\n"
+				"vec3 specular = vec3(0.0, 0.0, 0.0);\n"
+				"if (dot(normal, light_dir) >= 0.0) {\n"
+					"attenuation * light[i].color * pow(max(0.0, dot(reflect(-light_dir, normal), view_dir)), 25.0);\n"
+				"}\n"
+				"total_light = total_light + diffuse + specular;\n"
 			"}\n"
-			"color = ambient + diffuse + specular;\n"
+			"color = total_light;\n"
 		"}\n"
 	);
 	prog.Link();
@@ -235,9 +249,12 @@ PlanetSurface::PlanetSurface()
 	mvp_handle = prog.UniformLocation("MVP");
 	sampler_handle = prog.UniformLocation("tex_sampler");
 	normal_handle = prog.UniformLocation("normal");
-	light_position_handle = prog.UniformLocation("light.position");
-	light_color_handle = prog.UniformLocation("light.color");
-	light_strength_handle = prog.UniformLocation("light.strength");
+	num_lights_handle = prog.UniformLocation("num_lights");
+	for (int i = 0; i < MAX_LIGHTS; ++i) {
+		light_handle[3 * i + 0]  = prog.UniformLocation("light[" + std::to_string(i) + "].position");
+		light_handle[3 * i + 1]  = prog.UniformLocation("light[" + std::to_string(i) + "].color");
+		light_handle[3 * i + 2]  = prog.UniformLocation("light[" + std::to_string(i) + "].strength");
+	}
 }
 
 PlanetSurface::~PlanetSurface() {
@@ -272,10 +289,14 @@ void PlanetSurface::SetTexture(ArrayTexture &tex) noexcept {
 	prog.Uniform(sampler_handle, GLint(0));
 }
 
-void PlanetSurface::SetLight(const glm::vec3 &pos, const glm::vec3 &color, float strength) noexcept {
-	prog.Uniform(light_position_handle, pos);
-	prog.Uniform(light_color_handle, color);
-	prog.Uniform(light_strength_handle, strength);
+void PlanetSurface::SetLight(int n, const glm::vec3 &pos, const glm::vec3 &color, float strength) noexcept {
+	prog.Uniform(light_handle[3 * n + 0], pos);
+	prog.Uniform(light_handle[3 * n + 1], color);
+	prog.Uniform(light_handle[3 * n + 2], strength);
+}
+
+void PlanetSurface::SetNumLights(int n) noexcept {
+	prog.Uniform(num_lights_handle, std::min(MAX_LIGHTS, n));
 }
 
 

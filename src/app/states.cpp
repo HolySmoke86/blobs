@@ -56,10 +56,35 @@ void MasterState::OnKeyDown(const SDL_KeyboardEvent &e) {
 }
 
 void MasterState::OnRender(graphics::Viewport &viewport) {
-	glm::dmat4 ppos = cam.Model(**sim.Suns().begin());
 	assets.shaders.planet_surface.Activate();
 	assets.shaders.planet_surface.SetTexture(assets.textures.tiles);
-	assets.shaders.planet_surface.SetLight(glm::vec3(cam.View() * ppos[3]), glm::vec3(1.0f, 1.0f, 1.0f), 1.0e6f);
+
+	int num_lights = 0;
+	for (auto sun : sim.Suns()) {
+		// TODO: source sun's light color and strength
+		assets.shaders.planet_surface.SetLight(
+			num_lights,
+			glm::vec3(cam.View() * cam.Model(*sun)[3]),
+			glm::vec3(1.0f, 1.0f, 1.0f),
+			1.0e6f);
+		++num_lights;
+		if (num_lights >= graphics::PlanetSurface::MAX_LIGHTS) {
+			break;
+		}
+	}
+	for (auto planet : sim.Planets()) {
+		// TODO: indirect light from planets, calculate strength and get color somehow
+		assets.shaders.planet_surface.SetLight(
+			num_lights,
+			glm::vec3(cam.View() * cam.Model(*planet)[3]),
+			glm::vec3(1.0f, 1.0f, 1.0f),
+			10.0f);
+		++num_lights;
+		if (num_lights >= graphics::PlanetSurface::MAX_LIGHTS) {
+			break;
+		}
+	}
+	assets.shaders.planet_surface.SetNumLights(num_lights);
 
 	for (auto planet : sim.Planets()) {
 		assets.shaders.planet_surface.SetMVP(cam.Model(*planet), cam.View(), cam.Projection());

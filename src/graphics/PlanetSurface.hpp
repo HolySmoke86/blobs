@@ -14,6 +14,9 @@ class ArrayTexture;
 class PlanetSurface {
 
 public:
+	static constexpr int MAX_LIGHTS = 8;
+
+public:
 	PlanetSurface();
 	~PlanetSurface();
 
@@ -29,7 +32,8 @@ public:
 	void SetMVP(const glm::mat4 &m, const glm::mat4 &v, const glm::mat4 &p) noexcept;
 	void SetNormal(const glm::vec3 &) noexcept;
 	void SetTexture(ArrayTexture &) noexcept;
-	void SetLight(const glm::vec3 &pos, const glm::vec3 &color, float strength) noexcept;
+	void SetLight(int n, const glm::vec3 &pos, const glm::vec3 &color, float strength) noexcept;
+	void SetNumLights(int n) noexcept;
 
 	const glm::mat4 &M() const noexcept { return m; }
 	const glm::mat4 &V() const noexcept { return v; }
@@ -39,6 +43,8 @@ public:
 
 private:
 	Program prog;
+
+	int num_lights;
 
 	glm::mat4 m;
 	glm::mat4 v;
@@ -52,9 +58,8 @@ private:
 	GLuint sampler_handle;
 	GLuint normal_handle;
 
-	GLuint light_position_handle;
-	GLuint light_color_handle;
-	GLuint light_strength_handle;
+	GLuint num_lights_handle;
+	GLuint light_handle[MAX_LIGHTS * 3];
 
 };
 

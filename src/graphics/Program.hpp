@@ -5,6 +5,7 @@
 
 #include <iosfwd>
 #include <list>
+#include <string>
 #include <GL/glew.h>
 
 
@@ -29,7 +30,9 @@ public:
 	void Log(std::ostream &) const;
 
 	GLint AttributeLocation(const GLchar *name) const noexcept;
+	GLint AttributeLocation(const std::string &name) const noexcept;
 	GLint UniformLocation(const GLchar *name) const noexcept;
+	GLint UniformLocation(const std::string &name) const noexcept;
 
 	void Uniform(GLint, GLint) noexcept;
 	void Uniform(GLint, float) noexcept;
