@@ -120,8 +120,9 @@ glm::mat4 Camera::Model(const world::Body &b) const noexcept {
 			? ref->InverseTransform() * ref->ToParent() * b.LocalTransform()
 			: ref->ToParent() * b.LocalTransform();
 	} else {
-		// TODO: model matrices for path distances > 1
-		return track_orient ? glm::mat4(1.0f) : glm::mat4(ref->LocalTransform());
+		return track_orient
+			? ref->InverseTransform() * ref->ToUniverse() * b.FromUniverse() * b.LocalTransform()
+			: ref->ToUniverse() * b.FromUniverse() * b.LocalTransform();
 	}
 }
 

@@ -37,7 +37,11 @@ Body::Body()
 , surface_tilt(0.0, 0.0)
 , axis_tilt(0.0, 0.0)
 , rotation(0.0)
-, angular(0.0) {
+, angular(0.0)
+, orbital(1.0)
+, inverse_orbital(1.0)
+, local(1.0)
+, inverse_local(1.0) {
 }
 
 Body::~Body() {
@@ -101,32 +105,44 @@ double Body::RotationalPeriod() const noexcept {
 	}
 }
 
-glm::dmat4 Body::LocalTransform() const noexcept {
-	glm::dmat4 srf = glm::eulerAngleXY(surface_tilt.x, surface_tilt.y);
-	glm::dmat4 rot = glm::eulerAngleY(rotation);
-	glm::dmat4 tilt = glm::eulerAngleXY(axis_tilt.x, axis_tilt.y);
-	return tilt * rot * srf;
-}
-
-glm::dmat4 Body::InverseTransform() const noexcept {
-	glm::dmat4 srf = glm::eulerAngleYX(-surface_tilt.y, -surface_tilt.x);
-	glm::dmat4 rot = glm::eulerAngleY(-rotation);
-	glm::dmat4 tilt = glm::eulerAngleYX(-axis_tilt.y, -axis_tilt.x);
-	return srf * rot * tilt;
-}
-
-glm::dmat4 Body::ToParent() const noexcept {
-	if (!parent) {
-		return glm::dmat4(1.0);
+glm::dmat4 Body::ToUniverse() const noexcept {
+	glm::dmat4 m(1.0);
+	const Body *b = this;
+	while (b->HasParent()) {
+		m = b->ToParent() * m;
+		b = &b->Parent();
 	}
-	return orbit.InverseMatrix(PI_2p0 * (GetSimulation().Time() / OrbitalPeriod()));
+	return m;
 }
 
-glm::dmat4 Body::FromParent() const noexcept {
-	if (!parent) {
-		return glm::dmat4(1.0);
+glm::dmat4 Body::FromUniverse() const noexcept {
+	glm::dmat4 m(1.0);
+	const Body *b = this;
+	while (b->HasParent()) {
+		m *= b->FromParent();
+		b = &b->Parent();
 	}
-	return orbit.Matrix(PI_2p0 * (GetSimulation().Time() / OrbitalPeriod()));
+	return m;
+}
+
+void Body::Cache() noexcept {
+	if (parent) {
+		orbital =
+			orbit.Matrix(PI_2p0 * (GetSimulation().Time() / OrbitalPeriod()))
+			* glm::eulerAngleXY(axis_tilt.x, axis_tilt.y);
+		inverse_orbital =
+			glm::eulerAngleYX(-axis_tilt.y, -axis_tilt.x)
+			* orbit.InverseMatrix(PI_2p0 * (GetSimulation().Time() / OrbitalPeriod()));
+	} else {
+		orbital = glm::eulerAngleXY(axis_tilt.x, axis_tilt.y);
+		inverse_orbital = glm::eulerAngleYX(-axis_tilt.y, -axis_tilt.x);
+	}
+	local =
+		glm::eulerAngleY(rotation)
+		* glm::eulerAngleXY(surface_tilt.x, surface_tilt.y);
+	inverse_local =
+		glm::eulerAngleYX(-surface_tilt.y, -surface_tilt.x)
+		* glm::eulerAngleY(-rotation);
 }
 
 

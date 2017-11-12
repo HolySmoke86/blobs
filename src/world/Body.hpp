@@ -70,13 +70,18 @@ public:
 	double OrbitalPeriod() const noexcept;
 	double RotationalPeriod() const noexcept;
 
-	glm::dmat4 LocalTransform() const noexcept;
-	glm::dmat4 InverseTransform() const noexcept;
+	const glm::dmat4 &LocalTransform() const noexcept { return local; }
+	const glm::dmat4 &InverseTransform() const noexcept { return inverse_local; }
 
-	glm::dmat4 ToParent() const noexcept;
-	glm::dmat4 FromParent() const noexcept;
+	const glm::dmat4 &ToParent() const noexcept { return inverse_orbital; }
+	const glm::dmat4 &FromParent() const noexcept { return orbital; }
+
+	glm::dmat4 ToUniverse() const noexcept;
+	glm::dmat4 FromUniverse() const noexcept;
 
 	virtual void Draw(app::Assets &, graphics::Viewport &) { }
+
+	void Cache() noexcept;
 
 private:
 	void AddChild(Body &);
@@ -93,6 +98,11 @@ private:
 	glm::dvec2 axis_tilt;
 	double rotation;
 	double angular;
+
+	glm::dmat4 orbital;
+	glm::dmat4 inverse_orbital;
+	glm::dmat4 local;
+	glm::dmat4 inverse_local;
 
 };
 

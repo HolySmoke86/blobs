@@ -41,6 +41,7 @@ void Simulation::Tick() {
 	time += dt;
 	for (auto body : bodies) {
 		body->Rotation(body->Rotation() + dt * body->AngularMomentum() / body->Inertia());
+		body->Cache();
 	}
 }
 
