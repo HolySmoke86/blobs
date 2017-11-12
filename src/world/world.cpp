@@ -235,7 +235,7 @@ glm::dmat4 Orbit::Matrix(double t) const noexcept {
 	double P = sma * (cos(E) - ecc);
 	double Q = sma * sin(E) * sqrt(1 - (ecc * ecc));
 
-	return glm::translate(glm::yawPitchRoll(asc, inc, arg), glm::dvec3(P, 0.0, -Q));
+	return glm::yawPitchRoll(asc, inc, arg) * glm::translate(glm::dvec3(P, 0.0, -Q));
 }
 
 glm::dmat4 Orbit::InverseMatrix(double t) const noexcept {
@@ -243,7 +243,7 @@ glm::dmat4 Orbit::InverseMatrix(double t) const noexcept {
 	double E = mean2eccentric(M, ecc);
 	double P = sma * (cos(E) - ecc);
 	double Q = sma * sin(E) * sqrt(1 - (ecc * ecc));
-	return glm::transpose(glm::yawPitchRoll(asc, inc, arg)) * glm::translate(glm::dvec3(-P, 0.0, Q));
+	return glm::translate(glm::dvec3(-P, 0.0, Q)) * glm::transpose(glm::yawPitchRoll(asc, inc, arg));
 }
 
 

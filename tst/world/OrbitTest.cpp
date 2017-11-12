@@ -21,7 +21,7 @@ void OrbitTest::tearDown() {
 }
 
 
-void OrbitTest::testDefaultOrbit() {
+void OrbitTest::testDefault() {
 	Orbit orbit;
 	CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
 		"wrong semi-major axis on default orbit",
@@ -379,6 +379,312 @@ void OrbitTest::testMnAn() {
 	);
 }
 
+void OrbitTest::testInverseDefault() {
+	Orbit orbit;
+
+	// inverse matrix should project expected orbit position back to the origin
+	glm::vec4 pos(orbit.InverseMatrix(0.0) * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+	AssertEqual(
+		"wrong position at t=0",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	// at 90° position should be (0,0,sma) since the zero inclination
+	// reference plane is XZ and rotates counter-clockwise
+	pos = orbit.InverseMatrix(PI_0p5) * glm::vec4(0.0f, 0.0f, -1.0f, 1.0f);
+	AssertEqual(
+		"wrong position at t=90°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	// at 180° position should be (-sma,0,0)
+	pos = orbit.InverseMatrix(PI) * glm::vec4(-1.0f, 0.0f, 0.0f, 1.0f);
+	AssertEqual(
+		"wrong position at t=180°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	// at 270° position should be (0,0,-sma)
+	pos = orbit.InverseMatrix(PI_1p5) * glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+	AssertEqual(
+		"wrong position at t=270°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	// at 360° position should be (sma,0,0), the initial position
+	pos = orbit.InverseMatrix(PI_2p0) * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	AssertEqual(
+		"wrong position at t=360°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+}
+
+void OrbitTest::testInverseSMA() {
+	Orbit orbit;
+	orbit.SemiMajorAxis(2.0);
+
+	// reference direction is +X, so at t=0, the body should be
+	// at (sma,0,0) relative to its parent
+	glm::vec4 pos(orbit.InverseMatrix(0.0) * glm::vec4(2.0f, 0.0f, 0.0f, 1.0f));
+	AssertEqual(
+		"wrong position at t=0",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	// at 90° position should be (0,0,sma) since the zero inclination
+	// reference plane is XZ and rotates counter-clockwise
+	pos = orbit.InverseMatrix(PI_0p5) * glm::vec4(0.0f, 0.0f, -2.0f, 1.0f);
+	AssertEqual(
+		"wrong position at t=90°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	// at 180° position should be (-sma,0,0)
+	pos = orbit.InverseMatrix(PI) * glm::vec4(-2.0f, 0.0f, 0.0f, 1.0f);
+	AssertEqual(
+		"wrong position at t=180°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	// at 270° position should be (0,0,-sma)
+	pos = orbit.InverseMatrix(PI_1p5) * glm::vec4(0.0f, 0.0f, 2.0f, 1.0f);
+	AssertEqual(
+		"wrong position at t=270°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	// at 360° position should be (sma,0,0), the initial position
+	pos = orbit.InverseMatrix(PI_2p0) * glm::vec4(2.0f, 0.0f, 0.0f, 1.0f);
+	AssertEqual(
+		"wrong position at t=360°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+}
+
+void OrbitTest::testInverseEcc() {
+	Orbit orbit;
+	orbit.Eccentricity(0.5);
+
+	glm::vec4 pos(orbit.InverseMatrix(0.0) * glm::vec4(0.5f, 0.0f, 0.0f, 1.0f));
+	AssertEqual(
+		"wrong position at t=0",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	pos = orbit.InverseMatrix(PI_0p5) * glm::vec4(-0.935130834579468f, 0.0f, -0.779740869998932f, 1.0f);
+	AssertEqual(
+		"wrong position at t=90°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	pos = orbit.InverseMatrix(PI) * glm::vec4(-1.5f, 0.0f, 0.0f, 1.0f);
+	AssertEqual(
+		"wrong position at t=180°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	pos = orbit.InverseMatrix(PI_1p5) * glm::vec4(-0.935130834579468f, 0.0f, 0.779740869998932f, 1.0f);
+	AssertEqual(
+		"wrong position at t=270°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	pos = orbit.InverseMatrix(PI_2p0) * glm::vec4(0.5f, 0.0f, 0.0f, 1.0f);
+	AssertEqual(
+		"wrong position at t=360°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+}
+
+void OrbitTest::testInverseInc() {
+	Orbit orbit;
+	orbit.Inclination(PI * 0.25); // 45°
+
+	// inclination rotates counter clockwise around +X, so at t=0 should be
+	// at (sma,0,0) relative to its parent
+	glm::vec4 pos(orbit.InverseMatrix(0.0) * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+	AssertEqual(
+		"wrong position at t=0",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	pos = orbit.InverseMatrix(PI_0p5) * glm::vec4(0.0f, 0.70710676908493f, -0.70710676908493f, 1.0f);
+	AssertEqual(
+		"wrong position at t=90°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	pos = orbit.InverseMatrix(PI) * glm::vec4(-1.0f, 0.0f, 0.0f, 1.0f);
+	AssertEqual(
+		"wrong position at t=180°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	pos = orbit.InverseMatrix(PI_1p5) * glm::vec4(0.0f, -0.70710676908493f, 0.70710676908493f, 1.0f);
+	AssertEqual(
+		"wrong position at t=270°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	pos = orbit.InverseMatrix(PI_2p0) * glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	AssertEqual(
+		"wrong position at t=360°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+}
+
+void OrbitTest::testInverseLngAsc() {
+	Orbit orbit;
+	orbit.LongitudeAscending(PI * 0.25); // 45°
+	orbit.Inclination(PI * 0.5);
+
+	// inclination rotates counter clockwise around +X, while LAN rotates it
+	// around +Y, so at t=0 should be at (sma*sin(45°),0,-sma*cos(45°))
+	glm::vec4 pos(orbit.InverseMatrix(0.0) * glm::vec4(0.70710676908493f, 0.0f, -0.70710676908493f, 1.0f));
+	AssertEqual(
+		"wrong position at t=0",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	pos = orbit.InverseMatrix(PI_0p5) * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	AssertEqual(
+		"wrong position at t=90°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	pos = orbit.InverseMatrix(PI) * glm::vec4(-0.70710676908493f, 0.0f, 0.70710676908493f, 1.0f);
+	AssertEqual(
+		"wrong position at t=180°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	pos = orbit.InverseMatrix(PI_1p5) * glm::vec4(0.0f, -1.0f, 0.0f, 1.0f);
+	AssertEqual(
+		"wrong position at t=270°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	pos = orbit.InverseMatrix(PI_2p0) * glm::vec4(0.70710676908493f, 0.0f, -0.70710676908493f, 1.0f);
+	AssertEqual(
+		"wrong position at t=360°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+}
+
+void OrbitTest::testInverseArgPe() {
+	Orbit orbit;
+	orbit.ArgumentPeriapsis(PI * 0.25); // 45°
+	orbit.Inclination(PI * 0.5);
+
+	// inclination rotates counter clockwise around +X, while APe rotates it
+	// around +Y in the rotated coordinate system, so at t=0 should be at
+	// (sma*sin(45°),0,sma*cos(45°))
+	glm::vec4 pos(orbit.InverseMatrix(0.0) * glm::vec4(0.70710676908493f, 0.0f, 0.70710676908493f, 1.0f));
+	AssertEqual(
+		"wrong position at t=0",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	pos = orbit.InverseMatrix(PI_0p5) * glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+	AssertEqual(
+		"wrong position at t=90°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	pos = orbit.InverseMatrix(PI) * glm::vec4(-0.70710676908493f, 0.0f, -0.70710676908493f, 1.0f);
+	AssertEqual(
+		"wrong position at t=180°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	pos = orbit.InverseMatrix(PI_1p5) * glm::vec4(0.0f, -1.0f, 0.0f, 1.0f);
+	AssertEqual(
+		"wrong position at t=270°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	pos = orbit.InverseMatrix(PI_2p0) * glm::vec4(0.70710676908493f, 0.0f, 0.70710676908493f, 1.0f);
+	AssertEqual(
+		"wrong position at t=360°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+}
+
+void OrbitTest::testInverseMnAn() {
+	Orbit orbit;
+	orbit.MeanAnomaly(PI * 0.25); // 45°
+
+	// mean anomaly just phase shifts the orbit
+	glm::vec4 pos(orbit.InverseMatrix(0.0) * glm::vec4(0.70710676908493f, 0.0f, -0.70710676908493f, 1.0f));
+	AssertEqual(
+		"wrong position at t=0",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	// at 90° position should be (0,0,sma) since the zero inclination
+	// reference plane is XZ and rotates counter-clockwise
+	pos = orbit.InverseMatrix(PI_0p5) * glm::vec4(-0.70710676908493f, 0.0f, -0.70710676908493f, 1.0f);
+	AssertEqual(
+		"wrong position at t=90°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	// at 180° position should be (-sma,0,0)
+	pos = orbit.InverseMatrix(PI) * glm::vec4(-0.70710676908493f, 0.0f, 0.70710676908493f, 1.0f);
+	AssertEqual(
+		"wrong position at t=180°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	// at 270° position should be (0,0,-sma)
+	pos = orbit.InverseMatrix(PI_1p5) * glm::vec4(0.70710676908493f, 0.0f, 0.70710676908493f, 1.0f);
+	AssertEqual(
+		"wrong position at t=270°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+
+	// at 360° position should be (sma,0,0), the initial position
+	pos = orbit.InverseMatrix(PI_2p0) * glm::vec4(0.70710676908493f, 0.0f, -0.70710676908493f, 1.0f);
+	AssertEqual(
+		"wrong position at t=360°",
+		glm::vec3(0.0f, 0.0f, 0.0f),
+		glm::vec3(pos) / pos.w
+	);
+}
 }
 }
 }
