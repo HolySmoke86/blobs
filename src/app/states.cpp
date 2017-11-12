@@ -1,7 +1,9 @@
 #include "MasterState.hpp"
 
 #include "../world/Body.hpp"
+#include "../world/Planet.hpp"
 #include "../world/Simulation.hpp"
+#include "../world/Sun.hpp"
 
 #include <glm/gtx/transform.hpp>
 
@@ -13,17 +15,10 @@ MasterState::MasterState(Assets &assets, world::Simulation &sim) noexcept
 : State()
 , assets(assets)
 , sim(sim)
-, reference(&sim.Root())
-, cam()
+, cam(sim.Root())
 , remain(0)
 , thirds(0)
 , paused(false) {
-	// sunset view: standing in the center of surface 0 (+Z), looking west (-X)
-	//cam.View(glm::lookAt(glm::vec3(0.0f, 0.0f, 5.6f), glm::vec3(-1.0f, 0.0f, 5.6f), glm::vec3(0.0f, 0.0f, 1.0f)));
-	// sunrise view: standing in the center of surface 0 (+Z), looking east (+X)
-	cam.View(glm::lookAt(glm::vec3(0.0f, 0.0f, 5.6f), glm::vec3(1.0f, 0.0f, 5.6f), glm::vec3(0.0f, 0.0f, 1.0f)));
-	// far out, looking at planet
-	//cam.View(glm::lookAt(glm::vec3(10.0f, 10.0f, 50.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f)));
 }
 
 MasterState::~MasterState() noexcept {
@@ -61,22 +56,25 @@ void MasterState::OnKeyDown(const SDL_KeyboardEvent &e) {
 }
 
 void MasterState::OnRender(graphics::Viewport &viewport) {
-	glm::dmat4 ppos = reference->InverseTransform() * reference->ToParent();
+	glm::dmat4 ppos = cam.Model(**sim.Suns().begin());
 	assets.shaders.planet_surface.Activate();
 	assets.shaders.planet_surface.SetTexture(assets.textures.tiles);
+	assets.shaders.planet_surface.SetLight(glm::vec3(cam.View() * ppos[3]), glm::vec3(1.0f, 1.0f, 1.0f), 1.0e6f);
 
-	assets.shaders.planet_surface.SetMVP(glm::mat4(1.0f), cam.View(), cam.Projection());
-	assets.shaders.planet_surface.SetLight(glm::vec3(cam.View() * ppos[3]), glm::vec3(1.0f, 1.0f, 1.0f), 2.0e4f);
-	reference->Draw(assets, viewport);
-
-	world::Body *child = reference->Children()[0];
-	assets.shaders.planet_surface.SetMVP(reference->InverseTransform() * child->FromParent() * child->LocalTransform(), cam.View(), cam.Projection());
-	child->Draw(assets, viewport);
+	for (auto planet : sim.Planets()) {
+		assets.shaders.planet_surface.SetMVP(cam.Model(*planet), cam.View(), cam.Projection());
+		planet->Draw(assets, viewport);
+	}
 
 	assets.shaders.sun_surface.Activate();
-	assets.shaders.sun_surface.SetMVP(ppos * reference->Parent().LocalTransform(), cam.View(), cam.Projection());
-	assets.shaders.sun_surface.SetLight(glm::vec3(1.0f, 1.0f, 1.0f), 2.0e4f);
-	assets.shaders.sun_surface.Draw();
+	for (auto sun : sim.Suns()) {
+		double sun_radius = sun->Radius();
+		assets.shaders.sun_surface.SetMVP(
+			cam.Model(*sun) * glm::scale(glm::vec3(sun_radius, sun_radius, sun_radius)),
+			cam.View(), cam.Projection());
+		assets.shaders.sun_surface.SetLight(glm::vec3(1.0f, 1.0f, 1.0f), 1.0e6f);
+		assets.shaders.sun_surface.Draw();
+	}
 }
 
 }

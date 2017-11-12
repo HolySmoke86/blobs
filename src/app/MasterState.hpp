@@ -28,7 +28,8 @@ public:
 	MasterState &operator =(MasterState &&) = delete;
 
 public:
-	void SetReference(world::Body &r) { reference = &r; }
+	graphics::Camera &GetCamera() noexcept { return cam; }
+	const graphics::Camera &GetCamera() const noexcept { return cam; }
 
 private:
 	void OnResize(int w, int h) override;
@@ -44,7 +45,6 @@ private:
 private:
 	Assets &assets;
 	world::Simulation &sim;
-	world::Body *reference;
 
 	graphics::Camera cam;
 

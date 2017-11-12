@@ -254,6 +254,9 @@ void Planet::BuildVAOs() {
 		auto attrib = vao.MapAttributes(GL_WRITE_ONLY);
 		float offset = sidelength * 0.5f;
 
+		// srf  0  1  2  3  4  5
+		//  up +Z +X +Y -Z -X -Y
+
 		for (int index = 0, surface = 0; surface < 6; ++surface) {
 			for (int y = 0; y < sidelength; ++y) {
 				for (int x = 0; x < sidelength; ++x, ++index) {
