@@ -277,32 +277,34 @@ void Planet::BuildVAOs() {
 			for (int y = 0; y < sidelength; ++y) {
 				for (int x = 0; x < sidelength; ++x, ++index) {
 					float tex = TileAt(surface, x, y).type;
+					const float tex_u_begin = surface < 3 ? 1.0f : 0.0f;
+					const float tex_u_end = surface < 3 ? 0.0f : 1.0f;
 					attrib[4 * index + 0].position[(surface + 0) % 3] = x + 0 - offset;
 					attrib[4 * index + 0].position[(surface + 1) % 3] = y + 0 - offset;
 					attrib[4 * index + 0].position[(surface + 2) % 3] = surface < 3 ? offset : -offset;
-					attrib[4 * index + 0].tex_coord[0] = 0.0f;
-					attrib[4 * index + 0].tex_coord[1] = 0.0f;
+					attrib[4 * index + 0].tex_coord[0] = tex_u_begin;
+					attrib[4 * index + 0].tex_coord[1] = 1.0f;
 					attrib[4 * index + 0].tex_coord[2] = tex;
 
 					attrib[4 * index + 1].position[(surface + 0) % 3] = x + 0 - offset;
 					attrib[4 * index + 1].position[(surface + 1) % 3] = y + 1 - offset;
 					attrib[4 * index + 1].position[(surface + 2) % 3] = surface < 3 ? offset : -offset;
-					attrib[4 * index + 1].tex_coord[0] = 0.0f;
+					attrib[4 * index + 1].tex_coord[0] = tex_u_end;
 					attrib[4 * index + 1].tex_coord[1] = 1.0f;
 					attrib[4 * index + 1].tex_coord[2] = tex;
 
 					attrib[4 * index + 2].position[(surface + 0) % 3] = x + 1 - offset;
 					attrib[4 * index + 2].position[(surface + 1) % 3] = y + 0 - offset;
 					attrib[4 * index + 2].position[(surface + 2) % 3] = surface < 3 ? offset : -offset;
-					attrib[4 * index + 2].tex_coord[0] = 1.0f;
+					attrib[4 * index + 2].tex_coord[0] = tex_u_begin;
 					attrib[4 * index + 2].tex_coord[1] = 0.0f;
 					attrib[4 * index + 2].tex_coord[2] = tex;
 
 					attrib[4 * index + 3].position[(surface + 0) % 3] = x + 1 - offset;
 					attrib[4 * index + 3].position[(surface + 1) % 3] = y + 1 - offset;
 					attrib[4 * index + 3].position[(surface + 2) % 3] = surface < 3 ? offset : -offset;
-					attrib[4 * index + 3].tex_coord[0] = 1.0f;
-					attrib[4 * index + 3].tex_coord[1] = 1.0f;
+					attrib[4 * index + 3].tex_coord[0] = tex_u_end;
+					attrib[4 * index + 3].tex_coord[1] = 0.0f;
 					attrib[4 * index + 3].tex_coord[2] = tex;
 				}
 			}
@@ -363,7 +365,11 @@ void GenerateTest(Planet &p) {
 	for (int surface = 0; surface <= 5; ++surface) {
 		for (int y = 0; y < p.SideLength(); ++y) {
 			for (int x = 0; x < p.SideLength(); ++x) {
-				p.TileAt(surface, x, y).type = (x == p.SideLength()/2) + (y == p.SideLength()/2);
+				if (x == p.SideLength() / 2 && y == p.SideLength() / 2) {
+					p.TileAt(surface, x, y).type = surface;
+				} else {
+					p.TileAt(surface, x, y).type = (x == p.SideLength()/2) + (y == p.SideLength()/2) + 6;
+				}
 			}
 		}
 	}

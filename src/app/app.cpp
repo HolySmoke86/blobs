@@ -6,6 +6,7 @@
 #include "../graphics/Viewport.hpp"
 
 #include <SDL.h>
+#include <SDL_image.h>
 
 
 namespace blobs {
@@ -164,21 +165,39 @@ void State::OnQuit() {
 }
 
 
-Assets::Assets() {
+Assets::Assets()
+: path("assets/")
+, tile_path(path + "tiles/") {
 	graphics::Format format;
 	textures.tiles.Bind();
-	textures.tiles.Reserve(1, 1, 3, format);
-	std::uint8_t texdata[] = {
-		0xFF, 0x00, 0x00, 0xFF,
-		0x00, 0xFF, 0x00, 0xFF,
-		0x00, 0x00, 0xFF, 0xFF,
-	};
-	textures.tiles.Data(0, format, texdata);
-	textures.tiles.Data(1, format, texdata + 4);
-	textures.tiles.Data(2, format, texdata + 8);
+	textures.tiles.Reserve(256, 256, 9, format);
+	LoadTileTexture("1", textures.tiles, 0);
+	LoadTileTexture("2", textures.tiles, 1);
+	LoadTileTexture("3", textures.tiles, 2);
+	LoadTileTexture("4", textures.tiles, 3);
+	LoadTileTexture("5", textures.tiles, 4);
+	LoadTileTexture("6", textures.tiles, 5);
+	LoadTileTexture("7", textures.tiles, 6);
+	LoadTileTexture("8", textures.tiles, 7);
+	LoadTileTexture("9", textures.tiles, 8);
 }
 
 Assets::~Assets() {
+}
+
+void Assets::LoadTileTexture(const std::string &name, graphics::ArrayTexture &tex, int layer) const {
+	std::string path = tile_path + name + ".png";
+	SDL_Surface *srf = IMG_Load(path.c_str());
+	if (!srf) {
+		throw SDLError("IMG_Load");
+	}
+	try {
+		tex.Data(layer, *srf);
+	} catch (...) {
+		SDL_FreeSurface(srf);
+		throw;
+	}
+	SDL_FreeSurface(srf);
 }
 
 }

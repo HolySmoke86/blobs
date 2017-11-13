@@ -5,11 +5,16 @@
 #include "../graphics/PlanetSurface.hpp"
 #include "../graphics/SunSurface.hpp"
 
+#include <string>
+
 
 namespace blobs {
 namespace app {
 
 struct Assets {
+
+	std::string path;
+	std::string tile_path;
 
 	struct {
 		graphics::ArrayTexture tiles;
@@ -28,6 +33,8 @@ struct Assets {
 
 	Assets(Assets &&) = delete;
 	Assets &operator =(Assets &&) = delete;
+
+	void LoadTileTexture(const std::string &name, graphics::ArrayTexture &, int layer) const;
 
 };
 
