@@ -24,7 +24,6 @@ int main(int argc, char *argv[]) {
 	sun.AngularMomentum(1.0e13);
 
 	world::Planet planet(11);
-	world::GenerateTest(planet);
 	planet.SetParent(sun);
 	planet.Mass(1.0e9);
 	planet.GetOrbit().SemiMajorAxis(941.7);
@@ -33,7 +32,6 @@ int main(int argc, char *argv[]) {
 	planet.AngularMomentum(1.25e9);
 
 	world::Planet moon(3);
-	world::GenerateTest(moon);
 	moon.SetParent(planet);
 	moon.Mass(1.0e6);
 	moon.GetOrbit().SemiMajorAxis(25.0);
@@ -41,7 +39,6 @@ int main(int argc, char *argv[]) {
 	moon.AngularMomentum(1.0e4);
 
 	world::Planet second_planet(9);
-	world::GenerateTest(second_planet);
 	second_planet.SetParent(sun);
 	second_planet.Mass(1.0e9);
 	second_planet.GetOrbit().SemiMajorAxis(350.0);
@@ -55,6 +52,10 @@ int main(int argc, char *argv[]) {
 	sim.AddPlanet(second_planet);
 	sim.AddPlanet(moon);
 
+	world::GenerateEarthlike(planet);
+	world::GenerateTest(moon);
+	world::GenerateTest(second_planet);
+
 	std::cout << "length of year: " << planet.OrbitalPeriod() << "s" << std::endl;
 	std::cout << "length of moon cycle: " << moon.OrbitalPeriod() << "s" << std::endl;
 	std::cout << "length of day: " << planet.RotationalPeriod() << "s" << std::endl;
@@ -66,11 +67,13 @@ int main(int argc, char *argv[]) {
 	state.GetCamera()
 		.Reference(planet)
 		// sunrise
-		.FirstPerson(0, glm::vec3(0.0f, 0.0f, 0.1f), glm::vec3(1.0f, -0.75f, 0.1f))
+		//.FirstPerson(0, glm::vec3(0.0f, 0.0f, 0.1f), glm::vec3(1.0f, -0.75f, 0.1f))
 		// sunset
 		//.FirstPerson(3, glm::vec3(0.0f, 0.0f, 0.1f), glm::vec3(1.0f, -0.75f, 0.1f))
 		// from afar
 		//.MapView(0, glm::vec3(0.0f, 0.0f, 25.0f), 0.0f)
+		// from afar, rotating
+		.Orbital(glm::vec3(-25.0f, 0.0f, 0.0f))
 	;
 	// system view
 	//state.GetCamera()

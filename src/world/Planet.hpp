@@ -61,6 +61,8 @@ public:
 		return 6 * TilesPerSurface();
 	}
 
+	glm::dvec3 TileCenter(int surface, int x, int y) const noexcept;
+
 	void BuildVAOs();
 	void Draw(app::Assets &, graphics::Viewport &) override;
 
@@ -76,7 +78,8 @@ private:
 
 };
 
-void GenerateTest(Planet &);
+void GenerateEarthlike(Planet &) noexcept;
+void GenerateTest(Planet &) noexcept;
 
 }
 }

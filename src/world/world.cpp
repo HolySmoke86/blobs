@@ -8,11 +8,15 @@
 #include "../const.hpp"
 #include "../app/Assets.hpp"
 #include "../graphics/Viewport.hpp"
+#include "../rand/OctaveNoise.hpp"
+#include "../rand/SimplexNoise.hpp"
 
 #include <algorithm>
 #include <cmath>
+#include <iostream>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/io.hpp>
 #include <glm/gtx/transform.hpp>
 
 using blobs::G;
@@ -258,6 +262,14 @@ Planet::Planet(int sidelength)
 Planet::~Planet() {
 }
 
+glm::dvec3 Planet::TileCenter(int surface, int x, int y) const noexcept {
+	glm::dvec3 center(0.0f);
+	center[(surface + 0) % 3] = x + 0.5 - Radius();
+	center[(surface + 1) % 3] = y + 0.5 - Radius();
+	center[(surface + 2) % 3] = surface < 3 ? Radius() : -Radius();
+	return center;
+}
+
 void Planet::BuildVAOs() {
 	vao.Bind();
 	vao.BindAttributes();
@@ -268,7 +280,7 @@ void Planet::BuildVAOs() {
 	vao.ReserveAttributes(TilesTotal() * 4, GL_STATIC_DRAW);
 	{
 		auto attrib = vao.MapAttributes(GL_WRITE_ONLY);
-		float offset = sidelength * 0.5f;
+		float offset = Radius();
 
 		// srf  0  1  2  3  4  5
 		//  up +Z +X +Y -Z -X -Y
@@ -361,7 +373,56 @@ void Planet::Draw(app::Assets &assets, graphics::Viewport &viewport) {
 }
 
 
-void GenerateTest(Planet &p) {
+void GenerateEarthlike(Planet &p) noexcept {
+	rand::SimplexNoise elevation_gen(0);
+
+	constexpr int ice = 0;
+	constexpr int grass = 3;
+	constexpr int water = 4;
+	constexpr int sand = 5;
+	constexpr int rock = 8;
+
+	constexpr double water_thresh = 0.0;
+	constexpr double beach_thresh = 0.1;
+	constexpr double mountain_thresh = 0.5;
+
+	const glm::dvec3 axis(glm::dvec4(0.0, 1.0, 0.0, 0.0) * glm::eulerAngleXY(p.SurfaceTilt().x, p.SurfaceTilt().y));
+	const double cap_thresh = std::cos(p.AxialTilt().x);
+
+	for (int surface = 0; surface <= 5; ++surface) {
+		for (int y = 0; y < p.SideLength(); ++y) {
+			for (int x = 0; x < p.SideLength(); ++x) {
+				glm::dvec3 to_tile = p.TileCenter(surface, x, y);
+				double near_axis = std::abs(glm::dot(glm::normalize(to_tile), axis));
+				if (near_axis > cap_thresh) {
+					p.TileAt(surface, x, y).type = ice;
+					continue;
+				}
+				float elevation = rand::OctaveNoise(
+					elevation_gen,
+					to_tile / p.Radius(),
+					3,   // octaves
+					0.5, // persistence
+					2 / p.Radius(), // frequency
+					2,   // amplitude
+					2    // growth
+				);
+				if (elevation < water_thresh) {
+					p.TileAt(surface, x, y).type = water;
+				} else if (elevation < beach_thresh) {
+					p.TileAt(surface, x, y).type = sand;
+				} else if (elevation < mountain_thresh) {
+					p.TileAt(surface, x, y).type = grass;
+				} else {
+					p.TileAt(surface, x, y).type = rock;
+				}
+			}
+		}
+	}
+	p.BuildVAOs();
+}
+
+void GenerateTest(Planet &p) noexcept {
 	for (int surface = 0; surface <= 5; ++surface) {
 		for (int y = 0; y < p.SideLength(); ++y) {
 			for (int x = 0; x < p.SideLength(); ++x) {
