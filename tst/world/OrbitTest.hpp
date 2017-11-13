@@ -5,8 +5,8 @@
 
 
 namespace blobs {
-namespace test {
 namespace world {
+namespace test {
 
 class OrbitTest
 : public CppUnit::TestFixture {

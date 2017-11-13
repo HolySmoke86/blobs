@@ -5,14 +5,14 @@
 #include "const.hpp"
 #include "world/Orbit.hpp"
 
-CPPUNIT_TEST_SUITE_REGISTRATION(blobs::test::world::OrbitTest);
+CPPUNIT_TEST_SUITE_REGISTRATION(blobs::world::test::OrbitTest);
 
-using blobs::world::Orbit;
+using blobs::test::AssertEqual;
 
 
 namespace blobs {
-namespace test {
 namespace world {
+namespace test {
 
 void OrbitTest::setUp() {
 }
