@@ -6,6 +6,8 @@
 #include "world/Planet.hpp"
 #include "world/Simulation.hpp"
 #include "world/Sun.hpp"
+#include "world/TileSet.hpp"
+#include "world/TileType.hpp"
 
 #include <cstdint>
 #include <iostream>
@@ -16,6 +18,17 @@ using namespace blobs;
 int main(int argc, char *argv[]) {
 	app::Init init(true, 8);
 	app::Assets assets;
+
+	world::TileSet tiles;
+	tiles.Add({ "ice",     "Ice",     0, 0 });
+	tiles.Add({ "black",   "Black",   0, 1 });
+	tiles.Add({ "red",     "Red",     0, 2 });
+	tiles.Add({ "grass",   "Grass",   0, 3 });
+	tiles.Add({ "water",   "Water",   0, 4 });
+	tiles.Add({ "sand",    "Sand",    0, 5 });
+	tiles.Add({ "tundra",  "Tundra",  0, 6 });
+	tiles.Add({ "magenta", "Magenta", 0, 7 });
+	tiles.Add({ "rock",    "Rock",    0, 8 });
 
 	world::Sun sun;
 	sun.Mass(1.0e12);
@@ -52,9 +65,9 @@ int main(int argc, char *argv[]) {
 	sim.AddPlanet(second_planet);
 	sim.AddPlanet(moon);
 
-	world::GenerateEarthlike(planet);
-	world::GenerateTest(moon);
-	world::GenerateTest(second_planet);
+	world::GenerateEarthlike(tiles, planet);
+	world::GenerateTest(tiles, moon);
+	world::GenerateTest(tiles, second_planet);
 
 	std::cout << "length of year: " << planet.OrbitalPeriod() << "s" << std::endl;
 	std::cout << "length of moon cycle: " << moon.OrbitalPeriod() << "s" << std::endl;
@@ -80,7 +93,6 @@ int main(int argc, char *argv[]) {
 	//	.Reference(sun)
 	//	.Orbital(glm::vec3(-500.0f, 500.0f, 500.0f))
 	//;
-	planet.BuildVAOs();
 
 	app::Application app(init.window, init.viewport);
 	app.PushState(&state);

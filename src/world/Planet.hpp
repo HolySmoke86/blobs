@@ -15,7 +15,7 @@
 namespace blobs {
 namespace world {
 
-struct Tile;
+class TileSet;
 
 /// A planet has six surfaces, numbered 0 to 5, each filled with
 /// sidelength² tiles.
@@ -63,7 +63,7 @@ public:
 
 	glm::dvec3 TileCenter(int surface, int x, int y) const noexcept;
 
-	void BuildVAOs();
+	void BuildVAOs(const TileSet &);
 	void Draw(app::Assets &, graphics::Viewport &) override;
 
 private:
@@ -78,8 +78,8 @@ private:
 
 };
 
-void GenerateEarthlike(Planet &) noexcept;
-void GenerateTest(Planet &) noexcept;
+void GenerateEarthlike(const TileSet &, Planet &) noexcept;
+void GenerateTest(const TileSet &, Planet &) noexcept;
 
 }
 }

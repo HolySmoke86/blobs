@@ -4,6 +4,8 @@
 #include "Simulation.hpp"
 #include "Sun.hpp"
 #include "Tile.hpp"
+#include "TileSet.hpp"
+#include "TileType.hpp"
 
 #include "../const.hpp"
 #include "../app/Assets.hpp"
@@ -270,7 +272,7 @@ glm::dvec3 Planet::TileCenter(int surface, int x, int y) const noexcept {
 	return center;
 }
 
-void Planet::BuildVAOs() {
+void Planet::BuildVAOs(const TileSet &ts) {
 	vao.Bind();
 	vao.BindAttributes();
 	vao.EnableAttribute(0);
@@ -288,7 +290,7 @@ void Planet::BuildVAOs() {
 		for (int index = 0, surface = 0; surface < 6; ++surface) {
 			for (int y = 0; y < sidelength; ++y) {
 				for (int x = 0; x < sidelength; ++x, ++index) {
-					float tex = TileAt(surface, x, y).type;
+					float tex = ts[TileAt(surface, x, y).type].texture;
 					const float tex_u_begin = surface < 3 ? 1.0f : 0.0f;
 					const float tex_u_end = surface < 3 ? 0.0f : 1.0f;
 					attrib[4 * index + 0].position[(surface + 0) % 3] = x + 0 - offset;
@@ -373,14 +375,14 @@ void Planet::Draw(app::Assets &assets, graphics::Viewport &viewport) {
 }
 
 
-void GenerateEarthlike(Planet &p) noexcept {
+void GenerateEarthlike(const TileSet &tiles, Planet &p) noexcept {
 	rand::SimplexNoise elevation_gen(0);
 
-	constexpr int ice = 0;
-	constexpr int grass = 3;
-	constexpr int water = 4;
-	constexpr int sand = 5;
-	constexpr int rock = 8;
+	const int ice = tiles["ice"].id;
+	const int grass = tiles["grass"].id;
+	const int water = tiles["water"].id;
+	const int sand = tiles["sand"].id;
+	const int rock = tiles["rock"].id;
 
 	constexpr double water_thresh = 0.0;
 	constexpr double beach_thresh = 0.1;
@@ -419,10 +421,10 @@ void GenerateEarthlike(Planet &p) noexcept {
 			}
 		}
 	}
-	p.BuildVAOs();
+	p.BuildVAOs(tiles);
 }
 
-void GenerateTest(Planet &p) noexcept {
+void GenerateTest(const TileSet &tiles, Planet &p) noexcept {
 	for (int surface = 0; surface <= 5; ++surface) {
 		for (int y = 0; y < p.SideLength(); ++y) {
 			for (int x = 0; x < p.SideLength(); ++x) {
@@ -434,7 +436,7 @@ void GenerateTest(Planet &p) noexcept {
 			}
 		}
 	}
-	p.BuildVAOs();
+	p.BuildVAOs(tiles);
 }
 
 
@@ -443,6 +445,42 @@ Sun::Sun()
 }
 
 Sun::~Sun() {
+}
+
+TileSet::TileSet()
+: types()
+, names() {
+}
+
+TileSet::~TileSet() {
+}
+
+int TileSet::Add(const TileType &t) {
+	int id = types.size();
+	if (!names.emplace(t.name, id).second) {
+		throw std::runtime_error("duplicate tile type name " + t.name);
+	}
+	types.emplace_back(t);
+	types.back().id = id;
+	return id;
+}
+
+TileType &TileSet::operator [](const std::string &name) {
+	auto entry = names.find(name);
+	if (entry != names.end()) {
+		return types[entry->second];
+	} else {
+		throw std::runtime_error("unknown tile type " + name);
+	}
+}
+
+const TileType &TileSet::operator [](const std::string &name) const {
+	auto entry = names.find(name);
+	if (entry != names.end()) {
+		return types[entry->second];
+	} else {
+		throw std::runtime_error("unknown tile type " + name);
+	}
 }
 
 }
