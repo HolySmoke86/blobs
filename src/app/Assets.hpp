@@ -2,6 +2,7 @@
 #define BLOBS_APP_ASSETS_HPP_
 
 #include "../graphics/ArrayTexture.hpp"
+#include "../graphics/CreatureSkin.hpp"
 #include "../graphics/PlanetSurface.hpp"
 #include "../graphics/SunSurface.hpp"
 
@@ -15,14 +16,17 @@ struct Assets {
 
 	std::string path;
 	std::string tile_path;
+	std::string skin_path;
 
 	struct {
 		graphics::ArrayTexture tiles;
+		graphics::ArrayTexture skins;
 	} textures;
 
 	struct {
 		graphics::PlanetSurface planet_surface;
 		graphics::SunSurface sun_surface;
+		graphics::CreatureSkin creature_skin;
 	} shaders;
 
 	Assets();
@@ -35,6 +39,7 @@ struct Assets {
 	Assets &operator =(Assets &&) = delete;
 
 	void LoadTileTexture(const std::string &name, graphics::ArrayTexture &, int layer) const;
+	void LoadSkinTexture(const std::string &name, graphics::ArrayTexture &, int layer) const;
 
 };
 

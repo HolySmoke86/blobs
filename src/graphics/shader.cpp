@@ -1,3 +1,4 @@
+#include "CreatureSkin.hpp"
 #include "PlanetSurface.hpp"
 #include "Program.hpp"
 #include "Shader.hpp"
@@ -445,6 +446,128 @@ void SunSurface::SetLight(const glm::vec3 &color, float strength) noexcept {
 void SunSurface::Draw() const noexcept {
 	vao.Bind();
 	vao.DrawTriangles(36);
+}
+
+
+constexpr int CreatureSkin::MAX_LIGHTS;
+
+CreatureSkin::CreatureSkin()
+: prog() {
+	prog.LoadShader(
+		GL_VERTEX_SHADER,
+		"#version 330 core\n"
+
+		"layout(location = 0) in vec3 vtx_position;\n"
+		"layout(location = 1) in vec3 vtx_normal;\n"
+		"layout(location = 2) in vec3 vtx_tex_uv;\n"
+
+		"uniform mat4 M;\n"
+		"uniform mat4 MV;\n"
+		"uniform mat4 MVP;\n"
+
+		"out vec3 vtx_viewspace;\n"
+		"out vec3 frag_tex_uv;\n"
+		"out vec3 normal;\n"
+
+		"void main() {\n"
+			"gl_Position = MVP * vec4(vtx_position, 1);\n"
+			"vtx_viewspace = (MV * vec4(vtx_position, 1)).xyz;\n"
+			"normal = normalize((MV * vec4(vtx_normal, 0)).xyz);\n"
+			"frag_tex_uv = vtx_tex_uv;\n"
+		"}\n"
+	);
+	prog.LoadShader(
+		GL_FRAGMENT_SHADER,
+		"#version 330 core\n"
+
+		"struct LightSource {\n"
+			"vec3 position;\n"
+			"vec3 color;\n"
+			"float strength;\n"
+		"};\n"
+
+		"in vec3 vtx_viewspace;\n"
+		"in vec3 frag_tex_uv;\n"
+		"in vec3 normal;\n"
+
+		"uniform sampler2DArray tex_sampler;\n"
+		"uniform int num_lights;\n"
+		"uniform LightSource light[8];\n"
+
+		"out vec3 color;\n"
+
+		"void main() {\n"
+			"vec3 tex_color = texture(tex_sampler, frag_tex_uv).rgb;\n"
+			"vec3 total_light = tex_color * vec3(0.01, 0.01, 0.01);\n"
+			"for (int i = 0; i < num_lights; ++i) {\n"
+				"vec3 to_light = light[i].position - vtx_viewspace;\n"
+				"float distance = length(to_light) + length(vtx_viewspace);\n"
+				"vec3 light_dir = normalize(to_light);\n"
+				"float attenuation = light[i].strength / (distance * distance);\n"
+				"vec3 diffuse = attenuation * max(0.0, dot(normal, light_dir)) * light[i].color * tex_color;\n"
+				"vec3 view_dir = vec3(0.0, 0.0, 1.0);\n"
+				"vec3 specular = vec3(0.0, 0.0, 0.0);\n"
+				"if (dot(normal, light_dir) >= 0.0) {\n"
+					"attenuation * light[i].color * pow(max(0.0, dot(reflect(-light_dir, normal), view_dir)), 25.0);\n"
+				"}\n"
+				"total_light = total_light + diffuse + specular;\n"
+			"}\n"
+			"color = total_light;\n"
+		"}\n"
+	);
+	prog.Link();
+	if (!prog.Linked()) {
+		prog.Log(std::cerr);
+		throw std::runtime_error("link program");
+	}
+	m_handle = prog.UniformLocation("M");
+	mv_handle = prog.UniformLocation("MV");
+	mvp_handle = prog.UniformLocation("MVP");
+	sampler_handle = prog.UniformLocation("tex_sampler");
+	num_lights_handle = prog.UniformLocation("num_lights");
+	for (int i = 0; i < MAX_LIGHTS; ++i) {
+		light_handle[3 * i + 0]  = prog.UniformLocation("light[" + std::to_string(i) + "].position");
+		light_handle[3 * i + 1]  = prog.UniformLocation("light[" + std::to_string(i) + "].color");
+		light_handle[3 * i + 2]  = prog.UniformLocation("light[" + std::to_string(i) + "].strength");
+	}
+}
+
+CreatureSkin::~CreatureSkin() {
+}
+
+void CreatureSkin::Activate() noexcept {
+	prog.Use();
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glEnable(GL_CULL_FACE);
+	glDisable(GL_BLEND);
+}
+
+void CreatureSkin::SetMVP(const glm::mat4 &mm, const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
+	m = mm;
+	v = vv;
+	p = pp;
+	mv = v * m;
+	mvp = p * mv;
+	prog.Uniform(m_handle, m);
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
+void CreatureSkin::SetTexture(ArrayTexture &tex) noexcept {
+	glActiveTexture(GL_TEXTURE0);
+	tex.Bind();
+	prog.Uniform(sampler_handle, GLint(0));
+}
+
+void CreatureSkin::SetLight(int n, const glm::vec3 &pos, const glm::vec3 &color, float strength) noexcept {
+	prog.Uniform(light_handle[3 * n + 0], pos);
+	prog.Uniform(light_handle[3 * n + 1], color);
+	prog.Uniform(light_handle[3 * n + 2], strength);
+}
+
+void CreatureSkin::SetNumLights(int n) noexcept {
+	prog.Uniform(num_lights_handle, std::min(MAX_LIGHTS, n));
 }
 
 }

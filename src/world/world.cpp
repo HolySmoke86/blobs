@@ -7,6 +7,7 @@
 #include "TileSet.hpp"
 #include "TileType.hpp"
 
+#include "Creature.hpp"
 #include "../const.hpp"
 #include "../app/Assets.hpp"
 #include "../graphics/Viewport.hpp"
@@ -47,10 +48,14 @@ Body::Body()
 , orbital(1.0)
 , inverse_orbital(1.0)
 , local(1.0)
-, inverse_local(1.0) {
+, inverse_local(1.0)
+, creatures() {
 }
 
 Body::~Body() {
+	for (Creature *c : creatures) {
+		delete c;
+	}
 }
 
 void Body::SetSimulation(Simulation &s) noexcept {
@@ -149,6 +154,11 @@ void Body::Cache() noexcept {
 	inverse_local =
 		glm::eulerAngleYX(-surface_tilt.y, -surface_tilt.x)
 		* glm::eulerAngleY(-rotation);
+}
+
+void Body::AddCreature(Creature *c) {
+	c->SetBody(*this);
+	creatures.push_back(c);
 }
 
 
@@ -256,7 +266,7 @@ glm::dmat4 Orbit::InverseMatrix(double t) const noexcept {
 Planet::Planet(int sidelength)
 : Body()
 , sidelength(sidelength)
-, tiles(new Tile[TilesTotal()])
+, tiles(TilesTotal())
 , vao() {
 	Radius(double(sidelength) / 2.0);
 }
@@ -272,7 +282,7 @@ glm::dvec3 Planet::TileCenter(int surface, int x, int y) const noexcept {
 	return center;
 }
 
-void Planet::BuildVAOs(const TileSet &ts) {
+void Planet::BuildVAO(const TileSet &ts) {
 	vao.Bind();
 	vao.BindAttributes();
 	vao.EnableAttribute(0);
@@ -421,7 +431,7 @@ void GenerateEarthlike(const TileSet &tiles, Planet &p) noexcept {
 			}
 		}
 	}
-	p.BuildVAOs(tiles);
+	p.BuildVAO(tiles);
 }
 
 void GenerateTest(const TileSet &tiles, Planet &p) noexcept {
@@ -436,7 +446,7 @@ void GenerateTest(const TileSet &tiles, Planet &p) noexcept {
 			}
 		}
 	}
-	p.BuildVAOs(tiles);
+	p.BuildVAO(tiles);
 }
 
 

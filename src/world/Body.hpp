@@ -16,6 +16,7 @@ namespace graphics {
 }
 namespace world {
 
+class Creature;
 class Simulation;
 
 class Body {
@@ -83,6 +84,11 @@ public:
 
 	void Cache() noexcept;
 
+	// body takes over ownership of given pointer
+	void AddCreature(Creature *);
+	std::vector<Creature *> &Creatures() noexcept { return creatures; }
+	const std::vector<Creature *> &Creatures() const noexcept { return creatures; }
+
 private:
 	void AddChild(Body &);
 	void RemoveChild(Body &);
@@ -103,6 +109,8 @@ private:
 	glm::dmat4 inverse_orbital;
 	glm::dmat4 local;
 	glm::dmat4 inverse_local;
+
+	std::vector<Creature *> creatures;
 
 };
 

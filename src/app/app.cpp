@@ -167,7 +167,8 @@ void State::OnQuit() {
 
 Assets::Assets()
 : path("assets/")
-, tile_path(path + "tiles/") {
+, tile_path(path + "tiles/")
+, skin_path(path + "skins/") {
 	graphics::Format format;
 	textures.tiles.Bind();
 	textures.tiles.Reserve(256, 256, 9, format);
@@ -180,6 +181,17 @@ Assets::Assets()
 	LoadTileTexture("7", textures.tiles, 6);
 	LoadTileTexture("8", textures.tiles, 7);
 	LoadTileTexture("9", textures.tiles, 8);
+	textures.skins.Bind();
+	textures.skins.Reserve(256, 256, 9, format);
+	LoadSkinTexture("1", textures.skins, 0);
+	LoadSkinTexture("2", textures.skins, 1);
+	LoadSkinTexture("3", textures.skins, 2);
+	LoadSkinTexture("4", textures.skins, 3);
+	LoadSkinTexture("5", textures.skins, 4);
+	LoadSkinTexture("6", textures.skins, 5);
+	LoadSkinTexture("7", textures.skins, 6);
+	LoadSkinTexture("8", textures.skins, 7);
+	LoadSkinTexture("9", textures.skins, 8);
 }
 
 Assets::~Assets() {
@@ -187,6 +199,21 @@ Assets::~Assets() {
 
 void Assets::LoadTileTexture(const std::string &name, graphics::ArrayTexture &tex, int layer) const {
 	std::string path = tile_path + name + ".png";
+	SDL_Surface *srf = IMG_Load(path.c_str());
+	if (!srf) {
+		throw SDLError("IMG_Load");
+	}
+	try {
+		tex.Data(layer, *srf);
+	} catch (...) {
+		SDL_FreeSurface(srf);
+		throw;
+	}
+	SDL_FreeSurface(srf);
+}
+
+void Assets::LoadSkinTexture(const std::string &name, graphics::ArrayTexture &tex, int layer) const {
+	std::string path = skin_path + name + ".png";
 	SDL_Surface *srf = IMG_Load(path.c_str());
 	if (!srf) {
 		throw SDLError("IMG_Load");

@@ -8,7 +8,7 @@
 #include "../graphics/SimpleVAO.hpp"
 
 #include <cassert>
-#include <memory>
+#include <vector>
 #include <GL/glew.h>
 
 
@@ -63,12 +63,12 @@ public:
 
 	glm::dvec3 TileCenter(int surface, int x, int y) const noexcept;
 
-	void BuildVAOs(const TileSet &);
+	void BuildVAO(const TileSet &);
 	void Draw(app::Assets &, graphics::Viewport &) override;
 
 private:
 	int sidelength;
-	std::unique_ptr<Tile []> tiles;
+	std::vector<Tile> tiles;
 
 	struct Attributes {
 		glm::vec3 position;

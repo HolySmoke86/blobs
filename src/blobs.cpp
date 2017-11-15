@@ -3,6 +3,7 @@
 #include "app/Assets.hpp"
 #include "app/init.hpp"
 #include "app/MasterState.hpp"
+#include "world/Creature.hpp"
 #include "world/Planet.hpp"
 #include "world/Simulation.hpp"
 #include "world/Sun.hpp"
@@ -75,6 +76,12 @@ int main(int argc, char *argv[]) {
 	std::cout << "days per year: " << (planet.OrbitalPeriod() / planet.RotationalPeriod()) << std::endl;
 	std::cout << "moon cycle in days: " << (moon.OrbitalPeriod() / planet.RotationalPeriod()) << std::endl;
 	std::cout << "moon cycles per year: " << (planet.OrbitalPeriod() / moon.OrbitalPeriod()) << std::endl;
+
+	auto blob = new world::Creature;
+	blob->BuildVAO();
+	planet.AddCreature(blob);
+	blob->Surface(0);
+	blob->Position(glm::dvec3(0.0, 0.0, 0.0));
 
 	app::MasterState state(assets, sim);
 	state.GetCamera()
