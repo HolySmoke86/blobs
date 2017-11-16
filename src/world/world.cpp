@@ -1,10 +1,11 @@
 #include "Body.hpp"
 #include "Orbit.hpp"
 #include "Planet.hpp"
+#include "Resource.hpp"
+#include "Set.hpp"
 #include "Simulation.hpp"
 #include "Sun.hpp"
 #include "Tile.hpp"
-#include "TileSet.hpp"
 #include "TileType.hpp"
 
 #include "Creature.hpp"
@@ -282,7 +283,7 @@ glm::dvec3 Planet::TileCenter(int surface, int x, int y) const noexcept {
 	return center;
 }
 
-void Planet::BuildVAO(const TileSet &ts) {
+void Planet::BuildVAO(const Set<TileType> &ts) {
 	vao.Bind();
 	vao.BindAttributes();
 	vao.EnableAttribute(0);
@@ -385,8 +386,9 @@ void Planet::Draw(app::Assets &assets, graphics::Viewport &viewport) {
 }
 
 
-void GenerateEarthlike(const TileSet &tiles, Planet &p) noexcept {
+void GenerateEarthlike(const Set<TileType> &tiles, Planet &p) noexcept {
 	rand::SimplexNoise elevation_gen(0);
+	rand::SimplexNoise variation_gen(45623752346);
 
 	const int ice = tiles["ice"].id;
 	const int ocean = tiles["ocean"].id;
@@ -394,17 +396,24 @@ void GenerateEarthlike(const TileSet &tiles, Planet &p) noexcept {
 	const int sand = tiles["sand"].id;
 	const int grass = tiles["grass"].id;
 	const int tundra = tiles["tundra"].id;
+	const int taiga = tiles["taiga"].id;
 	const int desert = tiles["desert"].id;
 	const int mntn = tiles["mountain"].id;
+	const int algae = tiles["algae"].id;
+	const int forest = tiles["forest"].id;
+	const int jungle = tiles["jungle"].id;
+	const int rock = tiles["rock"].id;
+	const int wheat = tiles["wheat"].id;
 
 	constexpr double ocean_thresh = -0.2;
 	constexpr double water_thresh = 0.0;
-	constexpr double beach_thresh = 0.1;
+	constexpr double beach_thresh = 0.05;
+	constexpr double highland_thresh = 0.4;
 	constexpr double mountain_thresh = 0.5;
 
 	const glm::dvec3 axis(glm::dvec4(0.0, 1.0, 0.0, 0.0) * glm::eulerAngleXY(p.SurfaceTilt().x, p.SurfaceTilt().y));
 	const double cap_thresh = std::abs(std::cos(p.AxialTilt().x));
-	const double equ_thresh = 2.0 * (1.0 - cap_thresh);
+	const double equ_thresh = std::abs(std::sin(p.AxialTilt().x)) / 2.0;
 	const double fzone_start = equ_thresh - (equ_thresh - cap_thresh) / 3.0;
 	const double fzone_end = cap_thresh + (equ_thresh - cap_thresh) / 3.0;
 
@@ -422,26 +431,58 @@ void GenerateEarthlike(const TileSet &tiles, Planet &p) noexcept {
 					to_tile / p.Radius(),
 					3,   // octaves
 					0.5, // persistence
-					2 / p.Radius(), // frequency
+					5 / p.Radius(), // frequency
+					2,   // amplitude
+					2    // growth
+				);
+				float variation = rand::OctaveNoise(
+					variation_gen,
+					to_tile / p.Radius(),
+					3,   // octaves
+					0.5, // persistence
+					16 / p.Radius(), // frequency
 					2,   // amplitude
 					2    // growth
 				);
 				if (elevation < ocean_thresh) {
 					p.TileAt(surface, x, y).type = ocean;
 				} else if (elevation < water_thresh) {
-					p.TileAt(surface, x, y).type = water;
+					if (variation > 0.3) {
+						p.TileAt(surface, x, y).type = algae;
+					} else {
+						p.TileAt(surface, x, y).type = water;
+					}
 				} else if (elevation < beach_thresh) {
 					p.TileAt(surface, x, y).type = sand;
-				} else if (elevation < mountain_thresh) {
-					// TODO: perturb climate rings a little
+				} else if (elevation < highland_thresh) {
 					if (near_axis < equ_thresh) {
-						p.TileAt(surface, x, y).type = desert;
+						if (variation > 0.6) {
+							p.TileAt(surface, x, y).type = grass;
+						} else if (variation > 0.2) {
+							p.TileAt(surface, x, y).type = sand;
+						} else {
+							p.TileAt(surface, x, y).type = desert;
+						}
 					} else if (near_axis < fzone_start) {
-						p.TileAt(surface, x, y).type = grass;
+						if (variation > 0.4) {
+							p.TileAt(surface, x, y).type = forest;
+						} else if (variation < -0.5) {
+							p.TileAt(surface, x, y).type = jungle;
+						} else if (variation > -0.02 && variation < 0.02) {
+							p.TileAt(surface, x, y).type = wheat;
+						} else {
+							p.TileAt(surface, x, y).type = grass;
+						}
 					} else if (near_axis < fzone_end) {
 						p.TileAt(surface, x, y).type = tundra;
 					} else {
-						p.TileAt(surface, x, y).type = grass;
+						p.TileAt(surface, x, y).type = taiga;
+					}
+				} else if (elevation < mountain_thresh) {
+					if (variation > 0.3) {
+						p.TileAt(surface, x, y).type = mntn;
+					} else {
+						p.TileAt(surface, x, y).type = rock;
 					}
 				} else {
 					p.TileAt(surface, x, y).type = mntn;
@@ -452,7 +493,7 @@ void GenerateEarthlike(const TileSet &tiles, Planet &p) noexcept {
 	p.BuildVAO(tiles);
 }
 
-void GenerateTest(const TileSet &tiles, Planet &p) noexcept {
+void GenerateTest(const Set<TileType> &tiles, Planet &p) noexcept {
 	for (int surface = 0; surface <= 5; ++surface) {
 		for (int y = 0; y < p.SideLength(); ++y) {
 			for (int x = 0; x < p.SideLength(); ++x) {
@@ -473,42 +514,6 @@ Sun::Sun()
 }
 
 Sun::~Sun() {
-}
-
-TileSet::TileSet()
-: types()
-, names() {
-}
-
-TileSet::~TileSet() {
-}
-
-int TileSet::Add(const TileType &t) {
-	int id = types.size();
-	if (!names.emplace(t.name, id).second) {
-		throw std::runtime_error("duplicate tile type name " + t.name);
-	}
-	types.emplace_back(t);
-	types.back().id = id;
-	return id;
-}
-
-TileType &TileSet::operator [](const std::string &name) {
-	auto entry = names.find(name);
-	if (entry != names.end()) {
-		return types[entry->second];
-	} else {
-		throw std::runtime_error("unknown tile type " + name);
-	}
-}
-
-const TileType &TileSet::operator [](const std::string &name) const {
-	auto entry = names.find(name);
-	if (entry != names.end()) {
-		return types[entry->second];
-	} else {
-		throw std::runtime_error("unknown tile type " + name);
-	}
 }
 
 }

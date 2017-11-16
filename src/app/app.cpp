@@ -169,6 +169,55 @@ Assets::Assets()
 : path("assets/")
 , tile_path(path + "tiles/")
 , skin_path(path + "skins/") {
+	data.resources.Add({ "air", "Air", 0 });
+	data.resources.Add({ "biomass", "Biomass", 0 });
+	data.resources.Add({ "dirt", "Dirt", 0 });
+	data.resources.Add({ "ice", "Ice", 0 });
+	data.resources.Add({ "rock", "Rock", 0 });
+	data.resources.Add({ "sand", "Sand", 0 });
+	data.resources.Add({ "water", "Water", 0 });
+	data.resources.Add({ "wood", "Wood", 0 });
+
+	data.tiles.Add({ "algae",    "Algae",    0,  0 });
+	data.tiles.Add({ "desert",   "Desert",   0,  1 });
+	data.tiles.Add({ "forest",   "Forest",   0,  2 });
+	data.tiles.Add({ "grass",    "Grass",    0,  3 });
+	data.tiles.Add({ "ice",      "Ice",      0,  4 });
+	data.tiles.Add({ "jungle",   "Jungle",   0,  5 });
+	data.tiles.Add({ "mountain", "Mountain", 0,  6 });
+	data.tiles.Add({ "ocean",    "Ocean",    0,  7 });
+	data.tiles.Add({ "rock",     "Rock",     0,  8 });
+	data.tiles.Add({ "sand",     "Sand",     0,  9 });
+	data.tiles.Add({ "taiga",    "Taiga",    0, 10 });
+	data.tiles.Add({ "tundra",   "Tundra",   0, 11 });
+	data.tiles.Add({ "water",    "Water",    0, 12 });
+	data.tiles.Add({ "wheat",    "Wheat",    0, 13 });
+
+	data.tiles["algae"]   .resources.push_back({ data.resources["water"].id,   1.0  });
+	data.tiles["algae"]   .resources.push_back({ data.resources["biomass"].id, 0.5  });
+	data.tiles["desert"]  .resources.push_back({ data.resources["sand"].id,    1.0  });
+	data.tiles["forest"]  .resources.push_back({ data.resources["wood"].id,    1.0  });
+	data.tiles["forest"]  .resources.push_back({ data.resources["dirt"].id,    0.5  });
+	data.tiles["grass"]   .resources.push_back({ data.resources["dirt"].id,    0.5  });
+	data.tiles["grass"]   .resources.push_back({ data.resources["biomass"].id, 0.25 });
+	data.tiles["grass"]   .resources.push_back({ data.resources["water"].id,   0.25 });
+	data.tiles["ice"]     .resources.push_back({ data.resources["ice"].id,     1.0  });
+	data.tiles["ice"]     .resources.push_back({ data.resources["water"].id,   0.25 });
+	data.tiles["jungle"]  .resources.push_back({ data.resources["wood"].id,    0.5  });
+	data.tiles["jungle"]  .resources.push_back({ data.resources["biomass"].id, 0.5  });
+	data.tiles["mountain"].resources.push_back({ data.resources["rock"].id,    1.0  });
+	data.tiles["ocean"]   .resources.push_back({ data.resources["water"].id,   1.0  });
+	data.tiles["rock"]    .resources.push_back({ data.resources["rock"].id,    1.0  });
+	data.tiles["sand"]    .resources.push_back({ data.resources["sand"].id,    1.0  });
+	data.tiles["taiga"]   .resources.push_back({ data.resources["wood"].id,    1.0  });
+	data.tiles["taiga"]   .resources.push_back({ data.resources["water"].id,   0.5  });
+	data.tiles["tundra"]  .resources.push_back({ data.resources["rock"].id,    1.0  });
+	data.tiles["tundra"]  .resources.push_back({ data.resources["ice"].id,     0.5  });
+	data.tiles["water"]   .resources.push_back({ data.resources["water"].id,   1.0  });
+	data.tiles["water"]   .resources.push_back({ data.resources["biomass"].id, 0.25 });
+	data.tiles["wheat"]   .resources.push_back({ data.resources["biomass"].id, 1.0  });
+	data.tiles["wheat"]   .resources.push_back({ data.resources["water"].id,   0.25 });
+
 	graphics::Format format;
 	textures.tiles.Bind();
 	textures.tiles.Reserve(256, 256, 14, format);
@@ -186,6 +235,7 @@ Assets::Assets()
 	LoadTileTexture("tundra",   textures.tiles, 11);
 	LoadTileTexture("water",    textures.tiles, 12);
 	LoadTileTexture("wheat",    textures.tiles, 13);
+
 	textures.skins.Bind();
 	textures.skins.Reserve(256, 256, 9, format);
 	LoadSkinTexture("1", textures.skins, 0);

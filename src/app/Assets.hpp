@@ -5,6 +5,9 @@
 #include "../graphics/CreatureSkin.hpp"
 #include "../graphics/PlanetSurface.hpp"
 #include "../graphics/SunSurface.hpp"
+#include "../world/Resource.hpp"
+#include "../world/Set.hpp"
+#include "../world/TileType.hpp"
 
 #include <string>
 
@@ -17,6 +20,11 @@ struct Assets {
 	std::string path;
 	std::string tile_path;
 	std::string skin_path;
+
+	struct {
+		world::Set<world::Resource> resources;
+		world::Set<world::TileType> tiles;
+	} data;
 
 	struct {
 		graphics::ArrayTexture tiles;

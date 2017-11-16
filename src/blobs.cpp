@@ -5,9 +5,9 @@
 #include "app/MasterState.hpp"
 #include "world/Creature.hpp"
 #include "world/Planet.hpp"
+#include "world/Set.hpp"
 #include "world/Simulation.hpp"
 #include "world/Sun.hpp"
-#include "world/TileSet.hpp"
 #include "world/TileType.hpp"
 
 #include <cstdint>
@@ -19,22 +19,6 @@ using namespace blobs;
 int main(int argc, char *argv[]) {
 	app::Init init(true, 8);
 	app::Assets assets;
-
-	world::TileSet tiles;
-	tiles.Add({ "algae",    "Algae",    0,  0 });
-	tiles.Add({ "desert",   "Desert",   0,  1 });
-	tiles.Add({ "forest",   "Forest",   0,  2 });
-	tiles.Add({ "grass",    "Grass",    0,  3 });
-	tiles.Add({ "ice",      "Ice",      0,  4 });
-	tiles.Add({ "jungle",   "Jungle",   0,  5 });
-	tiles.Add({ "mountain", "Mountain", 0,  6 });
-	tiles.Add({ "ocean",    "Ocean",    0,  7 });
-	tiles.Add({ "rock",     "Rock",     0,  8 });
-	tiles.Add({ "sand",     "Sand",     0,  9 });
-	tiles.Add({ "taiga",    "Taiga",    0, 10 });
-	tiles.Add({ "tundra",   "Tundra",   0, 11 });
-	tiles.Add({ "water",    "Water",    0, 12 });
-	tiles.Add({ "wheat",    "Wheat",    0, 13 });
 
 	world::Sun sun;
 	sun.Mass(1.0e14);
@@ -71,9 +55,9 @@ int main(int argc, char *argv[]) {
 	sim.AddPlanet(second_planet);
 	sim.AddPlanet(moon);
 
-	world::GenerateEarthlike(tiles, planet);
-	world::GenerateTest(tiles, moon);
-	world::GenerateTest(tiles, second_planet);
+	world::GenerateEarthlike(assets.data.tiles, planet);
+	world::GenerateTest(assets.data.tiles, moon);
+	world::GenerateTest(assets.data.tiles, second_planet);
 
 	std::cout << "length of year: " << planet.OrbitalPeriod() << "s" << std::endl;
 	std::cout << "length of moon cycle: " << moon.OrbitalPeriod() << "s" << std::endl;

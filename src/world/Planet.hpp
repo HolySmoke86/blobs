@@ -3,6 +3,7 @@
 
 #include "Body.hpp"
 
+#include "Set.hpp"
 #include "Tile.hpp"
 #include "../graphics/glm.hpp"
 #include "../graphics/SimpleVAO.hpp"
@@ -15,7 +16,7 @@
 namespace blobs {
 namespace world {
 
-class TileSet;
+class TileType;
 
 /// A planet has six surfaces, numbered 0 to 5, each filled with
 /// sidelength² tiles.
@@ -63,7 +64,7 @@ public:
 
 	glm::dvec3 TileCenter(int surface, int x, int y) const noexcept;
 
-	void BuildVAO(const TileSet &);
+	void BuildVAO(const Set<TileType> &);
 	void Draw(app::Assets &, graphics::Viewport &) override;
 
 private:
@@ -78,8 +79,8 @@ private:
 
 };
 
-void GenerateEarthlike(const TileSet &, Planet &) noexcept;
-void GenerateTest(const TileSet &, Planet &) noexcept;
+void GenerateEarthlike(const Set<TileType> &, Planet &) noexcept;
+void GenerateTest(const Set<TileType> &, Planet &) noexcept;
 
 }
 }

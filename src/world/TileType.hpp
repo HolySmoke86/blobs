@@ -2,6 +2,7 @@
 #define BLOBS_WORLD_TILETYPE_HPP_
 
 #include <string>
+#include <vector>
 
 
 namespace blobs {
@@ -14,6 +15,12 @@ struct TileType {
 
 	int id;
 	int texture;
+
+	struct Yield {
+		int resource;
+		double ubiquity;
+	};
+	std::vector<Yield> resources;
 
 };
 
