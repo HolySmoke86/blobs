@@ -268,6 +268,7 @@ Planet::Planet(int sidelength)
 : Body()
 , sidelength(sidelength)
 , tiles(TilesTotal())
+, atmosphere(-1)
 , vao() {
 	Radius(double(sidelength) / 2.0);
 }

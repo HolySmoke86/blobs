@@ -64,12 +64,18 @@ public:
 
 	glm::dvec3 TileCenter(int surface, int x, int y) const noexcept;
 
+	void Atmosphere(int a) noexcept { atmosphere = a; }
+	int Atmosphere() const noexcept { return atmosphere; }
+	bool HasAtmosphere() const noexcept { return atmosphere >= 0; }
+
 	void BuildVAO(const Set<TileType> &);
 	void Draw(app::Assets &, graphics::Viewport &) override;
 
 private:
 	int sidelength;
 	std::vector<Tile> tiles;
+
+	int atmosphere;
 
 	struct Attributes {
 		glm::vec3 position;

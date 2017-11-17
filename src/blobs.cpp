@@ -56,6 +56,7 @@ int main(int argc, char *argv[]) {
 	sim.AddPlanet(moon);
 
 	world::GenerateEarthlike(assets.data.tiles, planet);
+	planet.Atmosphere(assets.data.resources["air"].id);
 	world::GenerateTest(assets.data.tiles, moon);
 	world::GenerateTest(assets.data.tiles, second_planet);
 
@@ -68,9 +69,7 @@ int main(int argc, char *argv[]) {
 
 	auto blob = new world::Creature;
 	blob->BuildVAO();
-	planet.AddCreature(blob);
-	blob->Surface(0);
-	blob->Position(glm::dvec3(0.0, 0.0, 0.0));
+	Spawn(*blob, planet, assets);
 
 	app::MasterState state(assets, sim);
 	state.GetCamera()

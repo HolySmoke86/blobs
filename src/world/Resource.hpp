@@ -14,6 +14,16 @@ struct Resource {
 
 	int id;
 
+	enum State {
+		SOLID = 0,
+		LIQUID = 1,
+		GAS = 2,
+		PLASMA = 3,
+	};
+	// the resource's natural state
+	// TODO: something about temperature and pressure and stuff
+	int state;
+
 };
 
 }

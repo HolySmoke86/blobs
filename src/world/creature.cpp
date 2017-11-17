@@ -1,15 +1,26 @@
 #include "Creature.hpp"
 
 #include "Body.hpp"
+#include "Planet.hpp"
+#include "TileType.hpp"
+#include "../app/Assets.hpp"
 
 #include <glm/gtx/transform.hpp>
+
+#include <iostream>
 
 
 namespace blobs {
 namespace world {
 
 Creature::Creature()
-: vao() {
+: body(nullptr)
+, surface(0)
+, position()
+, breathes(-1)
+, drinks(-1)
+, eats(-1)
+, vao() {
 }
 
 Creature::~Creature() {
@@ -108,6 +119,52 @@ void Creature::BuildVAO() {
 void Creature::Draw(app::Assets &assets, graphics::Viewport &viewport) {
 	vao.Bind();
 	vao.DrawTriangles(6 * 6);
+}
+
+
+void Spawn(Creature &c, Planet &p, app::Assets &assets) {
+	p.AddCreature(&c);
+	c.Surface(0);
+	c.Position(glm::dvec3(0.0, 0.0, 0.0));
+
+	// probe surrounding area for common resources
+	int start = p.SideLength() / 2 - 2;
+	int end = start + 5;
+	std::map<int, double> yields;
+	for (int y = start; y < end; ++y) {
+		for (int x = start; x < end; ++x) {
+			const TileType &t = assets.data.tiles[p.TileAt(0, x, y).type];
+			for (auto yield : t.resources) {
+				yields[yield.resource] += yield.ubiquity;
+			}
+		}
+	}
+	int liquid = -1;
+	int solid = -1;
+	for (auto e : yields) {
+		if (assets.data.resources[e.first].state == Resource::LIQUID) {
+			if (liquid < 0 || e.second > yields[liquid]) {
+				liquid = e.first;
+			}
+		} else if (assets.data.resources[e.first].state == Resource::SOLID) {
+			if (solid < 0 || e.second > yields[solid]) {
+				solid = e.first;
+			}
+		}
+	}
+
+	if (p.HasAtmosphere()) {
+		std::cout << "require breathing " << assets.data.resources[p.Atmosphere()].label << std::endl;
+		c.RequireBreathing(p.Atmosphere());
+	}
+	if (liquid > -1) {
+		std::cout << "require drinking " << assets.data.resources[liquid].label << std::endl;
+		c.RequireDrinking(liquid);
+	}
+	if (solid > -1) {
+		std::cout << "require eating " << assets.data.resources[solid].label << std::endl;
+		c.RequireEating(solid);
+	}
 }
 
 }

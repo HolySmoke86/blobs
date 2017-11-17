@@ -242,6 +242,19 @@ void Assets::ReadResources(io::TokenStreamReader &in) {
 			in.Skip(io::Token::EQUALS);
 			if (name == "label") {
 				in.ReadString(data.resources[id].label);
+			} else if (name == "state") {
+				in.ReadIdentifier(name);
+				if (name == "solid") {
+					data.resources[id].state = world::Resource::SOLID;
+				} else if (name == "liquid") {
+					data.resources[id].state = world::Resource::LIQUID;
+				} else if (name == "gas") {
+					data.resources[id].state = world::Resource::GAS;
+				} else if (name == "plasma") {
+					data.resources[id].state = world::Resource::PLASMA;
+				} else {
+					throw std::runtime_error("unknown resource state '" + name + "'");
+				}
 			} else {
 				throw std::runtime_error("unknown resource property '" + name + "'");
 			}

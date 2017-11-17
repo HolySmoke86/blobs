@@ -15,6 +15,7 @@ namespace graphics {
 namespace world {
 
 class Body;
+class Planet;
 
 class Creature {
 
@@ -36,6 +37,18 @@ public:
 	void Surface(int s) noexcept { surface = s; }
 	void Position(const glm::dvec3 &p) noexcept { position = p; }
 
+	void RequireBreathing(int r) noexcept { breathes = r; }
+	int Breathes() const noexcept { return breathes; }
+	bool MustBreathe() const noexcept { return breathes > -1; }
+
+	void RequireDrinking(int r) noexcept { drinks = r; }
+	int Drinks() const noexcept { return drinks; }
+	bool MustDrink() const noexcept { return drinks > -1; }
+
+	void RequireEating(int r) noexcept { eats = r; }
+	int Eats() const noexcept { return eats; }
+	bool MustEat() const noexcept { return eats > -1; }
+
 	glm::dmat4 LocalTransform() noexcept;
 
 	void BuildVAO();
@@ -46,6 +59,10 @@ private:
 	int surface;
 	glm::dvec3 position;
 
+	int breathes;
+	int drinks;
+	int eats;
+
 	struct Attributes {
 		glm::vec3 position;
 		glm::vec3 normal;
@@ -54,6 +71,9 @@ private:
 	graphics::SimpleVAO<Attributes, unsigned short> vao;
 
 };
+
+/// put creature on planet and configure it to (hopefully) survive
+void Spawn(Creature &, Planet &, app::Assets &);
 
 }
 }
