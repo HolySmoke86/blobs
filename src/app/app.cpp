@@ -175,14 +175,11 @@ Assets::Assets()
 , data_path(path + "data/")
 , skin_path(path + "skins/")
 , tile_path(path + "tiles/") {
-	data.resources.Add({ "air", "Air", 0 });
-	data.resources.Add({ "biomass", "Biomass", 0 });
-	data.resources.Add({ "dirt", "Dirt", 0 });
-	data.resources.Add({ "ice", "Ice", 0 });
-	data.resources.Add({ "rock", "Rock", 0 });
-	data.resources.Add({ "sand", "Sand", 0 });
-	data.resources.Add({ "water", "Water", 0 });
-	data.resources.Add({ "wood", "Wood", 0 });
+	{
+		std::ifstream resource_file(data_path + "resources");
+		io::TokenStreamReader resource_reader(resource_file);
+		ReadResources(resource_reader);
+	}
 
 	{
 		std::ifstream tile_file(data_path + "tiles");
@@ -222,6 +219,37 @@ Assets::Assets()
 }
 
 Assets::~Assets() {
+}
+
+void Assets::ReadResources(io::TokenStreamReader &in) {
+	while (in.HasMore()) {
+		string name;
+		in.ReadIdentifier(name);
+		in.Skip(io::Token::EQUALS);
+
+		int id = 0;
+		if (data.resources.Has(name)) {
+			id = data.resources[name].id;
+		} else {
+			world::Resource res;
+			res.name = name;
+			id = data.resources.Add(res);
+		}
+
+		in.Skip(io::Token::ANGLE_BRACKET_OPEN);
+		while (in.Peek().type != io::Token::ANGLE_BRACKET_CLOSE) {
+			in.ReadIdentifier(name);
+			in.Skip(io::Token::EQUALS);
+			if (name == "label") {
+				in.ReadString(data.resources[id].label);
+			} else {
+				throw std::runtime_error("unknown resource property '" + name + "'");
+			}
+			in.Skip(io::Token::SEMICOLON);
+		}
+		in.Skip(io::Token::ANGLE_BRACKET_CLOSE);
+		in.Skip(io::Token::SEMICOLON);
+	}
 }
 
 void Assets::ReadTileTypes(io::TokenStreamReader &in) {

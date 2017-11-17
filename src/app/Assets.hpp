@@ -50,6 +50,7 @@ struct Assets {
 	Assets(Assets &&) = delete;
 	Assets &operator =(Assets &&) = delete;
 
+	void ReadResources(io::TokenStreamReader &);
 	void ReadTileTypes(io::TokenStreamReader &);
 
 	void LoadTileTexture(const std::string &name, graphics::ArrayTexture &, int layer) const;
