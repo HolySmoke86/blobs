@@ -319,6 +319,10 @@ void TokenStreamReader::ReadIdentifier(string &out) {
 	out = GetValue();
 }
 
+void TokenStreamReader::ReadNumber(double &n) {
+	n = GetDouble();
+}
+
 void TokenStreamReader::ReadNumber(float &n) {
 	n = GetFloat();
 }
@@ -357,6 +361,36 @@ void TokenStreamReader::ReadVec(glm::vec3 &v) {
 }
 
 void TokenStreamReader::ReadVec(glm::vec4 &v) {
+	Skip(Token::BRACKET_OPEN);
+	ReadNumber(v.x);
+	Skip(Token::COMMA);
+	ReadNumber(v.y);
+	Skip(Token::COMMA);
+	ReadNumber(v.z);
+	Skip(Token::COMMA);
+	ReadNumber(v.w);
+	Skip(Token::BRACKET_CLOSE);
+}
+
+void TokenStreamReader::ReadVec(glm::dvec2 &v) {
+	Skip(Token::BRACKET_OPEN);
+	ReadNumber(v.x);
+	Skip(Token::COMMA);
+	ReadNumber(v.y);
+	Skip(Token::BRACKET_CLOSE);
+}
+
+void TokenStreamReader::ReadVec(glm::dvec3 &v) {
+	Skip(Token::BRACKET_OPEN);
+	ReadNumber(v.x);
+	Skip(Token::COMMA);
+	ReadNumber(v.y);
+	Skip(Token::COMMA);
+	ReadNumber(v.z);
+	Skip(Token::BRACKET_CLOSE);
+}
+
+void TokenStreamReader::ReadVec(glm::dvec4 &v) {
 	Skip(Token::BRACKET_OPEN);
 	ReadNumber(v.x);
 	Skip(Token::COMMA);
@@ -410,6 +444,18 @@ void TokenStreamReader::ReadQuat(glm::quat &q) {
 	Skip(Token::BRACKET_CLOSE);
 }
 
+void TokenStreamReader::ReadQuat(glm::dquat &q) {
+	Skip(Token::BRACKET_OPEN);
+	ReadNumber(q.w);
+	Skip(Token::COMMA);
+	ReadNumber(q.x);
+	Skip(Token::COMMA);
+	ReadNumber(q.y);
+	Skip(Token::COMMA);
+	ReadNumber(q.z);
+	Skip(Token::BRACKET_CLOSE);
+}
+
 
 bool TokenStreamReader::GetBool() {
 	Next();
@@ -436,6 +482,16 @@ bool TokenStreamReader::AsBool() const {
 				throw runtime_error(s.str());
 			}
 	}
+}
+
+float TokenStreamReader::GetDouble() {
+	Next();
+	return AsDouble();
+}
+
+float TokenStreamReader::AsDouble() const {
+	Assert(Token::NUMBER);
+	return stod(GetValue());
 }
 
 float TokenStreamReader::GetFloat() {

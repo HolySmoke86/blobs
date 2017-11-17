@@ -4,9 +4,14 @@
 
 #include "init.hpp"
 #include "../graphics/Viewport.hpp"
+#include "../io/Token.hpp"
+#include "../io/TokenStreamReader.hpp"
 
+#include <fstream>
 #include <SDL.h>
 #include <SDL_image.h>
+
+using std::string;
 
 
 namespace blobs {
@@ -167,8 +172,9 @@ void State::OnQuit() {
 
 Assets::Assets()
 : path("assets/")
-, tile_path(path + "tiles/")
-, skin_path(path + "skins/") {
+, data_path(path + "data/")
+, skin_path(path + "skins/")
+, tile_path(path + "tiles/") {
 	data.resources.Add({ "air", "Air", 0 });
 	data.resources.Add({ "biomass", "Biomass", 0 });
 	data.resources.Add({ "dirt", "Dirt", 0 });
@@ -178,20 +184,11 @@ Assets::Assets()
 	data.resources.Add({ "water", "Water", 0 });
 	data.resources.Add({ "wood", "Wood", 0 });
 
-	data.tiles.Add({ "algae",    "Algae",    0,  0 });
-	data.tiles.Add({ "desert",   "Desert",   0,  1 });
-	data.tiles.Add({ "forest",   "Forest",   0,  2 });
-	data.tiles.Add({ "grass",    "Grass",    0,  3 });
-	data.tiles.Add({ "ice",      "Ice",      0,  4 });
-	data.tiles.Add({ "jungle",   "Jungle",   0,  5 });
-	data.tiles.Add({ "mountain", "Mountain", 0,  6 });
-	data.tiles.Add({ "ocean",    "Ocean",    0,  7 });
-	data.tiles.Add({ "rock",     "Rock",     0,  8 });
-	data.tiles.Add({ "sand",     "Sand",     0,  9 });
-	data.tiles.Add({ "taiga",    "Taiga",    0, 10 });
-	data.tiles.Add({ "tundra",   "Tundra",   0, 11 });
-	data.tiles.Add({ "water",    "Water",    0, 12 });
-	data.tiles.Add({ "wheat",    "Wheat",    0, 13 });
+	{
+		std::ifstream tile_file(data_path + "tiles");
+		io::TokenStreamReader tile_reader(tile_file);
+		ReadTileTypes(tile_reader);
+	}
 
 	data.tiles["algae"]   .resources.push_back({ data.resources["water"].id,   1.0  });
 	data.tiles["algae"]   .resources.push_back({ data.resources["biomass"].id, 0.5  });
@@ -252,8 +249,41 @@ Assets::Assets()
 Assets::~Assets() {
 }
 
-void Assets::LoadTileTexture(const std::string &name, graphics::ArrayTexture &tex, int layer) const {
-	std::string path = tile_path + name + ".png";
+void Assets::ReadTileTypes(io::TokenStreamReader &in) {
+	while (in.HasMore()) {
+		string name;
+		in.ReadIdentifier(name);
+		in.Skip(io::Token::EQUALS);
+
+		int id = 0;
+		if (data.tiles.Has(name)) {
+			id = data.tiles[name].id;
+		} else {
+			world::TileType type;
+			type.name = name;
+			id = data.tiles.Add(type);
+		}
+
+		in.Skip(io::Token::ANGLE_BRACKET_OPEN);
+		while (in.Peek().type != io::Token::ANGLE_BRACKET_CLOSE) {
+			in.ReadIdentifier(name);
+			in.Skip(io::Token::EQUALS);
+			if (name == "label") {
+				in.ReadString(data.tiles[id].label);
+			} else if (name == "texture") {
+				data.tiles[id].texture = in.GetInt();
+			} else {
+				throw std::runtime_error("unknown tile type property '" + name + "'");
+			}
+			in.Skip(io::Token::SEMICOLON);
+		}
+		in.Skip(io::Token::ANGLE_BRACKET_CLOSE);
+		in.Skip(io::Token::SEMICOLON);
+	}
+}
+
+void Assets::LoadTileTexture(const string &name, graphics::ArrayTexture &tex, int layer) const {
+	string path = tile_path + name + ".png";
 	SDL_Surface *srf = IMG_Load(path.c_str());
 	if (!srf) {
 		throw SDLError("IMG_Load");
@@ -267,8 +297,8 @@ void Assets::LoadTileTexture(const std::string &name, graphics::ArrayTexture &te
 	SDL_FreeSurface(srf);
 }
 
-void Assets::LoadSkinTexture(const std::string &name, graphics::ArrayTexture &tex, int layer) const {
-	std::string path = skin_path + name + ".png";
+void Assets::LoadSkinTexture(const string &name, graphics::ArrayTexture &tex, int layer) const {
+	string path = skin_path + name + ".png";
 	SDL_Surface *srf = IMG_Load(path.c_str());
 	if (!srf) {
 		throw SDLError("IMG_Load");

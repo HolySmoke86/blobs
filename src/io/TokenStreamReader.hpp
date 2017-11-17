@@ -25,6 +25,7 @@ public:
 
 	void ReadBoolean(bool &);
 	void ReadIdentifier(std::string &);
+	void ReadNumber(double &);
 	void ReadNumber(float &);
 	void ReadNumber(int &);
 	void ReadNumber(unsigned long &);
@@ -34,11 +35,16 @@ public:
 	void ReadVec(glm::vec3 &);
 	void ReadVec(glm::vec4 &);
 
+	void ReadVec(glm::dvec2 &);
+	void ReadVec(glm::dvec3 &);
+	void ReadVec(glm::dvec4 &);
+
 	void ReadVec(glm::ivec2 &);
 	void ReadVec(glm::ivec3 &);
 	void ReadVec(glm::ivec4 &);
 
 	void ReadQuat(glm::quat &);
+	void ReadQuat(glm::dquat &);
 
 	// the Get* functions advance to the next token
 	// the As* functions try to cast the current token
@@ -46,6 +52,8 @@ public:
 
 	bool GetBool();
 	bool AsBool() const;
+	float GetDouble();
+	float AsDouble() const;
 	float GetFloat();
 	float AsFloat() const;
 	int GetInt();

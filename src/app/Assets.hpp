@@ -13,13 +13,17 @@
 
 
 namespace blobs {
+namespace io {
+	class TokenStreamReader;
+}
 namespace app {
 
 struct Assets {
 
 	std::string path;
-	std::string tile_path;
+	std::string data_path;
 	std::string skin_path;
+	std::string tile_path;
 
 	struct {
 		world::Set<world::Resource> resources;
@@ -45,6 +49,8 @@ struct Assets {
 
 	Assets(Assets &&) = delete;
 	Assets &operator =(Assets &&) = delete;
+
+	void ReadTileTypes(io::TokenStreamReader &);
 
 	void LoadTileTexture(const std::string &name, graphics::ArrayTexture &, int layer) const;
 	void LoadSkinTexture(const std::string &name, graphics::ArrayTexture &, int layer) const;

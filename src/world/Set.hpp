@@ -22,6 +22,8 @@ public:
 		types.back().id = id;
 		return id;
 	}
+	bool Has(int id) const noexcept { return id < types.size(); }
+	bool Has(const std::string &name) const noexcept { return names.find(name) != names.end(); }
 
 	Type &operator [](int id) noexcept { return types[id]; }
 	const Type &operator [](int id) const noexcept { return types[id]; }
