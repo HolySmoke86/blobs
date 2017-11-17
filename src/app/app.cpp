@@ -190,31 +190,6 @@ Assets::Assets()
 		ReadTileTypes(tile_reader);
 	}
 
-	data.tiles["algae"]   .resources.push_back({ data.resources["water"].id,   1.0  });
-	data.tiles["algae"]   .resources.push_back({ data.resources["biomass"].id, 0.5  });
-	data.tiles["desert"]  .resources.push_back({ data.resources["sand"].id,    1.0  });
-	data.tiles["forest"]  .resources.push_back({ data.resources["wood"].id,    1.0  });
-	data.tiles["forest"]  .resources.push_back({ data.resources["dirt"].id,    0.5  });
-	data.tiles["grass"]   .resources.push_back({ data.resources["dirt"].id,    0.5  });
-	data.tiles["grass"]   .resources.push_back({ data.resources["biomass"].id, 0.25 });
-	data.tiles["grass"]   .resources.push_back({ data.resources["water"].id,   0.25 });
-	data.tiles["ice"]     .resources.push_back({ data.resources["ice"].id,     1.0  });
-	data.tiles["ice"]     .resources.push_back({ data.resources["water"].id,   0.25 });
-	data.tiles["jungle"]  .resources.push_back({ data.resources["wood"].id,    0.5  });
-	data.tiles["jungle"]  .resources.push_back({ data.resources["biomass"].id, 0.5  });
-	data.tiles["mountain"].resources.push_back({ data.resources["rock"].id,    1.0  });
-	data.tiles["ocean"]   .resources.push_back({ data.resources["water"].id,   1.0  });
-	data.tiles["rock"]    .resources.push_back({ data.resources["rock"].id,    1.0  });
-	data.tiles["sand"]    .resources.push_back({ data.resources["sand"].id,    1.0  });
-	data.tiles["taiga"]   .resources.push_back({ data.resources["wood"].id,    1.0  });
-	data.tiles["taiga"]   .resources.push_back({ data.resources["water"].id,   0.5  });
-	data.tiles["tundra"]  .resources.push_back({ data.resources["rock"].id,    1.0  });
-	data.tiles["tundra"]  .resources.push_back({ data.resources["ice"].id,     0.5  });
-	data.tiles["water"]   .resources.push_back({ data.resources["water"].id,   1.0  });
-	data.tiles["water"]   .resources.push_back({ data.resources["biomass"].id, 0.25 });
-	data.tiles["wheat"]   .resources.push_back({ data.resources["biomass"].id, 1.0  });
-	data.tiles["wheat"]   .resources.push_back({ data.resources["water"].id,   0.25 });
-
 	graphics::Format format;
 	textures.tiles.Bind();
 	textures.tiles.Reserve(256, 256, 14, format);
@@ -272,6 +247,31 @@ void Assets::ReadTileTypes(io::TokenStreamReader &in) {
 				in.ReadString(data.tiles[id].label);
 			} else if (name == "texture") {
 				data.tiles[id].texture = in.GetInt();
+			} else if (name == "yield") {
+				in.Skip(io::Token::BRACKET_OPEN);
+				while (in.Peek().type != io::Token::BRACKET_CLOSE) {
+					world::TileType::Yield yield;
+					in.Skip(io::Token::ANGLE_BRACKET_OPEN);
+					while (in.Peek().type != io::Token::ANGLE_BRACKET_CLOSE) {
+						in.ReadIdentifier(name);
+						in.Skip(io::Token::EQUALS);
+						if (name == "resource") {
+							in.ReadIdentifier(name);
+							yield.resource = data.resources[name].id;
+						} else if (name == "ubiquity") {
+							yield.ubiquity = in.GetDouble();
+						} else {
+							throw std::runtime_error("unknown tile type yield property '" + name + "'");
+						}
+						in.Skip(io::Token::SEMICOLON);
+					}
+					in.Skip(io::Token::ANGLE_BRACKET_CLOSE);
+					data.tiles[id].resources.push_back(yield);
+					if (in.Peek().type == io::Token::COMMA) {
+						in.Skip(io::Token::COMMA);
+					}
+				}
+				in.Skip(io::Token::BRACKET_CLOSE);
 			} else {
 				throw std::runtime_error("unknown tile type property '" + name + "'");
 			}
