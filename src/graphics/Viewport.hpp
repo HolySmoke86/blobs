@@ -27,6 +27,7 @@ public:
 	void Resize(int w, int h);
 
 	void Clear();
+	void ClearDepth();
 
 private:
 	int width;

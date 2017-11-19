@@ -18,6 +18,10 @@
 namespace blobs {
 namespace graphics {
 
+Font::Font(const std::string &src, int size, long index)
+: Font(src.c_str(), size, index) {
+}
+
 Font::Font(const char *src, int size, long index)
 : handle(TTF_OpenFontIndex(src, size, index)) {
 	if (!handle) {
@@ -115,10 +119,18 @@ glm::ivec2 Font::TextSize(const char *text) const {
 	return size;
 }
 
+glm::ivec2 Font::TextSize(const std::string &text) const {
+	return TextSize(text.c_str());
+}
+
 Texture Font::Render(const char *text) const {
 	Texture tex;
 	Render(text, tex);
 	return tex;
+}
+
+Texture Font::Render(const std::string &text) const {
+	return Render(text.c_str());
 }
 
 void Font::Render(const char *text, Texture &tex) const {
@@ -130,6 +142,10 @@ void Font::Render(const char *text, Texture &tex) const {
 	tex.Data(*srf, false);
 	tex.FilterLinear();
 	SDL_FreeSurface(srf);
+}
+
+void Font::Render(const std::string &text, Texture &tex) const {
+	Render(text.c_str(), tex);
 }
 
 Format::Format() noexcept

@@ -1,8 +1,11 @@
 #ifndef BLOBS_APP_ASSETS_HPP_
 #define BLOBS_APP_ASSETS_HPP_
 
+#include "../graphics/AlphaSprite.hpp"
 #include "../graphics/ArrayTexture.hpp"
 #include "../graphics/CreatureSkin.hpp"
+#include "../graphics/Font.hpp"
+#include "../graphics/PlainColor.hpp"
 #include "../graphics/PlanetSurface.hpp"
 #include "../graphics/SunSurface.hpp"
 #include "../world/Resource.hpp"
@@ -22,6 +25,7 @@ struct Assets {
 
 	std::string path;
 	std::string data_path;
+	std::string font_path;
 	std::string skin_path;
 	std::string tile_path;
 
@@ -31,11 +35,19 @@ struct Assets {
 	} data;
 
 	struct {
+		graphics::Font large;
+		graphics::Font medium;
+		graphics::Font small;
+	} fonts;
+
+	struct {
 		graphics::ArrayTexture tiles;
 		graphics::ArrayTexture skins;
 	} textures;
 
 	struct {
+		graphics::AlphaSprite alpha_sprite;
+		graphics::PlainColor plain_color;
 		graphics::PlanetSurface planet_surface;
 		graphics::SunSurface sun_surface;
 		graphics::CreatureSkin creature_skin;

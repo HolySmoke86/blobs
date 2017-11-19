@@ -1,6 +1,7 @@
 #include "MasterState.hpp"
 
 #include "../creature/Creature.hpp"
+#include "../graphics/Viewport.hpp"
 #include "../world/Body.hpp"
 #include "../world/Planet.hpp"
 #include "../world/Simulation.hpp"
@@ -17,6 +18,7 @@ MasterState::MasterState(Assets &assets, world::Simulation &sim) noexcept
 , assets(assets)
 , sim(sim)
 , cam(sim.Root())
+, cp(assets)
 , remain(0)
 , thirds(0)
 , paused(false) {
@@ -27,7 +29,18 @@ MasterState::~MasterState() noexcept {
 
 
 void MasterState::OnResize(int w, int h) {
+	assets.shaders.plain_color.Activate();
+	assets.shaders.plain_color.SetVP(glm::mat4(1.0f), glm::ortho(0.0f, float(w), float(h), 0.0f, 1.0e4f, -1.0e4f));
+	assets.shaders.alpha_sprite.Activate();
+	assets.shaders.alpha_sprite.SetVP(glm::mat4(1.0f), glm::ortho(0.0f, float(w), float(h), 0.0f, 1.0e4f, -1.0e4f));
+
 	cam.Aspect(float(w), float(h));
+	assets.shaders.planet_surface.Activate();
+	assets.shaders.planet_surface.SetVP(cam.View(), cam.Projection());
+	assets.shaders.sun_surface.Activate();
+	assets.shaders.sun_surface.SetVP(cam.View(), cam.Projection());
+	assets.shaders.creature_skin.Activate();
+	assets.shaders.creature_skin.SetVP(cam.View(), cam.Projection());
 }
 
 void MasterState::OnUpdate(int dt) {
@@ -57,7 +70,6 @@ void MasterState::OnKeyDown(const SDL_KeyboardEvent &e) {
 }
 
 void MasterState::OnRender(graphics::Viewport &viewport) {
-
 	int num_lights = 0;
 	for (auto sun : sim.Suns()) {
 		// TODO: source sun's light color and strength
@@ -95,16 +107,15 @@ void MasterState::OnRender(graphics::Viewport &viewport) {
 	assets.shaders.planet_surface.Activate();
 	assets.shaders.planet_surface.SetTexture(assets.textures.tiles);
 	for (auto planet : sim.Planets()) {
-		assets.shaders.planet_surface.SetMVP(cam.Model(*planet), cam.View(), cam.Projection());
+		assets.shaders.planet_surface.SetM(cam.Model(*planet));
 		planet->Draw(assets, viewport);
 	}
 
 	assets.shaders.sun_surface.Activate();
 	for (auto sun : sim.Suns()) {
 		double sun_radius = sun->Radius();
-		assets.shaders.sun_surface.SetMVP(
-			cam.Model(*sun) * glm::scale(glm::vec3(sun_radius, sun_radius, sun_radius)),
-			cam.View(), cam.Projection());
+		assets.shaders.sun_surface.SetM(
+			cam.Model(*sun) * glm::scale(glm::vec3(sun_radius, sun_radius, sun_radius)));
 		assets.shaders.sun_surface.SetLight(glm::vec3(1.0f, 1.0f, 1.0f), 1.0e6f);
 		assets.shaders.sun_surface.Draw();
 	}
@@ -113,9 +124,12 @@ void MasterState::OnRender(graphics::Viewport &viewport) {
 	assets.shaders.creature_skin.SetTexture(assets.textures.skins);
 	// TODO: extend to nearby bodies as well
 	for (auto c : cam.Reference().Creatures()) {
-		assets.shaders.creature_skin.SetMVP(cam.Model(c->GetBody()) * glm::mat4(c->LocalTransform()), cam.View(), cam.Projection());
+		assets.shaders.creature_skin.SetM(cam.Model(c->GetBody()) * glm::mat4(c->LocalTransform()));
 		c->Draw(assets, viewport);
 	}
+
+	viewport.ClearDepth();
+	cp.Draw(assets, viewport);
 }
 
 }

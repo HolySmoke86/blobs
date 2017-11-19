@@ -1,30 +1,28 @@
-#ifndef BLOBS_GRAPHICS_CREATURESKIN_HPP_
-#define BLOBS_GRAPHICS_CREATURESKIN_HPP_
+#ifndef BLOBS_GRAPHICS_PLAINCOLOR_HPP_
+#define BLOBS_GRAPHICS_PLAINCOLOR_HPP_
 
 #include "Program.hpp"
+#include "SimpleVAO.hpp"
 
 #include "glm.hpp"
+
+#include <cstdint>
 
 
 namespace blobs {
 namespace graphics {
 
-class ArrayTexture;
-
-class CreatureSkin {
+class PlainColor {
 
 public:
-	static constexpr int MAX_LIGHTS = 8;
+	PlainColor();
+	~PlainColor();
 
-public:
-	CreatureSkin();
-	~CreatureSkin();
+	PlainColor(const PlainColor &) = delete;
+	PlainColor &operator =(const PlainColor &) = delete;
 
-	CreatureSkin(const CreatureSkin &) = delete;
-	CreatureSkin &operator =(const CreatureSkin &) = delete;
-
-	CreatureSkin(CreatureSkin &&) = delete;
-	CreatureSkin &operator =(CreatureSkin &&) = delete;
+	PlainColor(PlainColor &&) = delete;
+	PlainColor &operator =(PlainColor &&) = delete;
 
 public:
 	void Activate() noexcept;
@@ -32,9 +30,7 @@ public:
 	void SetM(const glm::mat4 &m) noexcept;
 	void SetVP(const glm::mat4 &v, const glm::mat4 &p) noexcept;
 	void SetMVP(const glm::mat4 &m, const glm::mat4 &v, const glm::mat4 &p) noexcept;
-	void SetTexture(ArrayTexture &) noexcept;
-	void SetLight(int n, const glm::vec3 &pos, const glm::vec3 &color, float strength) noexcept;
-	void SetNumLights(int n) noexcept;
+	void SetColor(const glm::vec3 &color) noexcept;
 
 	const glm::mat4 &M() const noexcept { return m; }
 	const glm::mat4 &V() const noexcept { return v; }
@@ -42,10 +38,15 @@ public:
 	const glm::mat4 &MV() const noexcept { return mv; }
 	const glm::mat4 &MVP() const noexcept { return mvp; }
 
-private:
-	Program prog;
+	void DrawRect() const noexcept;
+	void OutlineRect() const noexcept;
 
-	int num_lights;
+private:
+	struct Attributes {
+		glm::vec3 position;
+	};
+	SimpleVAO<Attributes, std::uint8_t> vao;
+	Program prog;
 
 	glm::mat4 m;
 	glm::mat4 v;
@@ -56,10 +57,8 @@ private:
 	GLuint m_handle;
 	GLuint mv_handle;
 	GLuint mvp_handle;
-	GLuint sampler_handle;
 
-	GLuint num_lights_handle;
-	GLuint light_handle[MAX_LIGHTS * 3];
+	GLuint fg_color_handle;
 
 };
 

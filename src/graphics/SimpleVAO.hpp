@@ -72,8 +72,17 @@ public:
 	MappedBuffer<Element> MapElements(GLenum access) {
 		return MappedBuffer<Element>(GL_ELEMENT_ARRAY_BUFFER, access);
 	}
+	void Draw(GLenum mode, std::size_t size, std::size_t offset = 0) const noexcept {
+		glDrawElements(mode, size, gl_traits<Element>::type, ((Element *) nullptr) + offset);
+	}
 	void DrawTriangles(std::size_t size, std::size_t offset = 0) const noexcept {
-		glDrawElements(GL_TRIANGLES, size, gl_traits<Element>::type, ((Element *) nullptr) + offset);
+		Draw(GL_TRIANGLES, size, offset);
+	}
+	void DrawTriangleStrip(std::size_t size, std::size_t offset = 0) const noexcept {
+		Draw(GL_TRIANGLE_STRIP, size, offset);
+	}
+	void DrawLineLoop(std::size_t size, std::size_t offset = 0) const noexcept {
+		Draw(GL_LINE_LOOP, size, offset);
 	}
 
 private:

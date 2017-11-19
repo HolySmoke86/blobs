@@ -29,6 +29,8 @@ public:
 public:
 	void Activate() noexcept;
 
+	void SetM(const glm::mat4 &m) noexcept;
+	void SetVP(const glm::mat4 &v, const glm::mat4 &p) noexcept;
 	void SetMVP(const glm::mat4 &m, const glm::mat4 &v, const glm::mat4 &p) noexcept;
 	void SetNormal(const glm::vec3 &) noexcept;
 	void SetTexture(ArrayTexture &) noexcept;

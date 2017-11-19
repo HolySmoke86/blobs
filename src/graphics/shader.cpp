@@ -1,10 +1,13 @@
+#include "AlphaSprite.hpp"
 #include "CreatureSkin.hpp"
+#include "PlainColor.hpp"
 #include "PlanetSurface.hpp"
 #include "Program.hpp"
 #include "Shader.hpp"
 #include "SunSurface.hpp"
 
 #include "ArrayTexture.hpp"
+#include "Texture.hpp"
 #include "../app/init.hpp"
 
 #include <algorithm>
@@ -269,6 +272,24 @@ void PlanetSurface::Activate() noexcept {
 	glDisable(GL_BLEND);
 }
 
+void PlanetSurface::SetM(const glm::mat4 &mm) noexcept {
+	m = mm;
+	mv = v * m;
+	mvp = p * mv;
+	prog.Uniform(m_handle, m);
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
+void PlanetSurface::SetVP(const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
+	v = vv;
+	p = pp;
+	mv = v * m;
+	mvp = p * mv;
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
 void PlanetSurface::SetMVP(const glm::mat4 &mm, const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
 	m = mm;
 	v = vv;
@@ -427,6 +448,24 @@ void SunSurface::Activate() noexcept {
 	glDisable(GL_BLEND);
 }
 
+void SunSurface::SetM(const glm::mat4 &mm) noexcept {
+	m = mm;
+	mv = v * m;
+	mvp = p * mv;
+	prog.Uniform(m_handle, m);
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
+void SunSurface::SetVP(const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
+	v = vv;
+	p = pp;
+	mv = v * m;
+	mvp = p * mv;
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
 void SunSurface::SetMVP(const glm::mat4 &mm, const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
 	m = mm;
 	v = vv;
@@ -543,6 +582,24 @@ void CreatureSkin::Activate() noexcept {
 	glDisable(GL_BLEND);
 }
 
+void CreatureSkin::SetM(const glm::mat4 &mm) noexcept {
+	m = mm;
+	mv = v * m;
+	mvp = p * mv;
+	prog.Uniform(m_handle, m);
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
+void CreatureSkin::SetVP(const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
+	v = vv;
+	p = pp;
+	mv = v * m;
+	mvp = p * mv;
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
 void CreatureSkin::SetMVP(const glm::mat4 &mm, const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
 	m = mm;
 	v = vv;
@@ -568,6 +625,267 @@ void CreatureSkin::SetLight(int n, const glm::vec3 &pos, const glm::vec3 &color,
 
 void CreatureSkin::SetNumLights(int n) noexcept {
 	prog.Uniform(num_lights_handle, std::min(MAX_LIGHTS, n));
+}
+
+
+PlainColor::PlainColor()
+: prog() {
+	prog.LoadShader(
+		GL_VERTEX_SHADER,
+		"#version 330 core\n"
+
+		"layout(location = 0) in vec3 vtx_position;\n"
+
+		"uniform mat4 M;\n"
+		"uniform mat4 MV;\n"
+		"uniform mat4 MVP;\n"
+
+		"void main() {\n"
+			"gl_Position = MVP * vec4(vtx_position, 1);\n"
+		"}\n"
+	);
+	prog.LoadShader(
+		GL_FRAGMENT_SHADER,
+		"#version 330 core\n"
+
+		"uniform vec3 fg_color;\n"
+
+		"out vec3 color;\n"
+
+		"void main() {\n"
+			"color = fg_color;\n"
+		"}\n"
+	);
+	prog.Link();
+	if (!prog.Linked()) {
+		prog.Log(std::cerr);
+		throw std::runtime_error("link program");
+	}
+	m_handle = prog.UniformLocation("M");
+	mv_handle = prog.UniformLocation("MV");
+	mvp_handle = prog.UniformLocation("MVP");
+	fg_color_handle = prog.UniformLocation("fg_color");
+
+	vao.Bind();
+	vao.BindAttributes();
+	vao.EnableAttribute(0);
+	vao.AttributePointer<glm::vec3>(0, false, offsetof(Attributes, position));
+	vao.ReserveAttributes(4, GL_STATIC_DRAW);
+	{
+		auto attrib = vao.MapAttributes(GL_WRITE_ONLY);
+		attrib[0].position = glm::vec3(-1.0f, -1.0f, 0.0f);
+		attrib[1].position = glm::vec3(-1.0f,  1.0f, 0.0f);
+		attrib[2].position = glm::vec3( 1.0f, -1.0f, 0.0f);
+		attrib[3].position = glm::vec3( 1.0f,  1.0f, 0.0f);
+	}
+	vao.BindElements();
+	vao.ReserveElements(7, GL_STATIC_DRAW);
+	{
+		auto element = vao.MapElements(GL_WRITE_ONLY);
+		element[ 0] = 0;
+		element[ 1] = 3;
+		element[ 2] = 2;
+		element[ 3] = 0;
+		element[ 4] = 1;
+		element[ 5] = 3;
+		element[ 6] = 2;
+	}
+	vao.Unbind();
+}
+
+PlainColor::~PlainColor() {
+}
+
+void PlainColor::Activate() noexcept {
+	prog.Use();
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glEnable(GL_CULL_FACE);
+	glDisable(GL_BLEND);
+}
+
+void PlainColor::SetM(const glm::mat4 &mm) noexcept {
+	m = mm;
+	mv = v * m;
+	mvp = p * mv;
+	prog.Uniform(m_handle, m);
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
+void PlainColor::SetVP(const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
+	v = vv;
+	p = pp;
+	mv = v * m;
+	mvp = p * mv;
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
+void PlainColor::SetMVP(const glm::mat4 &mm, const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
+	m = mm;
+	v = vv;
+	p = pp;
+	mv = v * m;
+	mvp = p * mv;
+	prog.Uniform(m_handle, m);
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
+void PlainColor::SetColor(const glm::vec3 &color) noexcept {
+	prog.Uniform(fg_color_handle, color);
+}
+
+void PlainColor::DrawRect() const noexcept {
+	vao.Bind();
+	vao.DrawTriangles(6);
+}
+
+void PlainColor::OutlineRect() const noexcept {
+	vao.Bind();
+	vao.DrawLineLoop(4, 3);
+}
+
+
+AlphaSprite::AlphaSprite()
+: prog() {
+	prog.LoadShader(
+		GL_VERTEX_SHADER,
+		"#version 330 core\n"
+
+		"layout(location = 0) in vec3 vtx_position;\n"
+		"layout(location = 1) in vec2 vtx_texture;\n"
+
+		"uniform mat4 M;\n"
+		"uniform mat4 MV;\n"
+		"uniform mat4 MVP;\n"
+
+		"out vec2 frag_tex_uv;\n"
+
+		"void main() {\n"
+			"gl_Position = MVP * vec4(vtx_position, 1);\n"
+			"frag_tex_uv = vtx_texture;\n"
+		"}\n"
+	);
+	prog.LoadShader(
+		GL_FRAGMENT_SHADER,
+		"#version 330 core\n"
+
+		"in vec2 frag_tex_uv;\n"
+
+		"uniform sampler2D tex_sampler;\n"
+		"uniform vec4 fg_color;\n"
+		"uniform vec4 bg_color;\n"
+
+		"out vec4 color;\n"
+
+		"void main() {\n"
+			"vec4 tex_color = texture(tex_sampler, frag_tex_uv);\n"
+			"vec4 factor = mix(bg_color, fg_color, tex_color.a);\n"
+			"color = vec4((tex_color * factor).rgb, factor.a);\n"
+		"}\n"
+	);
+	prog.Link();
+	if (!prog.Linked()) {
+		prog.Log(std::cerr);
+		throw std::runtime_error("link program");
+	}
+	m_handle = prog.UniformLocation("M");
+	mv_handle = prog.UniformLocation("MV");
+	mvp_handle = prog.UniformLocation("MVP");
+	sampler_handle = prog.UniformLocation("tex_sampler");
+	fg_color_handle = prog.UniformLocation("fg_color");
+	bg_color_handle = prog.UniformLocation("bg_color");
+
+	vao.Bind();
+	vao.BindAttributes();
+	vao.EnableAttribute(0);
+	vao.EnableAttribute(1);
+	vao.AttributePointer<glm::vec3>(0, false, offsetof(Attributes, position));
+	vao.AttributePointer<glm::vec2>(1, false, offsetof(Attributes, texture));
+	vao.ReserveAttributes(4, GL_STATIC_DRAW);
+	{
+		auto attrib = vao.MapAttributes(GL_WRITE_ONLY);
+		attrib[0].position = glm::vec3(-1.0f, -1.0f, 0.0f);
+		attrib[0].texture = glm::vec2(0.0f, 0.0f);
+		attrib[1].position = glm::vec3(-1.0f,  1.0f, 0.0f);
+		attrib[1].texture = glm::vec2(0.0f, 1.0f);
+		attrib[2].position = glm::vec3( 1.0f, -1.0f, 0.0f);
+		attrib[2].texture = glm::vec2(1.0f, 0.0f);
+		attrib[3].position = glm::vec3( 1.0f,  1.0f, 0.0f);
+		attrib[3].texture = glm::vec2(1.0f, 1.0f);
+	}
+	vao.BindElements();
+	vao.ReserveElements(7, GL_STATIC_DRAW);
+	{
+		auto element = vao.MapElements(GL_WRITE_ONLY);
+		element[ 0] = 0;
+		element[ 1] = 1;
+		element[ 2] = 2;
+		element[ 3] = 3;
+	}
+	vao.Unbind();
+}
+
+AlphaSprite::~AlphaSprite() {
+}
+
+void AlphaSprite::Activate() noexcept {
+	prog.Use();
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+void AlphaSprite::SetM(const glm::mat4 &mm) noexcept {
+	m = mm;
+	mv = v * m;
+	mvp = p * mv;
+	prog.Uniform(m_handle, m);
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
+void AlphaSprite::SetVP(const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
+	v = vv;
+	p = pp;
+	mv = v * m;
+	mvp = p * mv;
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
+void AlphaSprite::SetMVP(const glm::mat4 &mm, const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
+	m = mm;
+	v = vv;
+	p = pp;
+	mv = v * m;
+	mvp = p * mv;
+	prog.Uniform(m_handle, m);
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
+void AlphaSprite::SetTexture(Texture &tex) noexcept {
+	glActiveTexture(GL_TEXTURE0);
+	tex.Bind();
+	prog.Uniform(sampler_handle, GLint(0));
+}
+
+void AlphaSprite::SetFgColor(const glm::vec4 &color) noexcept {
+	prog.Uniform(fg_color_handle, color);
+}
+
+void AlphaSprite::SetBgColor(const glm::vec4 &color) noexcept {
+	prog.Uniform(bg_color_handle, color);
+}
+
+void AlphaSprite::DrawRect() const noexcept {
+	vao.Bind();
+	vao.DrawTriangleStrip(4);
 }
 
 }

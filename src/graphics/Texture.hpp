@@ -29,6 +29,7 @@ public:
 public:
 	GLsizei Width() const noexcept { return width; }
 	GLsizei Height() const noexcept { return height; }
+	glm::vec2 Size() const noexcept { return glm::vec2(width, height); }
 
 	void Data(const SDL_Surface &, bool pad2 = true) noexcept;
 	void Data(GLsizei w, GLsizei h, const Format &, GLvoid *data) noexcept;

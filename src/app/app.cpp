@@ -173,8 +173,14 @@ void State::OnQuit() {
 Assets::Assets()
 : path("assets/")
 , data_path(path + "data/")
+, font_path(path + "fonts/")
 , skin_path(path + "skins/")
-, tile_path(path + "tiles/") {
+, tile_path(path + "tiles/")
+, fonts{
+	graphics::Font(font_path + "DejaVuSans.ttf", 32),
+	graphics::Font(font_path + "DejaVuSans.ttf", 24),
+	graphics::Font(font_path + "DejaVuSans.ttf", 16)
+} {
 	{
 		std::ifstream resource_file(data_path + "resources");
 		io::TokenStreamReader resource_reader(resource_file);
@@ -186,6 +192,7 @@ Assets::Assets()
 		io::TokenStreamReader tile_reader(tile_file);
 		ReadTileTypes(tile_reader);
 	}
+
 
 	graphics::Format format;
 	textures.tiles.Bind();

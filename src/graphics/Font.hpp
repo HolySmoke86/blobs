@@ -3,6 +3,7 @@
 
 #include "glm.hpp"
 
+#include <string>
 #include <SDL_ttf.h>
 
 
@@ -29,6 +30,7 @@ public:
 	};
 
 public:
+	Font(const std::string &src, int size, long index = 0);
 	Font(const char *src, int size, long index = 0);
 	~Font();
 
@@ -60,9 +62,12 @@ public:
 	bool HasGlyph(Uint16) const noexcept;
 
 	glm::ivec2 TextSize(const char *) const;
+	glm::ivec2 TextSize(const std::string &) const;
 
 	Texture Render(const char *) const;
+	Texture Render(const std::string &) const;
 	void Render(const char *, Texture &) const;
+	void Render(const std::string &, Texture &) const;
 
 private:
 	TTF_Font *handle;

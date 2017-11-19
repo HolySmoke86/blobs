@@ -5,6 +5,7 @@
 
 #include "Assets.hpp"
 #include "../graphics/Camera.hpp"
+#include "../ui/CreaturePanel.hpp"
 
 
 namespace blobs {
@@ -31,6 +32,9 @@ public:
 	graphics::Camera &GetCamera() noexcept { return cam; }
 	const graphics::Camera &GetCamera() const noexcept { return cam; }
 
+	ui::CreaturePanel &GetCreaturePanel() noexcept { return cp; }
+	const ui::CreaturePanel &GetCreaturePanel() const noexcept { return cp; }
+
 private:
 	void OnResize(int w, int h) override;
 
@@ -47,6 +51,7 @@ private:
 	world::Simulation &sim;
 
 	graphics::Camera cam;
+	ui::CreaturePanel cp;
 
 	int remain;
 	int thirds;

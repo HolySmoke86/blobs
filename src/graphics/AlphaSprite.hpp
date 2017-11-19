@@ -1,30 +1,30 @@
-#ifndef BLOBS_GRAPHICS_CREATURESKIN_HPP_
-#define BLOBS_GRAPHICS_CREATURESKIN_HPP_
+#ifndef BLOBS_GRAPHICS_ALPHASPRITE_HPP_
+#define BLOBS_GRAPHICS_ALPHASPRITE_HPP_
 
 #include "Program.hpp"
+#include "SimpleVAO.hpp"
 
 #include "glm.hpp"
+
+#include <cstdint>
 
 
 namespace blobs {
 namespace graphics {
 
-class ArrayTexture;
+class Texture;
 
-class CreatureSkin {
-
-public:
-	static constexpr int MAX_LIGHTS = 8;
+class AlphaSprite {
 
 public:
-	CreatureSkin();
-	~CreatureSkin();
+	AlphaSprite();
+	~AlphaSprite();
 
-	CreatureSkin(const CreatureSkin &) = delete;
-	CreatureSkin &operator =(const CreatureSkin &) = delete;
+	AlphaSprite(const AlphaSprite &) = delete;
+	AlphaSprite &operator =(const AlphaSprite &) = delete;
 
-	CreatureSkin(CreatureSkin &&) = delete;
-	CreatureSkin &operator =(CreatureSkin &&) = delete;
+	AlphaSprite(AlphaSprite &&) = delete;
+	AlphaSprite &operator =(AlphaSprite &&) = delete;
 
 public:
 	void Activate() noexcept;
@@ -32,9 +32,9 @@ public:
 	void SetM(const glm::mat4 &m) noexcept;
 	void SetVP(const glm::mat4 &v, const glm::mat4 &p) noexcept;
 	void SetMVP(const glm::mat4 &m, const glm::mat4 &v, const glm::mat4 &p) noexcept;
-	void SetTexture(ArrayTexture &) noexcept;
-	void SetLight(int n, const glm::vec3 &pos, const glm::vec3 &color, float strength) noexcept;
-	void SetNumLights(int n) noexcept;
+	void SetTexture(Texture &) noexcept;
+	void SetFgColor(const glm::vec4 &) noexcept;
+	void SetBgColor(const glm::vec4 &) noexcept;
 
 	const glm::mat4 &M() const noexcept { return m; }
 	const glm::mat4 &V() const noexcept { return v; }
@@ -42,10 +42,15 @@ public:
 	const glm::mat4 &MV() const noexcept { return mv; }
 	const glm::mat4 &MVP() const noexcept { return mvp; }
 
-private:
-	Program prog;
+	void DrawRect() const noexcept;
 
-	int num_lights;
+private:
+	struct Attributes {
+		glm::vec3 position;
+		glm::vec2 texture;
+	};
+	SimpleVAO<Attributes, std::uint8_t> vao;
+	Program prog;
 
 	glm::mat4 m;
 	glm::mat4 v;
@@ -56,10 +61,10 @@ private:
 	GLuint m_handle;
 	GLuint mv_handle;
 	GLuint mvp_handle;
-	GLuint sampler_handle;
 
-	GLuint num_lights_handle;
-	GLuint light_handle[MAX_LIGHTS * 3];
+	GLuint sampler_handle;
+	GLuint fg_color_handle;
+	GLuint bg_color_handle;
 
 };
 

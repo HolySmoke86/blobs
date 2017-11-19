@@ -68,8 +68,9 @@ int main(int argc, char *argv[]) {
 	std::cout << "moon cycles per year: " << (planet.OrbitalPeriod() / moon.OrbitalPeriod()) << std::endl;
 
 	auto blob = new creature::Creature;
-	blob->BuildVAO();
 	Spawn(*blob, planet, assets);
+	blob->BuildVAO();
+	blob->Name("Blob");
 
 	app::MasterState state(assets, sim);
 	state.GetCamera()
@@ -88,6 +89,7 @@ int main(int argc, char *argv[]) {
 	//	.Reference(sun)
 	//	.Orbital(glm::vec3(-500.0f, 500.0f, 500.0f))
 	//;
+	state.GetCreaturePanel().Show(*blob);
 
 	app::Application app(init.window, init.viewport);
 	app.PushState(&state);
