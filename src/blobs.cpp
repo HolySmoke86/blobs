@@ -3,7 +3,7 @@
 #include "app/Assets.hpp"
 #include "app/init.hpp"
 #include "app/MasterState.hpp"
-#include "world/Creature.hpp"
+#include "creature/Creature.hpp"
 #include "world/Planet.hpp"
 #include "world/Set.hpp"
 #include "world/Simulation.hpp"
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
 	std::cout << "moon cycle in days: " << (moon.OrbitalPeriod() / planet.RotationalPeriod()) << std::endl;
 	std::cout << "moon cycles per year: " << (planet.OrbitalPeriod() / moon.OrbitalPeriod()) << std::endl;
 
-	auto blob = new world::Creature;
+	auto blob = new creature::Creature;
 	blob->BuildVAO();
 	Spawn(*blob, planet, assets);
 

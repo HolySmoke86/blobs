@@ -1,7 +1,7 @@
 #include "MasterState.hpp"
 
+#include "../creature/Creature.hpp"
 #include "../world/Body.hpp"
-#include "../world/Creature.hpp"
 #include "../world/Planet.hpp"
 #include "../world/Simulation.hpp"
 #include "../world/Sun.hpp"

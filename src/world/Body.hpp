@@ -11,12 +11,14 @@ namespace blobs {
 namespace app {
 	class Assets;
 }
+namespace creature {
+	class Creature;
+}
 namespace graphics {
 	class Viewport;
 }
 namespace world {
 
-class Creature;
 class Simulation;
 
 class Body {
@@ -82,12 +84,18 @@ public:
 
 	virtual void Draw(app::Assets &, graphics::Viewport &) { }
 
+	void Tick(double dt);
 	void Cache() noexcept;
 
 	// body takes over ownership of given pointer
-	void AddCreature(Creature *);
-	std::vector<Creature *> &Creatures() noexcept { return creatures; }
-	const std::vector<Creature *> &Creatures() const noexcept { return creatures; }
+	void AddCreature(creature::Creature *);
+	void RemoveCreature(creature::Creature *);
+	std::vector<creature::Creature *> &Creatures() noexcept { return creatures; }
+	const std::vector<creature::Creature *> &Creatures() const noexcept { return creatures; }
+
+	void Atmosphere(int a) noexcept { atmosphere = a; }
+	int Atmosphere() const noexcept { return atmosphere; }
+	bool HasAtmosphere() const noexcept { return atmosphere >= 0; }
 
 private:
 	void AddChild(Body &);
@@ -110,7 +118,8 @@ private:
 	glm::dmat4 local;
 	glm::dmat4 inverse_local;
 
-	std::vector<Creature *> creatures;
+	std::vector<creature::Creature *> creatures;
+	int atmosphere;
 
 };
 

@@ -8,9 +8,9 @@
 #include "Tile.hpp"
 #include "TileType.hpp"
 
-#include "Creature.hpp"
 #include "../const.hpp"
 #include "../app/Assets.hpp"
+#include "../creature/Creature.hpp"
 #include "../graphics/Viewport.hpp"
 #include "../rand/OctaveNoise.hpp"
 #include "../rand/SimplexNoise.hpp"
@@ -50,11 +50,12 @@ Body::Body()
 , inverse_orbital(1.0)
 , local(1.0)
 , inverse_local(1.0)
-, creatures() {
+, creatures()
+, atmosphere(-1) {
 }
 
 Body::~Body() {
-	for (Creature *c : creatures) {
+	for (creature::Creature *c : creatures) {
 		delete c;
 	}
 }
@@ -137,6 +138,14 @@ glm::dmat4 Body::FromUniverse() const noexcept {
 	return m;
 }
 
+void Body::Tick(double dt) {
+	rotation += dt * AngularMomentum() / Inertia();
+	Cache();
+	for (creature::Creature *c : Creatures()) {
+		c->Tick(dt);
+	}
+}
+
 void Body::Cache() noexcept {
 	if (parent) {
 		orbital =
@@ -157,9 +166,16 @@ void Body::Cache() noexcept {
 		* glm::eulerAngleY(-rotation);
 }
 
-void Body::AddCreature(Creature *c) {
+void Body::AddCreature(creature::Creature *c) {
 	c->SetBody(*this);
 	creatures.push_back(c);
+}
+
+void Body::RemoveCreature(creature::Creature *c) {
+	auto entry = std::find(creatures.begin(), creatures.end(), c);
+	if (entry != creatures.end()) {
+		creatures.erase(entry);
+	}
 }
 
 
@@ -268,7 +284,6 @@ Planet::Planet(int sidelength)
 : Body()
 , sidelength(sidelength)
 , tiles(TilesTotal())
-, atmosphere(-1)
 , vao() {
 	Radius(double(sidelength) / 2.0);
 }

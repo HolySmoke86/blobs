@@ -40,8 +40,7 @@ void Simulation::Tick() {
 	constexpr double dt = 0.01666666666666666666666666666666;
 	time += dt;
 	for (auto body : bodies) {
-		body->Rotation(body->Rotation() + dt * body->AngularMomentum() / body->Inertia());
-		body->Cache();
+		body->Tick(dt);
 	}
 }
 

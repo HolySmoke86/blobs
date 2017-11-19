@@ -1,9 +1,10 @@
 #include "Creature.hpp"
+#include "Need.hpp"
 
-#include "Body.hpp"
-#include "Planet.hpp"
-#include "TileType.hpp"
 #include "../app/Assets.hpp"
+#include "../world/Body.hpp"
+#include "../world/Planet.hpp"
+#include "../world/TileType.hpp"
 
 #include <glm/gtx/transform.hpp>
 
@@ -11,21 +12,30 @@
 
 
 namespace blobs {
-namespace world {
+namespace creature {
 
 Creature::Creature()
 : body(nullptr)
 , surface(0)
 , position()
-, breathes(-1)
-, drinks(-1)
-, eats(-1)
+, name()
+, health(1.0)
+, needs()
 , vao() {
 }
 
 Creature::~Creature() {
 }
 
+
+void Creature::Tick(double dt) {
+	for (Need &need : needs) {
+		need.Tick(dt);
+		if (!need.IsSatisfied()) {
+			health = std::max(0.0, health - need.penalty * dt);
+		}
+	}
+}
 
 glm::dmat4 Creature::LocalTransform() noexcept {
 	// TODO: surface transform
@@ -122,7 +132,7 @@ void Creature::Draw(app::Assets &assets, graphics::Viewport &viewport) {
 }
 
 
-void Spawn(Creature &c, Planet &p, app::Assets &assets) {
+void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
 	p.AddCreature(&c);
 	c.Surface(0);
 	c.Position(glm::dvec3(0.0, 0.0, 0.0));
@@ -133,7 +143,7 @@ void Spawn(Creature &c, Planet &p, app::Assets &assets) {
 	std::map<int, double> yields;
 	for (int y = start; y < end; ++y) {
 		for (int x = start; x < end; ++x) {
-			const TileType &t = assets.data.tiles[p.TileAt(0, x, y).type];
+			const world::TileType &t = assets.data.tiles[p.TileAt(0, x, y).type];
 			for (auto yield : t.resources) {
 				yields[yield.resource] += yield.ubiquity;
 			}
@@ -142,11 +152,11 @@ void Spawn(Creature &c, Planet &p, app::Assets &assets) {
 	int liquid = -1;
 	int solid = -1;
 	for (auto e : yields) {
-		if (assets.data.resources[e.first].state == Resource::LIQUID) {
+		if (assets.data.resources[e.first].state == world::Resource::LIQUID) {
 			if (liquid < 0 || e.second > yields[liquid]) {
 				liquid = e.first;
 			}
-		} else if (assets.data.resources[e.first].state == Resource::SOLID) {
+		} else if (assets.data.resources[e.first].state == world::Resource::SOLID) {
 			if (solid < 0 || e.second > yields[solid]) {
 				solid = e.first;
 			}
@@ -155,16 +165,36 @@ void Spawn(Creature &c, Planet &p, app::Assets &assets) {
 
 	if (p.HasAtmosphere()) {
 		std::cout << "require breathing " << assets.data.resources[p.Atmosphere()].label << std::endl;
-		c.RequireBreathing(p.Atmosphere());
+		Need need;
+		need.resource = p.Atmosphere();
+		need.gain = 0.25;
+		need.critical = 0.95;
+		need.penalty = 0.1;
+		c.AddNeed(need);
 	}
 	if (liquid > -1) {
 		std::cout << "require drinking " << assets.data.resources[liquid].label << std::endl;
-		c.RequireDrinking(liquid);
+		Need need;
+		need.resource = liquid;
+		need.gain = 0.0001;
+		need.critical = 0.95;
+		need.penalty = 0.01;
+		c.AddNeed(need);
 	}
 	if (solid > -1) {
 		std::cout << "require eating " << assets.data.resources[solid].label << std::endl;
-		c.RequireEating(solid);
+		Need need;
+		need.resource = solid;
+		need.gain = 0.00001;
+		need.critical = 0.95;
+		need.penalty = 0.001;
+		c.AddNeed(need);
 	}
+}
+
+
+void Need::Tick(double dt) noexcept {
+	value = std::min(1.0, value + gain * dt);
 }
 
 }
