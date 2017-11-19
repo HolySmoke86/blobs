@@ -2,6 +2,7 @@
 #define BLOBS_UI_CREATUREPANEL_HPP_
 
 #include "Label.hpp"
+#include "Panel.hpp"
 
 
 namespace blobs {
@@ -37,7 +38,8 @@ public:
 private:
 	creature::Creature *c;
 
-	Label name;
+	Label *name;
+	Panel panel;
 
 };
 

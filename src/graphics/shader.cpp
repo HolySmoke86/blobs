@@ -673,10 +673,10 @@ PlainColor::PlainColor()
 	vao.ReserveAttributes(4, GL_STATIC_DRAW);
 	{
 		auto attrib = vao.MapAttributes(GL_WRITE_ONLY);
-		attrib[0].position = glm::vec3(-1.0f, -1.0f, 0.0f);
-		attrib[1].position = glm::vec3(-1.0f,  1.0f, 0.0f);
-		attrib[2].position = glm::vec3( 1.0f, -1.0f, 0.0f);
-		attrib[3].position = glm::vec3( 1.0f,  1.0f, 0.0f);
+		attrib[0].position = glm::vec3(-0.5f, -0.5f, 0.0f);
+		attrib[1].position = glm::vec3(-0.5f,  0.5f, 0.0f);
+		attrib[2].position = glm::vec3( 0.5f, -0.5f, 0.0f);
+		attrib[3].position = glm::vec3( 0.5f,  0.5f, 0.0f);
 	}
 	vao.BindElements();
 	vao.ReserveElements(7, GL_STATIC_DRAW);
@@ -807,13 +807,13 @@ AlphaSprite::AlphaSprite()
 	vao.ReserveAttributes(4, GL_STATIC_DRAW);
 	{
 		auto attrib = vao.MapAttributes(GL_WRITE_ONLY);
-		attrib[0].position = glm::vec3(-1.0f, -1.0f, 0.0f);
+		attrib[0].position = glm::vec3(-0.5f, -0.5f, 0.0f);
 		attrib[0].texture = glm::vec2(0.0f, 0.0f);
-		attrib[1].position = glm::vec3(-1.0f,  1.0f, 0.0f);
+		attrib[1].position = glm::vec3(-0.5f,  0.5f, 0.0f);
 		attrib[1].texture = glm::vec2(0.0f, 1.0f);
-		attrib[2].position = glm::vec3( 1.0f, -1.0f, 0.0f);
+		attrib[2].position = glm::vec3( 0.5f, -0.5f, 0.0f);
 		attrib[2].texture = glm::vec2(1.0f, 0.0f);
-		attrib[3].position = glm::vec3( 1.0f,  1.0f, 0.0f);
+		attrib[3].position = glm::vec3( 0.5f,  0.5f, 0.0f);
 		attrib[3].texture = glm::vec2(1.0f, 1.0f);
 	}
 	vao.BindElements();
