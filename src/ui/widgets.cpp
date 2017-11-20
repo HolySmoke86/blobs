@@ -108,10 +108,10 @@ void Meter::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
 
 	if (value > 0.0f) {
 		glm::vec3 top_left(glm::vec2(TopLeft()) + padding + glm::vec2(border), Position().z);
-		glm::vec3 actual_size(size.x * value, size.y, 1.0f);
+		glm::vec2 actual_size(size.x * value, size.y);
 
 		assets.shaders.plain_color.SetM(glm::translate(align(Gravity::NORTH_WEST, actual_size, top_left))
-			* glm::scale(actual_size));
+			* glm::scale(glm::vec3(actual_size, 1.0f)));
 		assets.shaders.plain_color.SetColor(fill_color);
 		assets.shaders.plain_color.DrawRect();
 	}
