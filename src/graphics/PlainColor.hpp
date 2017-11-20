@@ -30,7 +30,7 @@ public:
 	void SetM(const glm::mat4 &m) noexcept;
 	void SetVP(const glm::mat4 &v, const glm::mat4 &p) noexcept;
 	void SetMVP(const glm::mat4 &m, const glm::mat4 &v, const glm::mat4 &p) noexcept;
-	void SetColor(const glm::vec3 &color) noexcept;
+	void SetColor(const glm::vec4 &color) noexcept;
 
 	const glm::mat4 &M() const noexcept { return m; }
 	const glm::mat4 &V() const noexcept { return v; }

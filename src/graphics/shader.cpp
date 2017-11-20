@@ -648,9 +648,9 @@ PlainColor::PlainColor()
 		GL_FRAGMENT_SHADER,
 		"#version 330 core\n"
 
-		"uniform vec3 fg_color;\n"
+		"uniform vec4 fg_color;\n"
 
-		"out vec3 color;\n"
+		"out vec4 color;\n"
 
 		"void main() {\n"
 			"color = fg_color;\n"
@@ -701,7 +701,8 @@ void PlainColor::Activate() noexcept {
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	glEnable(GL_CULL_FACE);
-	glDisable(GL_BLEND);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
 void PlainColor::SetM(const glm::mat4 &mm) noexcept {
@@ -733,7 +734,7 @@ void PlainColor::SetMVP(const glm::mat4 &mm, const glm::mat4 &vv, const glm::mat
 	prog.Uniform(mvp_handle, mvp);
 }
 
-void PlainColor::SetColor(const glm::vec3 &color) noexcept {
+void PlainColor::SetColor(const glm::vec4 &color) noexcept {
 	prog.Uniform(fg_color_handle, color);
 }
 
