@@ -21,10 +21,10 @@ public:
 	~Label() override;
 
 public:
-	Label &Text(const std::string &);
-	Label &Font(const graphics::Font &);
-	Label &Foreground(const glm::vec4 &);
-	Label &Background(const glm::vec4 &);
+	Label *Text(const std::string &);
+	Label *Font(const graphics::Font &);
+	Label *Foreground(const glm::vec4 &);
+	Label *Background(const glm::vec4 &);
 
 	glm::vec2 Size() override;
 	void Draw(app::Assets &, graphics::Viewport &) noexcept override;

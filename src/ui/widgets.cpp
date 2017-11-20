@@ -1,4 +1,5 @@
 #include "Label.hpp"
+#include "Meter.hpp"
 #include "Panel.hpp"
 #include "Widget.hpp"
 
@@ -24,30 +25,30 @@ Label::Label(const graphics::Font &f)
 Label::~Label() {
 }
 
-Label &Label::Text(const std::string &t) {
+Label *Label::Text(const std::string &t) {
 	if (text != t) {
 		dirty = true;
 	}
 	text = t;
-	return *this;
+	return this;
 }
 
-Label &Label::Font(const graphics::Font &f) {
+Label *Label::Font(const graphics::Font &f) {
 	if (font != &f) {
 		dirty = true;
 	}
 	font = &f;
-	return *this;
+	return this;
 }
 
-Label &Label::Foreground(const glm::vec4 &c) {
+Label *Label::Foreground(const glm::vec4 &c) {
 	fg_color = c;
-	return *this;
+	return this;
 }
 
-Label &Label::Background(const glm::vec4 &c) {
+Label *Label::Background(const glm::vec4 &c) {
 	bg_color = c;
-	return *this;
+	return this;
 }
 
 glm::vec2 Label::Size() {
@@ -78,6 +79,45 @@ void Label::Update() {
 }
 
 
+Meter::Meter()
+: fill_color(1.0f)
+, border_color(1.0f)
+, size(3.0f)
+, padding(1.0f)
+, border(1.0f)
+, value(0.0f) {
+}
+
+Meter::~Meter() {
+}
+
+glm::vec2 Meter::Size() {
+	return size + (2.0f * padding) + (2.0f * border);
+}
+
+void Meter::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
+	glm::vec2 fullsize = Size();
+	assets.shaders.plain_color.Activate();
+
+	if (border > 0.0f) {
+		assets.shaders.plain_color.SetM(glm::translate(AlignedPosition())
+			* glm::scale(glm::vec3(fullsize.x, fullsize.y, 1.0f)));
+		assets.shaders.plain_color.SetColor(border_color);
+		assets.shaders.plain_color.OutlineRect();
+	}
+
+	if (value > 0.0f) {
+		glm::vec3 top_left(glm::vec2(TopLeft()) + padding + glm::vec2(border), Position().z);
+		glm::vec3 actual_size(size.x * value, size.y, 1.0f);
+
+		assets.shaders.plain_color.SetM(glm::translate(align(Gravity::NORTH_WEST, actual_size, top_left))
+			* glm::scale(actual_size));
+		assets.shaders.plain_color.SetColor(fill_color);
+		assets.shaders.plain_color.DrawRect();
+	}
+}
+
+
 Panel::Panel()
 : widgets()
 , bg_color(0.0f, 0.0f, 0.0f, 0.0f)
@@ -90,7 +130,7 @@ Panel::Panel()
 Panel::~Panel() {
 }
 
-Panel &Panel::Add(Widget *w) {
+Panel *Panel::Add(Widget *w) {
 	std::unique_ptr<Widget> widget(w);
 	glm::vec2 wsize = widget->Size();
 	if (dir == HORIZONTAL) {
@@ -101,32 +141,38 @@ Panel &Panel::Add(Widget *w) {
 		size.y += wsize.y;
 	}
 	widgets.emplace_back(std::move(widget));
-	return *this;
+	return this;
 }
 
-Panel &Panel::Background(const glm::vec4 &c) {
+Panel *Panel::Clear() {
+	widgets.clear();
+	size = glm::vec2(0.0f);
+	return this;
+}
+
+Panel *Panel::Background(const glm::vec4 &c) {
 	bg_color = c;
-	return *this;
+	return this;
 }
 
-Panel &Panel::Padding(const glm::vec2 &p) {
+Panel *Panel::Padding(const glm::vec2 &p) {
 	padding = p;
-	return *this;
+	return this;
 }
 
-Panel &Panel::Spacing(float s) {
+Panel *Panel::Spacing(float s) {
 	spacing = s;
-	return *this;
+	return this;
 }
 
-Panel &Panel::Direction(Dir d) {
+Panel *Panel::Direction(Dir d) {
 	dir = d;
 	Relayout();
-	return *this;
+	return this;
 }
 
 glm::vec2 Panel::Size() {
-	return 2.0f * padding + glm::vec2(0.0f, (widgets.size() - 1) * spacing) + size;
+	return (2.0f * padding) + glm::vec2(0.0f, (widgets.size() - 1) * spacing) + size;
 }
 
 void Panel::Relayout() {
@@ -161,7 +207,7 @@ void Panel::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
 	cursor.y += padding.y;
 	cursor.z -= 1.0f;
 	for (auto &w : widgets) {
-		w->Position(cursor).Origin(Gravity::NORTH_WEST);
+		w->Position(cursor)->Origin(Gravity::NORTH_WEST);
 		w->Draw(assets, viewport);
 		cursor[dir] += w->Size()[dir] + spacing;
 	}

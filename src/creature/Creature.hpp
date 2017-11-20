@@ -49,6 +49,7 @@ public:
 	double Health() const noexcept { return health; }
 
 	void AddNeed(const Need &n) { needs.push_back(n); }
+	const std::vector<Need> &Needs() const noexcept { return needs; }
 
 	void Tick(double dt);
 

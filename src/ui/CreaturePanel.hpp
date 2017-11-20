@@ -1,7 +1,6 @@
 #ifndef BLOBS_UI_CREATUREPANEL_HPP_
 #define BLOBS_UI_CREATUREPANEL_HPP_
 
-#include "Label.hpp"
 #include "Panel.hpp"
 
 
@@ -16,6 +15,9 @@ namespace graphics {
 	class Viewport;
 }
 namespace ui {
+
+class Label;
+class Meter;
 
 class CreaturePanel {
 
@@ -36,10 +38,17 @@ public:
 	void Draw(app::Assets &, graphics::Viewport &) noexcept;
 
 private:
+	void CreateNeeds();
+
+private:
+	const app::Assets &assets;
 	creature::Creature *c;
 
 	Label *name;
+	Panel *needs;
 	Panel panel;
+
+	std::vector<Meter *> meters;
 
 };
 

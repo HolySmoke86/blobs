@@ -27,12 +27,12 @@ public:
 	Widget &operator =(Widget &&) = delete;
 
 public:
-	Widget &Position(const glm::vec3 &p) noexcept { pos = p; return *this; }
+	Widget *Position(const glm::vec3 &p) noexcept { pos = p; return this; }
 	const glm::vec3 &Position() const noexcept { return pos; }
 	glm::vec3 AlignedPosition() noexcept;
 	glm::vec3 TopLeft() noexcept;
 
-	Widget &Origin(Gravity o) noexcept { origin = o; return *this; }
+	Widget *Origin(Gravity o) noexcept { origin = o; return this; }
 	Gravity Origin() const noexcept { return origin; }
 
 	virtual glm::vec2 Size() = 0;

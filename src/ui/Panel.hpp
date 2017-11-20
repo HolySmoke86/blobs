@@ -18,6 +18,7 @@ public:
 		HORIZONTAL,
 		VERTICAL,
 	};
+	using Children_t = std::vector<std::unique_ptr<Widget>>;
 
 public:
 	Panel();
@@ -25,19 +26,22 @@ public:
 
 public:
 	// panel takes ownership
-	Panel &Add(Widget *);
+	Panel *Add(Widget *);
+	Panel *Clear();
+	Panel *Reserve(int n) { widgets.reserve(n); return this; }
+	const Children_t &Children() const noexcept { return widgets; }
 
-	Panel &Background(const glm::vec4 &);
-	Panel &Padding(const glm::vec2 &);
-	Panel &Spacing(float);
-	Panel &Direction(Dir);
+	Panel *Background(const glm::vec4 &);
+	Panel *Padding(const glm::vec2 &);
+	Panel *Spacing(float);
+	Panel *Direction(Dir);
 
 	glm::vec2 Size() override;
 	void Relayout();
 	void Draw(app::Assets &, graphics::Viewport &) noexcept override;
 
 private:
-	std::vector<std::unique_ptr<Widget>> widgets;
+	Children_t widgets;
 	glm::vec4 bg_color;
 	glm::vec2 padding;
 	float spacing;
