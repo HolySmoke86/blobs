@@ -1,7 +1,6 @@
 #ifndef BLOBS_UI_WIDGET_HPP_
 #define BLOBS_UI_WIDGET_HPP_
 
-#include "align.hpp"
 #include "../graphics/glm.hpp"
 
 
@@ -27,20 +26,18 @@ public:
 	Widget &operator =(Widget &&) = delete;
 
 public:
-	Widget *Position(const glm::vec3 &p) noexcept { pos = p; return this; }
-	const glm::vec3 &Position() const noexcept { return pos; }
-	glm::vec3 AlignedPosition() noexcept;
-	glm::vec3 TopLeft() noexcept;
+	Widget *Position(const glm::vec2 &p) noexcept { pos = p; return this; }
+	const glm::vec2 &Position() const noexcept { return pos; }
 
-	Widget *Origin(Gravity o) noexcept { origin = o; return this; }
-	Gravity Origin() const noexcept { return origin; }
+	Widget *ZIndex(float z) noexcept { z_index = z; return this; }
+	float ZIndex() const noexcept { return z_index; }
 
 	virtual glm::vec2 Size() = 0;
 	virtual void Draw(app::Assets &, graphics::Viewport &) noexcept = 0;
 
 private:
-	glm::vec3 pos;
-	Gravity origin;
+	glm::vec2 pos;
+	float z_index;
 
 };
 

@@ -1,6 +1,6 @@
 #include "AlphaSprite.hpp"
+#include "Canvas.hpp"
 #include "CreatureSkin.hpp"
-#include "PlainColor.hpp"
 #include "PlanetSurface.hpp"
 #include "Program.hpp"
 #include "Shader.hpp"
@@ -17,6 +17,7 @@
 #include <stdexcept>
 #include <string>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/transform.hpp>
 
 
 namespace {
@@ -628,127 +629,6 @@ void CreatureSkin::SetNumLights(int n) noexcept {
 }
 
 
-PlainColor::PlainColor()
-: prog() {
-	prog.LoadShader(
-		GL_VERTEX_SHADER,
-		"#version 330 core\n"
-
-		"layout(location = 0) in vec3 vtx_position;\n"
-
-		"uniform mat4 M;\n"
-		"uniform mat4 MV;\n"
-		"uniform mat4 MVP;\n"
-
-		"void main() {\n"
-			"gl_Position = MVP * vec4(vtx_position, 1);\n"
-		"}\n"
-	);
-	prog.LoadShader(
-		GL_FRAGMENT_SHADER,
-		"#version 330 core\n"
-
-		"uniform vec4 fg_color;\n"
-
-		"out vec4 color;\n"
-
-		"void main() {\n"
-			"color = fg_color;\n"
-		"}\n"
-	);
-	prog.Link();
-	if (!prog.Linked()) {
-		prog.Log(std::cerr);
-		throw std::runtime_error("link program");
-	}
-	m_handle = prog.UniformLocation("M");
-	mv_handle = prog.UniformLocation("MV");
-	mvp_handle = prog.UniformLocation("MVP");
-	fg_color_handle = prog.UniformLocation("fg_color");
-
-	vao.Bind();
-	vao.BindAttributes();
-	vao.EnableAttribute(0);
-	vao.AttributePointer<glm::vec3>(0, false, offsetof(Attributes, position));
-	vao.ReserveAttributes(4, GL_STATIC_DRAW);
-	{
-		auto attrib = vao.MapAttributes(GL_WRITE_ONLY);
-		attrib[0].position = glm::vec3(-0.5f, -0.5f, 0.0f);
-		attrib[1].position = glm::vec3(-0.5f,  0.5f, 0.0f);
-		attrib[2].position = glm::vec3( 0.5f, -0.5f, 0.0f);
-		attrib[3].position = glm::vec3( 0.5f,  0.5f, 0.0f);
-	}
-	vao.BindElements();
-	vao.ReserveElements(7, GL_STATIC_DRAW);
-	{
-		auto element = vao.MapElements(GL_WRITE_ONLY);
-		element[ 0] = 0;
-		element[ 1] = 3;
-		element[ 2] = 2;
-		element[ 3] = 0;
-		element[ 4] = 1;
-		element[ 5] = 3;
-		element[ 6] = 2;
-	}
-	vao.Unbind();
-}
-
-PlainColor::~PlainColor() {
-}
-
-void PlainColor::Activate() noexcept {
-	prog.Use();
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-}
-
-void PlainColor::SetM(const glm::mat4 &mm) noexcept {
-	m = mm;
-	mv = v * m;
-	mvp = p * mv;
-	prog.Uniform(m_handle, m);
-	prog.Uniform(mv_handle, mv);
-	prog.Uniform(mvp_handle, mvp);
-}
-
-void PlainColor::SetVP(const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
-	v = vv;
-	p = pp;
-	mv = v * m;
-	mvp = p * mv;
-	prog.Uniform(mv_handle, mv);
-	prog.Uniform(mvp_handle, mvp);
-}
-
-void PlainColor::SetMVP(const glm::mat4 &mm, const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
-	m = mm;
-	v = vv;
-	p = pp;
-	mv = v * m;
-	mvp = p * mv;
-	prog.Uniform(m_handle, m);
-	prog.Uniform(mv_handle, mv);
-	prog.Uniform(mvp_handle, mvp);
-}
-
-void PlainColor::SetColor(const glm::vec4 &color) noexcept {
-	prog.Uniform(fg_color_handle, color);
-}
-
-void PlainColor::DrawRect() const noexcept {
-	vao.Bind();
-	vao.DrawTriangles(6);
-}
-
-void PlainColor::OutlineRect() const noexcept {
-	vao.Bind();
-	vao.DrawLineLoop(4, 3);
-}
-
-
 AlphaSprite::AlphaSprite()
 : prog() {
 	prog.LoadShader(
@@ -887,6 +767,168 @@ void AlphaSprite::SetBgColor(const glm::vec4 &color) noexcept {
 void AlphaSprite::DrawRect() const noexcept {
 	vao.Bind();
 	vao.DrawTriangleStrip(4);
+}
+
+
+Canvas::Canvas()
+: prog()
+, vao() {
+	prog.LoadShader(
+		GL_VERTEX_SHADER,
+		"#version 330 core\n"
+
+		"layout(location = 0) in vec2 vtx_position;\n"
+
+		"uniform mat4 P;\n"
+		"uniform float z;\n"
+
+		"void main() {\n"
+			// disamond rule adjust
+			//"vec3 position = vtx_position + vec3(0.5, 0.5, 0.0);\n"
+			"gl_Position = P * vec4(vtx_position, z, 1);\n"
+		"}\n"
+	);
+	prog.LoadShader(
+		GL_FRAGMENT_SHADER,
+		"#version 330 core\n"
+
+		"uniform vec4 c;\n"
+
+		"out vec4 color;\n"
+
+		"void main() {\n"
+			"color = c;\n"
+		"}\n"
+	);
+	prog.Link();
+	if (!prog.Linked()) {
+		prog.Log(std::cerr);
+		throw std::runtime_error("link program");
+	}
+	p_handle = prog.UniformLocation("P");
+	z_handle = prog.UniformLocation("z");
+	c_handle = prog.UniformLocation("c");
+
+	vao.Bind();
+	vao.BindAttributes();
+	vao.EnableAttribute(0);
+	vao.AttributePointer<glm::vec2>(0, false, offsetof(Attributes, position));
+	vao.ReserveAttributes(255, GL_DYNAMIC_DRAW);
+	vao.BindElements();
+	vao.ReserveElements(255, GL_DYNAMIC_DRAW);
+	vao.Unbind();
+}
+
+Canvas::~Canvas() {
+}
+
+void Canvas::Resize(float w, float h) noexcept {
+	prog.Uniform(p_handle, glm::ortho(0.0f, w, h, 0.0f, 1.0e4f, -1.0e4f));
+}
+
+void Canvas::ZIndex(float z) noexcept {
+	prog.Uniform(z_handle, -z);
+}
+
+void Canvas::SetColor(const glm::vec4 &color) noexcept {
+	prog.Uniform(c_handle, color);
+}
+
+void Canvas::Activate() noexcept {
+	prog.Use();
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glEnable(GL_CULL_FACE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+}
+
+void Canvas::DrawLine(const glm::vec2 &p1, const glm::vec2 &p2, float width) {
+	glm::vec2 d = glm::normalize(p2 - p1) * (width * 0.5f);
+	glm::vec2 n = glm::vec2(d.y, -d.x);
+	vao.Bind();
+	vao.BindAttributes();
+	{
+		auto attr = vao.MapAttributes(GL_WRITE_ONLY);
+		attr[0].position = p1 - d + n;
+		attr[1].position = p1 - d - n;
+		attr[2].position = p2 + d + n;
+		attr[3].position = p2 + d - n;
+	}
+	vao.BindElements();
+	{
+		auto elem = vao.MapElements(GL_WRITE_ONLY);
+		elem[0] = 0;
+		elem[1] = 1;
+		elem[2] = 2;
+		elem[3] = 3;
+	}
+	vao.DrawTriangleStrip(4);
+	vao.Unbind();
+}
+
+void Canvas::DrawRect(const glm::vec2 &p1, const glm::vec2 &p2, float width) {
+	glm::vec2 min(std::min(p1.x, p2.x), std::min(p1.y, p2.y));
+	glm::vec2 max(std::max(p1.x, p2.x), std::max(p1.y, p2.y));
+	glm::vec2 dg1(min.x, max.y);
+	glm::vec2 dg2(max.x, min.y);
+	glm::vec2 d(width * 0.5f, width * 0.5f);
+	glm::vec2 n(d.y, -d.x);
+	vao.Bind();
+	vao.BindAttributes();
+	{
+		auto attr = vao.MapAttributes(GL_WRITE_ONLY);
+		attr[0].position = min + d;
+		attr[1].position = min - d;
+		attr[2].position = dg1 + n;
+		attr[3].position = dg1 - n;
+		attr[4].position = max - d;
+		attr[5].position = max + d;
+		attr[6].position = dg2 - n;
+		attr[7].position = dg2 + n;
+	}
+	vao.BindElements();
+	{
+		auto elem = vao.MapElements(GL_WRITE_ONLY);
+		elem[0] = 0;
+		elem[1] = 1;
+		elem[2] = 2;
+		elem[3] = 3;
+		elem[4] = 4;
+		elem[5] = 5;
+		elem[6] = 6;
+		elem[7] = 7;
+		elem[8] = 0;
+		elem[9] = 1;
+	}
+	vao.DrawTriangleStrip(10);
+	vao.Unbind();
+}
+
+void Canvas::FillRect(const glm::vec2 &p1, const glm::vec2 &p2) {
+	glm::vec2 min(std::min(p1.x, p2.x), std::min(p1.y, p2.y));
+	glm::vec2 max(std::max(p1.x, p2.x), std::max(p1.y, p2.y));
+	glm::vec2 dg1(min.x, max.y);
+	glm::vec2 dg2(max.x, min.y);
+	vao.Bind();
+	vao.BindAttributes();
+	{
+		auto attr = vao.MapAttributes(GL_WRITE_ONLY);
+		attr[0].position = min;
+		attr[1].position = dg1;
+		attr[2].position = dg2;
+		attr[3].position = max;
+	}
+	vao.BindElements();
+	{
+		auto elem = vao.MapElements(GL_WRITE_ONLY);
+		elem[0] = 0;
+		elem[1] = 1;
+		elem[2] = 2;
+		elem[3] = 3;
+	}
+	vao.DrawTriangleStrip(4);
+	vao.Unbind();
 }
 
 }

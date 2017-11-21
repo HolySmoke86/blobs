@@ -24,8 +24,7 @@ CreaturePanel::CreaturePanel(const app::Assets &assets)
 		->Padding(glm::vec2(10.0f))
 		->Spacing(10.0f)
 		->Direction(Panel::VERTICAL)
-		->Background(glm::vec4(0.7f, 0.7f, 0.7f, 1.0f))
-		->Origin(Gravity::NORTH_EAST);
+		->Background(glm::vec4(0.7f, 0.7f, 0.7f, 1.0f));
 }
 
 CreaturePanel::~CreaturePanel() {
@@ -49,7 +48,7 @@ void CreaturePanel::CreateNeeds() {
 		Meter *meter = new Meter;
 		meter
 			->Value(1.0f - need.value)
-			->Size(glm::vec2(100.0f, assets.fonts.medium.Height()))
+			->Size(glm::vec2(100.0f, assets.fonts.medium.Height() + assets.fonts.medium.Descent()))
 			->Padding(glm::vec2(1.0f))
 			->Border(1.0f)
 			->FillColor(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f))
@@ -88,7 +87,7 @@ void CreaturePanel::Draw(app::Assets &assets, graphics::Viewport &viewport) noex
 
 	const glm::vec2 margin(20.0f);
 
-	panel.Position(glm::vec3(viewport.Width() - margin.x, margin.y, 0.0f));
+	panel.Position(glm::vec3(viewport.Width() - margin.x - panel.Size().x, margin.y, 0.0f));
 	panel.Draw(assets, viewport);
 }
 

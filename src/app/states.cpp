@@ -29,8 +29,8 @@ MasterState::~MasterState() noexcept {
 
 
 void MasterState::OnResize(int w, int h) {
-	assets.shaders.plain_color.Activate();
-	assets.shaders.plain_color.SetVP(glm::mat4(1.0f), glm::ortho(0.0f, float(w), float(h), 0.0f, 1.0e4f, -1.0e4f));
+	assets.shaders.canvas.Activate();
+	assets.shaders.canvas.Resize(float(w), float(h));
 	assets.shaders.alpha_sprite.Activate();
 	assets.shaders.alpha_sprite.SetVP(glm::mat4(1.0f), glm::ortho(0.0f, float(w), float(h), 0.0f, 1.0e4f, -1.0e4f));
 

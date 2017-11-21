@@ -64,7 +64,7 @@ void Label::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
 	glm::vec2 size = Size();
 
 	assets.shaders.alpha_sprite.Activate();
-	assets.shaders.alpha_sprite.SetM(glm::translate(AlignedPosition())
+	assets.shaders.alpha_sprite.SetM(glm::translate(glm::vec3(Position() + (size * 0.5f), -ZIndex()))
 		* glm::scale(glm::vec3(size.x, size.y, 1.0f)));
 	assets.shaders.alpha_sprite.SetTexture(tex);
 	assets.shaders.alpha_sprite.SetFgColor(fg_color);
@@ -92,28 +92,29 @@ Meter::~Meter() {
 }
 
 glm::vec2 Meter::Size() {
-	return size + (2.0f * padding) + (2.0f * border);
+	return size + (2.0f * padding) + glm::vec2(2.0f * border);
 }
 
 void Meter::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
 	glm::vec2 fullsize = Size();
-	assets.shaders.plain_color.Activate();
+	assets.shaders.canvas.Activate();
+	assets.shaders.canvas.ZIndex(ZIndex());
 
 	if (border > 0.0f) {
-		assets.shaders.plain_color.SetM(glm::translate(AlignedPosition())
-			* glm::scale(glm::vec3(fullsize.x, fullsize.y, 1.0f)));
-		assets.shaders.plain_color.SetColor(border_color);
-		assets.shaders.plain_color.OutlineRect();
+		assets.shaders.canvas.SetColor(border_color);
+		assets.shaders.canvas.DrawRect(
+			Position() + glm::vec2(border * 0.5f),
+			Position() + fullsize - glm::vec2(border * 0.5f),
+			border
+		);
 	}
 
 	if (value > 0.0f) {
-		glm::vec3 top_left(glm::vec2(TopLeft()) + padding + glm::vec2(border), Position().z);
-		glm::vec2 actual_size(size.x * value, size.y);
-
-		assets.shaders.plain_color.SetM(glm::translate(align(Gravity::NORTH_WEST, actual_size, top_left))
-			* glm::scale(glm::vec3(actual_size, 1.0f)));
-		assets.shaders.plain_color.SetColor(fill_color);
-		assets.shaders.plain_color.DrawRect();
+		assets.shaders.canvas.SetColor(fill_color);
+		assets.shaders.canvas.FillRect(
+			Position() + glm::vec2(border) + padding,
+			Position() + fullsize - glm::vec2(border) - padding
+		);
 	}
 }
 
@@ -194,20 +195,17 @@ void Panel::Relayout() {
 
 void Panel::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
 	if (bg_color.a > 0.0f) {
-		glm::vec2 fullsize = Size();
-		assets.shaders.plain_color.Activate();
-		assets.shaders.plain_color.SetM(glm::translate(AlignedPosition())
-			* glm::scale(glm::vec3(fullsize.x, fullsize.y, 1.0f)));
-		assets.shaders.plain_color.SetColor(bg_color);
-		assets.shaders.plain_color.DrawRect();
+		assets.shaders.canvas.Activate();
+		assets.shaders.canvas.ZIndex(ZIndex());
+		assets.shaders.canvas.SetColor(bg_color);
+		assets.shaders.canvas.FillRect(Position(), Position() + Size());
 	}
 
-	glm::vec3 cursor = TopLeft();
+	glm::vec2 cursor = Position();
 	cursor.x += padding.x;
 	cursor.y += padding.y;
-	cursor.z -= 1.0f;
 	for (auto &w : widgets) {
-		w->Position(cursor)->Origin(Gravity::NORTH_WEST);
+		w->Position(cursor)->ZIndex(ZIndex() + 1.0f);
 		w->Draw(assets, viewport);
 		cursor[dir] += w->Size()[dir] + spacing;
 	}
@@ -216,19 +214,10 @@ void Panel::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
 
 Widget::Widget()
 : pos(0.0f)
-, origin(Gravity::CENTER) {
+, z_index(1.0f)  {
 }
 
 Widget::~Widget() {
-}
-
-glm::vec3 Widget::AlignedPosition() noexcept {
-	return align(origin, Size(), pos);
-}
-
-glm::vec3 Widget::TopLeft() noexcept {
-	glm::vec2 size = Size();
-	return align(origin, size, pos) - glm::vec3(size * 0.5f, 0.0f);
 }
 
 }
