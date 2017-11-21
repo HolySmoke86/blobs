@@ -87,7 +87,7 @@ void CreaturePanel::Draw(app::Assets &assets, graphics::Viewport &viewport) noex
 
 	const glm::vec2 margin(20.0f);
 
-	panel.Position(glm::vec3(viewport.Width() - margin.x - panel.Size().x, margin.y, 0.0f));
+	panel.Position(glm::vec2(viewport.Width() - margin.x - panel.Size().x, margin.y));
 	panel.Draw(assets, viewport);
 }
 
