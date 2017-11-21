@@ -110,10 +110,12 @@ void Meter::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
 	}
 
 	if (value > 0.0f) {
+		glm::vec2 bottom_right = Position() + fullsize - glm::vec2(border) - padding;
+		bottom_right.x -= size.x * (1.0f - value);
 		assets.shaders.canvas.SetColor(fill_color);
 		assets.shaders.canvas.FillRect(
 			Position() + glm::vec2(border) + padding,
-			Position() + fullsize - glm::vec2(border) - padding
+			bottom_right
 		);
 	}
 }
