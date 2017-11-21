@@ -167,7 +167,6 @@ void Body::Cache() noexcept {
 }
 
 void Body::AddCreature(creature::Creature *c) {
-	c->SetBody(*this);
 	creatures.push_back(c);
 }
 

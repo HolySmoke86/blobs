@@ -1,5 +1,6 @@
 #include "Creature.hpp"
 #include "Need.hpp"
+#include "Situation.hpp"
 
 #include "../app/Assets.hpp"
 #include "../world/Body.hpp"
@@ -15,12 +16,10 @@ namespace blobs {
 namespace creature {
 
 Creature::Creature()
-: body(nullptr)
-, surface(0)
-, position()
-, name()
+: name()
 , health(1.0)
 , needs()
+, situation()
 , vao() {
 }
 
@@ -40,7 +39,8 @@ void Creature::Tick(double dt) {
 glm::dmat4 Creature::LocalTransform() noexcept {
 	// TODO: surface transform
 	constexpr double half_height = 0.25;
-	return glm::translate(glm::dvec3(position.x, position.y, position.z + body->Radius() + half_height))
+	const glm::dvec3 &pos = situation.Position();
+	return glm::translate(glm::dvec3(pos.x, pos.y, pos.z + situation.GetPlanet().Radius() + half_height))
 		* glm::scale(glm::dvec3(half_height, half_height, half_height));
 }
 
@@ -134,8 +134,7 @@ void Creature::Draw(app::Assets &assets, graphics::Viewport &viewport) {
 
 void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
 	p.AddCreature(&c);
-	c.Surface(0);
-	c.Position(glm::dvec3(0.0, 0.0, 0.0));
+	c.GetSituation().SetPlanetSurface(p, 0, glm::dvec3(0.0, 0.0, 0.0));
 
 	// probe surrounding area for common resources
 	int start = p.SideLength() / 2 - 2;
@@ -195,6 +194,28 @@ void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
 
 void Need::Tick(double dt) noexcept {
 	value = std::min(1.0, value + gain * dt);
+}
+
+
+Situation::Situation()
+: planet(nullptr)
+, position(0.0)
+, surface(0)
+, type(LOST) {
+}
+
+Situation::~Situation() {
+}
+
+bool Situation::OnPlanet() const noexcept {
+	return type == PLANET_SURFACE;
+}
+
+void Situation::SetPlanetSurface(world::Planet &p, int srf, const glm::dvec3 &pos) noexcept {
+	type = PLANET_SURFACE;
+	planet = &p;
+	surface = srf;
+	position = pos;
 }
 
 }

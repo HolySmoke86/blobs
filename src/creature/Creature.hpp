@@ -2,6 +2,7 @@
 #define BLOBS_CREATURE_CREATURE_HPP_
 
 #include "Need.hpp"
+#include "Situation.hpp"
 #include "../graphics/glm.hpp"
 #include "../graphics/SimpleVAO.hpp"
 
@@ -35,13 +36,6 @@ public:
 	Creature &operator =(Creature &&) = delete;
 
 public:
-	void SetBody(world::Body &b) noexcept { body = &b; }
-	world::Body &GetBody() noexcept { return *body; }
-	const world::Body &GetBody() const noexcept { return *body; }
-
-	void Surface(int s) noexcept { surface = s; }
-	void Position(const glm::dvec3 &p) noexcept { position = p; }
-
 	void Name(const std::string &n) noexcept { name = n; }
 	const std::string &Name() const noexcept { return name; }
 
@@ -53,19 +47,20 @@ public:
 
 	void Tick(double dt);
 
+	Situation &GetSituation() noexcept { return situation; }
+	const Situation &GetSituation() const noexcept { return situation; }
+
 	glm::dmat4 LocalTransform() noexcept;
 
 	void BuildVAO();
 	void Draw(app::Assets &, graphics::Viewport &);
 
 private:
-	world::Body *body;
-	int surface;
-	glm::dvec3 position;
-
 	std::string name;
 	double health;
 	std::vector<Need> needs;
+
+	Situation situation;
 
 	struct Attributes {
 		glm::vec3 position;
