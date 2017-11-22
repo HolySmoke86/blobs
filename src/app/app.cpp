@@ -188,7 +188,7 @@ Assets::Assets()
 	}
 
 	{
-		std::ifstream tile_file(data_path + "tiles");
+		std::ifstream tile_file(data_path + "tile_types");
 		io::TokenStreamReader tile_reader(tile_file);
 		ReadTileTypes(tile_reader);
 	}
@@ -279,12 +279,12 @@ void Assets::ReadTileTypes(io::TokenStreamReader &in) {
 		in.Skip(io::Token::EQUALS);
 
 		int id = 0;
-		if (data.tiles.Has(name)) {
-			id = data.tiles[name].id;
+		if (data.tile_types.Has(name)) {
+			id = data.tile_types[name].id;
 		} else {
 			world::TileType type;
 			type.name = name;
-			id = data.tiles.Add(type);
+			id = data.tile_types.Add(type);
 		}
 
 		in.Skip(io::Token::ANGLE_BRACKET_OPEN);
@@ -292,9 +292,9 @@ void Assets::ReadTileTypes(io::TokenStreamReader &in) {
 			in.ReadIdentifier(name);
 			in.Skip(io::Token::EQUALS);
 			if (name == "label") {
-				in.ReadString(data.tiles[id].label);
+				in.ReadString(data.tile_types[id].label);
 			} else if (name == "texture") {
-				data.tiles[id].texture = in.GetInt();
+				data.tile_types[id].texture = in.GetInt();
 			} else if (name == "yield") {
 				in.Skip(io::Token::BRACKET_OPEN);
 				while (in.Peek().type != io::Token::BRACKET_CLOSE) {
@@ -314,7 +314,7 @@ void Assets::ReadTileTypes(io::TokenStreamReader &in) {
 						in.Skip(io::Token::SEMICOLON);
 					}
 					in.Skip(io::Token::ANGLE_BRACKET_CLOSE);
-					data.tiles[id].resources.push_back(yield);
+					data.tile_types[id].resources.push_back(yield);
 					if (in.Peek().type == io::Token::COMMA) {
 						in.Skip(io::Token::COMMA);
 					}

@@ -7,6 +7,8 @@
 namespace blobs {
 namespace world {
 	class Planet;
+	class Tile;
+	class TileType;
 }
 namespace creature {
 
@@ -19,8 +21,11 @@ public:
 public:
 	bool OnPlanet() const noexcept;
 	world::Planet &GetPlanet() const noexcept { return *planet; }
+	bool OnSurface() const noexcept;
 	int Surface() const noexcept { return surface; }
 	const glm::dvec3 &Position() const noexcept { return position; }
+	world::Tile &GetTile() const noexcept;
+	const world::TileType &GetTileType() const noexcept;
 
 	void SetPlanetSurface(world::Planet &, int srf, const glm::dvec3 &pos) noexcept;
 

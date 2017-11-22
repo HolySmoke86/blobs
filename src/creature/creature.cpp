@@ -7,6 +7,7 @@
 #include "../app/Assets.hpp"
 #include "../world/Body.hpp"
 #include "../world/Planet.hpp"
+#include "../world/Simulation.hpp"
 #include "../world/TileType.hpp"
 
 #include <glm/gtx/transform.hpp>
@@ -149,7 +150,7 @@ void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
 	std::map<int, double> yields;
 	for (int y = start; y < end; ++y) {
 		for (int x = start; x < end; ++x) {
-			const world::TileType &t = assets.data.tiles[p.TileAt(0, x, y).type];
+			const world::TileType &t = assets.data.tile_types[p.TileAt(0, x, y).type];
 			for (auto yield : t.resources) {
 				yields[yield.resource] += yield.ubiquity;
 			}
@@ -182,16 +183,16 @@ void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
 		std::cout << "require drinking " << assets.data.resources[liquid].label << std::endl;
 		std::unique_ptr<Need> need(new IngestNeed(liquid, 0.2, 0.01));
 		need->name = assets.data.resources[liquid].label;
-		need->gain = 0.0001;
+		need->gain = 0.01;
 		need->inconvenient = 0.6;
 		need->critical = 0.95;
 		c.AddNeed(std::move(need));
 	}
 	if (solid > -1) {
 		std::cout << "require eating " << assets.data.resources[solid].label << std::endl;
-		std::unique_ptr<Need> need(new IngestNeed(solid, 0.03, 0.001));
+		std::unique_ptr<Need> need(new IngestNeed(solid, 0.1, 0.001));
 		need->name = assets.data.resources[solid].label;
-		need->gain = 0.00001;
+		need->gain = 0.007;
 		need->inconvenient = 0.6;
 		need->critical = 0.95;
 		c.AddNeed(std::move(need));
@@ -210,6 +211,22 @@ Situation::~Situation() {
 
 bool Situation::OnPlanet() const noexcept {
 	return type == PLANET_SURFACE;
+}
+
+bool Situation::OnSurface() const noexcept {
+	return type == PLANET_SURFACE;
+}
+
+world::Tile &Situation::GetTile() const noexcept {
+	double side_length = planet->SideLength();
+	double offset = side_length * 0.5;
+	double x = std::max(0.0, std::min(side_length, position.x + offset));
+	double y = std::max(0.0, std::min(side_length, position.y + offset));
+	return planet->TileAt(surface, int(x), int(y));
+}
+
+const world::TileType &Situation::GetTileType() const noexcept {
+	return planet->GetSimulation().TileTypes()[GetTile().type];
 }
 
 void Situation::SetPlanetSurface(world::Planet &p, int srf, const glm::dvec3 &pos) noexcept {

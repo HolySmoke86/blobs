@@ -31,7 +31,7 @@ struct Assets {
 
 	struct {
 		world::Set<world::Resource> resources;
-		world::Set<world::TileType> tiles;
+		world::Set<world::TileType> tile_types;
 	} data;
 
 	struct {

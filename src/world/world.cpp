@@ -290,6 +290,10 @@ Planet::Planet(int sidelength)
 Planet::~Planet() {
 }
 
+const TileType &Planet::TypeAt(int surface, int x, int y) const {
+	return GetSimulation().TileTypes()[TileAt(surface, x, y).type];
+}
+
 glm::dvec3 Planet::TileCenter(int surface, int x, int y) const noexcept {
 	glm::dvec3 center(0.0f);
 	center[(surface + 0) % 3] = x + 0.5 - Radius();

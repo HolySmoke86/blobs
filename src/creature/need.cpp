@@ -4,6 +4,7 @@
 
 #include "Creature.hpp"
 #include "../world/Planet.hpp"
+#include "../world/TileType.hpp"
 
 
 namespace blobs {
@@ -28,7 +29,8 @@ void Need::Decrease(double delta) noexcept {
 IngestNeed::IngestNeed(int resource, double speed, double damage)
 : resource(resource)
 , speed(speed)
-, damage(damage) {
+, damage(damage)
+, ingesting(false) {
 }
 
 IngestNeed::~IngestNeed() {
@@ -36,7 +38,19 @@ IngestNeed::~IngestNeed() {
 
 void IngestNeed::ApplyEffect(Creature &c, double dt) {
 	if (!IsSatisfied()) {
+		ingesting = true;
+	}
+	if (!IsSatisfied()) {
 		// TODO: find resource and start ingest task
+		if (c.GetSituation().OnSurface()) {
+			const world::TileType &t = c.GetSituation().GetTileType();
+			for (auto &yield : t.resources) {
+				if (yield.resource == resource) {
+					Decrease(std::min(yield.ubiquity, speed) * dt);
+					break;
+				}
+			}
+		}
 	}
 	if (IsCritical()) {
 		c.Hurt(damage * dt);
@@ -55,7 +69,7 @@ InhaleNeed::~InhaleNeed() {
 }
 
 void InhaleNeed::ApplyEffect(Creature &c, double dt) {
-	if (!IsSatisfied() && !inhaling) {
+	if (!IsSatisfied()) {
 		inhaling = true;
 	}
 	if (inhaling) {

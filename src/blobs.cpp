@@ -49,16 +49,16 @@ int main(int argc, char *argv[]) {
 	second_planet.AxialTilt(glm::dvec2(PI * 0.95, 0.0));
 	second_planet.AngularMomentum(1.0e8);
 
-	world::Simulation sim(sun);
+	world::Simulation sim(sun, assets.data.resources, assets.data.tile_types);
 	sim.AddSun(sun);
 	sim.AddPlanet(planet);
 	sim.AddPlanet(second_planet);
 	sim.AddPlanet(moon);
 
-	world::GenerateEarthlike(assets.data.tiles, planet);
+	world::GenerateEarthlike(assets.data.tile_types, planet);
 	planet.Atmosphere(assets.data.resources["air"].id);
-	world::GenerateTest(assets.data.tiles, moon);
-	world::GenerateTest(assets.data.tiles, second_planet);
+	world::GenerateTest(assets.data.tile_types, moon);
+	world::GenerateTest(assets.data.tile_types, second_planet);
 
 	std::cout << "length of year: " << planet.OrbitalPeriod() << "s" << std::endl;
 	std::cout << "length of moon cycle: " << moon.OrbitalPeriod() << "s" << std::endl;

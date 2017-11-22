@@ -42,6 +42,8 @@ public:
 		return tiles[IndexOf(surface, x, y)];
 	}
 
+	const TileType &TypeAt(int surface, int x, int y) const;
+
 	/// Convert coordinates into a tile index.
 	int IndexOf(int surface, int x, int y) const {
 		assert(0 <= surface && surface <= 5);
