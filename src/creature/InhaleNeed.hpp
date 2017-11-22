@@ -23,6 +23,7 @@ private:
 	int resource;
 	double speed;
 	double damage;
+	bool inhaling;
 
 };
 

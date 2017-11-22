@@ -13,7 +13,15 @@ Need::~Need() {
 }
 
 void Need::Tick(double dt) noexcept {
-	value = std::min(1.0, value + gain * dt);
+	Increase(gain * dt);
+}
+
+void Need::Increase(double delta) noexcept {
+	value = std::min(1.0, value + delta);
+}
+
+void Need::Decrease(double delta) noexcept {
+	value = std::max(0.0, value - delta);
 }
 
 
@@ -39,17 +47,23 @@ void IngestNeed::ApplyEffect(Creature &c, double dt) {
 InhaleNeed::InhaleNeed(int resource, double speed, double damage)
 : resource(resource)
 , speed(speed)
-, damage(damage) {
+, damage(damage)
+, inhaling(false) {
 }
 
 InhaleNeed::~InhaleNeed() {
 }
 
 void InhaleNeed::ApplyEffect(Creature &c, double dt) {
-	if (!IsSatisfied()) {
-		// TODO: make condition more natural with thresholds and stuff
+	if (!IsSatisfied() && !inhaling) {
+		inhaling = true;
+	}
+	if (inhaling) {
 		if (c.GetSituation().OnPlanet() && c.GetSituation().GetPlanet().Atmosphere() == resource) {
-			value = std::max(0.0, value - (speed * dt));
+			Decrease(speed * dt);
+			if (value == 0.0) {
+				inhaling = false;
+			}
 		} else {
 			// TODO: panic
 		}

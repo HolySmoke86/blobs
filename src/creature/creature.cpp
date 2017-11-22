@@ -171,9 +171,9 @@ void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
 
 	if (p.HasAtmosphere()) {
 		std::cout << "require breathing " << assets.data.resources[p.Atmosphere()].label << std::endl;
-		std::unique_ptr<Need> need(new InhaleNeed(p.Atmosphere(), 0.25, 0.1));
+		std::unique_ptr<Need> need(new InhaleNeed(p.Atmosphere(), 0.5, 0.1));
 		need->name = assets.data.resources[p.Atmosphere()].label;
-		need->gain = 0.25;
+		need->gain = 0.2;
 		need->inconvenient = 0.4;
 		need->critical = 0.95;
 		c.AddNeed(std::move(need));

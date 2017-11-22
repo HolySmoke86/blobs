@@ -26,6 +26,8 @@ struct Need {
 	virtual ~Need() noexcept;
 
 	void Tick(double dt) noexcept;
+	void Increase(double) noexcept;
+	void Decrease(double) noexcept;
 
 	bool IsSatisfied() const noexcept { return value < inconvenient; }
 	bool IsInconvenient() const noexcept { return value >= inconvenient && value < critical; }
