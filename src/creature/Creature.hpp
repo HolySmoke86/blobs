@@ -6,6 +6,7 @@
 #include "../graphics/glm.hpp"
 #include "../graphics/SimpleVAO.hpp"
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -41,9 +42,10 @@ public:
 
 	void Health(double h) noexcept { health = h; }
 	double Health() const noexcept { return health; }
+	void Hurt(double d) noexcept;
 
-	void AddNeed(const Need &n) { needs.push_back(n); }
-	const std::vector<Need> &Needs() const noexcept { return needs; }
+	void AddNeed(std::unique_ptr<Need> &&n) { needs.emplace_back(std::move(n)); }
+	const std::vector<std::unique_ptr<Need>> &Needs() const noexcept { return needs; }
 
 	void Tick(double dt);
 
@@ -58,7 +60,7 @@ public:
 private:
 	std::string name;
 	double health;
-	std::vector<Need> needs;
+	std::vector<std::unique_ptr<Need>> needs;
 
 	Situation situation;
 

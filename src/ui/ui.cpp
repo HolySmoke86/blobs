@@ -4,6 +4,7 @@
 #include "Meter.hpp"
 #include "../app/Assets.hpp"
 #include "../creature/Creature.hpp"
+#include "../creature/Need.hpp"
 #include "../graphics/Viewport.hpp"
 
 #include <glm/gtx/transform.hpp>
@@ -17,9 +18,25 @@ CreaturePanel::CreaturePanel(const app::Assets &assets)
 , c(nullptr)
 , name(new Label(assets.fonts.large))
 , needs(new Panel)
-, panel() {
+, panel()
+, health_meter(new Meter)
+, need_meters() {
+	Label *health_label = new Label(assets.fonts.medium);
+	health_label->Text("Health");
+	health_meter
+		->Size(glm::vec2(100.0f, assets.fonts.medium.Height() + assets.fonts.medium.Descent()))
+		->Padding(glm::vec2(1.0f))
+		->Border(1.0f)
+		->FillColor(glm::vec4(0.9f, 0.0f, 0.0f, 1.0f))
+		->BorderColor(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	Panel *health_panel = new Panel;
+	health_panel
+		->Add(health_label)
+		->Add(health_meter)
+		->Direction(Panel::HORIZONTAL);
 	panel
 		.Add(name)
+		->Add(health_panel)
 		->Add(needs)
 		->Padding(glm::vec2(10.0f))
 		->Spacing(10.0f)
@@ -39,15 +56,14 @@ void CreaturePanel::Show(creature::Creature &cr) {
 
 void CreaturePanel::CreateNeeds() {
 	needs->Clear()->Reserve(c->Needs().size());
-	meters.clear();
-	meters.reserve(c->Needs().size());
+	need_meters.clear();
+	need_meters.reserve(c->Needs().size());
 	for (auto &need : c->Needs()) {
 		Label *label = new Label(assets.fonts.medium);
-		label
-			->Text(assets.data.resources[need.resource].label);
+		label->Text(need->name);
 		Meter *meter = new Meter;
 		meter
-			->Value(1.0f - need.value)
+			->Value(1.0f - need->value)
 			->Size(glm::vec2(100.0f, assets.fonts.medium.Height() + assets.fonts.medium.Descent()))
 			->Padding(glm::vec2(1.0f))
 			->Border(1.0f)
@@ -60,7 +76,7 @@ void CreaturePanel::CreateNeeds() {
 			->Add(label)
 			->Add(meter);
 		needs->Add(need_panel);
-		meters.push_back(meter);
+		need_meters.push_back(meter);
 	}
 	panel.Relayout();
 }
@@ -72,16 +88,23 @@ void CreaturePanel::Hide() noexcept {
 void CreaturePanel::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
 	if (!c) return;
 
-	if (meters.size() != c->Needs().size()) {
+	health_meter->Value(c->Health());
+
+	if (need_meters.size() != c->Needs().size()) {
 		CreateNeeds();
 	} else {
 		auto need = c->Needs().begin();
 		auto need_end = c->Needs().end();
-		auto meter = meters.begin();
+		auto meter = need_meters.begin();
 		for (; need != need_end; ++need, ++meter) {
-			(*meter)->Value(1.0f - need->value)->FillColor(need->IsSatisfied()
-				? glm::vec4(0.0f, 0.0f, 0.0f, 1.0f)
-				: glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+			(*meter)->Value(1.0f - (*need)->value);
+			if ((*need)->IsSatisfied()) {
+				(*meter)->FillColor(glm::vec4(0.0f, 0.7f, 0.0f, 1.0f));
+			} else if ((*need)->IsInconvenient()) {
+				(*meter)->FillColor(glm::vec4(0.7f, 0.5f, 0.0f, 1.0f));
+			} else {
+				(*meter)->FillColor(glm::vec4(0.9f, 0.0f, 0.0f, 1.0f));
+			}
 		}
 	}
 

@@ -1,7 +1,9 @@
 #include "Creature.hpp"
-#include "Need.hpp"
 #include "Situation.hpp"
 
+#include "InhaleNeed.hpp"
+#include "IngestNeed.hpp"
+#include "Need.hpp"
 #include "../app/Assets.hpp"
 #include "../world/Body.hpp"
 #include "../world/Planet.hpp"
@@ -26,13 +28,18 @@ Creature::Creature()
 Creature::~Creature() {
 }
 
+void Creature::Hurt(double dt) noexcept {
+	health = std::max(0.0, health - dt);
+}
 
 void Creature::Tick(double dt) {
-	for (Need &need : needs) {
-		need.Tick(dt);
-		if (!need.IsSatisfied()) {
-			health = std::max(0.0, health - need.penalty * dt);
-		}
+	// update needs
+	for (auto &need : needs) {
+		need->Tick(dt);
+	}
+	// do background stuff
+	for (auto &need : needs) {
+		need->ApplyEffect(*this, dt);
 	}
 }
 
@@ -164,38 +171,32 @@ void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
 
 	if (p.HasAtmosphere()) {
 		std::cout << "require breathing " << assets.data.resources[p.Atmosphere()].label << std::endl;
-		Need need;
-		need.resource = p.Atmosphere();
-		need.gain = 0.25;
-		need.critical = 0.95;
-		need.penalty = 0.1;
-		c.AddNeed(need);
+		std::unique_ptr<Need> need(new InhaleNeed(p.Atmosphere(), 0.25, 0.1));
+		need->name = assets.data.resources[p.Atmosphere()].label;
+		need->gain = 0.25;
+		need->inconvenient = 0.4;
+		need->critical = 0.95;
+		c.AddNeed(std::move(need));
 	}
 	if (liquid > -1) {
 		std::cout << "require drinking " << assets.data.resources[liquid].label << std::endl;
-		Need need;
-		need.resource = liquid;
-		need.gain = 0.0001;
-		need.critical = 0.95;
-		need.penalty = 0.01;
-		c.AddNeed(need);
+		std::unique_ptr<Need> need(new IngestNeed(liquid, 0.2, 0.01));
+		need->name = assets.data.resources[liquid].label;
+		need->gain = 0.0001;
+		need->inconvenient = 0.6;
+		need->critical = 0.95;
+		c.AddNeed(std::move(need));
 	}
 	if (solid > -1) {
 		std::cout << "require eating " << assets.data.resources[solid].label << std::endl;
-		Need need;
-		need.resource = solid;
-		need.gain = 0.00001;
-		need.critical = 0.95;
-		need.penalty = 0.001;
-		c.AddNeed(need);
+		std::unique_ptr<Need> need(new IngestNeed(solid, 0.03, 0.001));
+		need->name = assets.data.resources[solid].label;
+		need->gain = 0.00001;
+		need->inconvenient = 0.6;
+		need->critical = 0.95;
+		c.AddNeed(std::move(need));
 	}
 }
-
-
-void Need::Tick(double dt) noexcept {
-	value = std::min(1.0, value + gain * dt);
-}
-
 
 Situation::Situation()
 : planet(nullptr)

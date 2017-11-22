@@ -48,7 +48,8 @@ private:
 	Panel *needs;
 	Panel panel;
 
-	std::vector<Meter *> meters;
+	Meter *health_meter;
+	std::vector<Meter *> need_meters;
 
 };
 
