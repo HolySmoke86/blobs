@@ -27,6 +27,7 @@ public:
 	world::Tile &GetTile() const noexcept;
 	const world::TileType &GetTileType() const noexcept;
 
+	void Move(const glm::dvec3 &dp) noexcept;
 	void SetPlanetSurface(world::Planet &, int srf, const glm::dvec3 &pos) noexcept;
 
 public:

@@ -535,5 +535,16 @@ Sun::Sun()
 Sun::~Sun() {
 }
 
+
+std::vector<TileType::Yield>::const_iterator TileType::FindResource(int r) const {
+	auto yield = resources.cbegin();
+	for (; yield != resources.cend(); ++yield) {
+		if (yield->resource == r) {
+			break;
+		}
+	}
+	return yield;
+}
+
 }
 }

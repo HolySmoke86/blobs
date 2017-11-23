@@ -22,6 +22,8 @@ struct TileType {
 	};
 	std::vector<Yield> resources;
 
+	std::vector<Yield>::const_iterator FindResource(int) const;
+
 };
 
 }

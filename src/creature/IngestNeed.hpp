@@ -24,6 +24,7 @@ private:
 	double speed;
 	double damage;
 	bool ingesting;
+	bool locating;
 
 };
 
