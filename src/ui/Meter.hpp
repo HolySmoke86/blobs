@@ -17,7 +17,6 @@ public:
 public:
 	Meter *Size(const glm::vec2 &s) noexcept { size = s; return this; }
 	Meter *Padding(const glm::vec2 &p) noexcept { padding = p; return this; }
-	// TODO: gl line width is deprecated, use polys instead
 	Meter *Border(float b) noexcept { border = b; return this; }
 
 	Meter *FillColor(const glm::vec4 &c) noexcept { fill_color = c; return this; }
