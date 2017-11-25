@@ -28,11 +28,11 @@ void Need::Decrease(double delta) noexcept {
 
 
 IngestNeed::IngestNeed(int resource, double speed, double damage)
-: resource(resource)
+: locate_goal(nullptr)
+, resource(resource)
 , speed(speed)
 , damage(damage)
-, ingesting(false)
-, locating(false) {
+, ingesting(false) {
 }
 
 IngestNeed::~IngestNeed() {
@@ -53,19 +53,32 @@ void IngestNeed::ApplyEffect(Creature &c, double dt) {
 					Decrease(std::min(yield.ubiquity, speed) * dt);
 					if (value == 0.0) {
 						ingesting = false;
-						locating = false;
+						if (locate_goal) {
+							// abort
+							locate_goal->Complete();
+						}
 					}
 					break;
 				}
 			}
-			if (!found && !locating) {
-				c.AddGoal(std::unique_ptr<Goal>(new LocateResourceGoal(resource)));
-				locating = true;
+			if (!found && !locate_goal) {
+				locate_goal = new LocateResourceGoal(c, resource);
+				locate_goal->OnComplete([&](Goal &g){ OnLocateComplete(g); });
+				c.AddGoal(std::unique_ptr<Goal>(locate_goal));
 			}
 		}
 	}
 	if (IsCritical()) {
 		c.Hurt(damage * dt);
+	}
+	if (locate_goal) {
+		locate_goal->Urgency(value);
+	}
+}
+
+void IngestNeed::OnLocateComplete(Goal &g) {
+	if (&g == locate_goal) {
+		locate_goal = nullptr;
 	}
 }
 

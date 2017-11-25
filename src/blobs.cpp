@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
 	std::cout << "moon cycle in days: " << (moon.OrbitalPeriod() / planet.RotationalPeriod()) << std::endl;
 	std::cout << "moon cycles per year: " << (planet.OrbitalPeriod() / moon.OrbitalPeriod()) << std::endl;
 
-	auto blob = new creature::Creature;
+	auto blob = new creature::Creature(sim);
 	Spawn(*blob, planet, assets);
 	blob->BuildVAO();
 	blob->Name("Blob");
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
 		// sunset
 		//.FirstPerson(3, glm::vec3(0.0f, 0.0f, 0.1f), glm::vec3(1.0f, -0.75f, 0.1f))
 		// from afar
-		.MapView(0, glm::vec3(0.0f, 0.0f, 30.0f), 0.0f)
+		.MapView(0, glm::vec3(0.0f, 0.0f, 31.0f), 0.0f)
 		// from afar, rotating
 		//.Orbital(glm::vec3(-60.0f, 0.0f, 0.0f))
 	;

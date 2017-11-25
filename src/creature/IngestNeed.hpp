@@ -7,7 +7,7 @@
 namespace blobs {
 namespace creature {
 
-class Need;
+class Goal;
 
 class IngestNeed
 : public Need {
@@ -20,11 +20,14 @@ public:
 	void ApplyEffect(Creature &, double dt) override;
 
 private:
+	void OnLocateComplete(Goal &);
+
+private:
+	Goal *locate_goal;
 	int resource;
 	double speed;
 	double damage;
 	bool ingesting;
-	bool locating;
 
 };
 

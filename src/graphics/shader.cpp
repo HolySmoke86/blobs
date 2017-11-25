@@ -227,7 +227,7 @@ PlanetSurface::PlanetSurface()
 
 		"void main() {\n"
 			"vec3 tex_color = texture(tex_sampler, frag_tex_uv).rgb;\n"
-			"vec3 total_light = tex_color * vec3(0.01, 0.01, 0.01);\n"
+			"vec3 total_light = tex_color * vec3(0.1, 0.1, 0.1);\n"
 			"for (int i = 0; i < num_lights; ++i) {\n"
 				"vec3 to_light = light[i].position - vtx_viewspace;\n"
 				"float distance = length(to_light) + length(vtx_viewspace);\n"

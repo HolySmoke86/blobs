@@ -9,6 +9,7 @@
 #include "../graphics/SimpleVAO.hpp"
 
 #include <cassert>
+#include <memory>
 #include <vector>
 #include <GL/glew.h>
 
@@ -47,8 +48,8 @@ public:
 	/// Convert coordinates into a tile index.
 	int IndexOf(int surface, int x, int y) const {
 		assert(0 <= surface && surface <= 5);
-		assert(0 <= x && x <= sidelength);
-		assert(0 <= y && y <= sidelength);
+		assert(0 <= x && x < sidelength);
+		assert(0 <= y && y < sidelength);
 		return surface * TilesPerSurface() + y * SideLength() + x;
 	}
 	/// The length of the side of each surface.
@@ -64,7 +65,15 @@ public:
 		return 6 * TilesPerSurface();
 	}
 
-	glm::dvec3 TileCenter(int surface, int x, int y) const noexcept;
+	double TileToPosition(int t) const noexcept { return double(t) - Radius(); }
+	int PositionToTile(double p) const noexcept { return int(p + Radius()); }
+
+	// tile coordinates of position on surface
+	glm::ivec2 SurfacePosition(int surface, const glm::dvec3 &) const noexcept;
+	// height of point over surface
+	double SurfaceElevation(int surface, const glm::dvec3 &) const noexcept;
+	// center point of tile on surface at elevation
+	glm::dvec3 TileCenter(int surface, int x, int y, double elevation = 0.0) const noexcept;
 
 	void BuildVAO(const Set<TileType> &);
 	void Draw(app::Assets &, graphics::Viewport &) override;
@@ -77,7 +86,7 @@ private:
 		glm::vec3 position;
 		glm::vec3 tex_coord;
 	};
-	graphics::SimpleVAO<Attributes, unsigned int> vao;
+	std::unique_ptr<graphics::SimpleVAO<Attributes, unsigned int>> vao;
 
 };
 

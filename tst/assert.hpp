@@ -13,6 +13,23 @@ namespace test {
 template<class T>
 void AssertEqual(
 	const std::string &msg,
+	const glm::tvec2<T> &expected,
+	const glm::tvec2<T> &actual,
+	T epsilon = std::numeric_limits<T>::epsilon()
+) {
+	CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
+		msg + " (X component)",
+		expected.x, actual.x, epsilon
+	);
+	CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
+		msg + " (Y component)",
+		expected.y, actual.y, epsilon
+	);
+}
+
+template<class T>
+void AssertEqual(
+	const std::string &msg,
 	const glm::tvec3<T> &expected,
 	const glm::tvec3<T> &actual,
 	T epsilon = std::numeric_limits<T>::epsilon()

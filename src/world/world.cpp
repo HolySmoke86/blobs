@@ -290,28 +290,41 @@ Planet::Planet(int sidelength)
 Planet::~Planet() {
 }
 
-const TileType &Planet::TypeAt(int surface, int x, int y) const {
-	return GetSimulation().TileTypes()[TileAt(surface, x, y).type];
+const TileType &Planet::TypeAt(int srf, int x, int y) const {
+	return GetSimulation().TileTypes()[TileAt(srf, x, y).type];
 }
 
-glm::dvec3 Planet::TileCenter(int surface, int x, int y) const noexcept {
+glm::ivec2 Planet::SurfacePosition(int srf, const glm::dvec3 &pos) const noexcept {
+	return glm::ivec2(
+		PositionToTile(pos[(srf + 0) % 3]),
+		PositionToTile(pos[(srf + 1) % 3]));
+}
+
+double Planet::SurfaceElevation(int srf, const glm::dvec3 &pos) const noexcept {
+	return srf < 3
+		? pos[(srf + 2) % 3] - Radius()
+		: -pos[(srf + 2) % 3] - Radius();
+}
+
+glm::dvec3 Planet::TileCenter(int srf, int x, int y, double e) const noexcept {
 	glm::dvec3 center(0.0f);
-	center[(surface + 0) % 3] = x + 0.5 - Radius();
-	center[(surface + 1) % 3] = y + 0.5 - Radius();
-	center[(surface + 2) % 3] = surface < 3 ? Radius() : -Radius();
+	center[(srf + 0) % 3] = x + 0.5 - Radius();
+	center[(srf + 1) % 3] = y + 0.5 - Radius();
+	center[(srf + 2) % 3] = srf < 3 ? (Radius() + e) : -(Radius() + e);
 	return center;
 }
 
 void Planet::BuildVAO(const Set<TileType> &ts) {
-	vao.Bind();
-	vao.BindAttributes();
-	vao.EnableAttribute(0);
-	vao.EnableAttribute(1);
-	vao.AttributePointer<glm::vec3>(0, false, offsetof(Attributes, position));
-	vao.AttributePointer<glm::vec3>(1, false, offsetof(Attributes, tex_coord));
-	vao.ReserveAttributes(TilesTotal() * 4, GL_STATIC_DRAW);
+	vao.reset(new graphics::SimpleVAO<Attributes, unsigned int>);
+	vao->Bind();
+	vao->BindAttributes();
+	vao->EnableAttribute(0);
+	vao->EnableAttribute(1);
+	vao->AttributePointer<glm::vec3>(0, false, offsetof(Attributes, position));
+	vao->AttributePointer<glm::vec3>(1, false, offsetof(Attributes, tex_coord));
+	vao->ReserveAttributes(TilesTotal() * 4, GL_STATIC_DRAW);
 	{
-		auto attrib = vao.MapAttributes(GL_WRITE_ONLY);
+		auto attrib = vao->MapAttributes(GL_WRITE_ONLY);
 		float offset = Radius();
 
 		// srf  0  1  2  3  4  5
@@ -354,10 +367,10 @@ void Planet::BuildVAO(const Set<TileType> &ts) {
 			}
 		}
 	}
-	vao.BindElements();
-	vao.ReserveElements(TilesTotal() * 6, GL_STATIC_DRAW);
+	vao->BindElements();
+	vao->ReserveElements(TilesTotal() * 6, GL_STATIC_DRAW);
 	{
-		auto element = vao.MapElements(GL_WRITE_ONLY);
+		auto element = vao->MapElements(GL_WRITE_ONLY);
 		int index = 0;
 		for (int surface = 0; surface < 3; ++surface) {
 			for (int y = 0; y < sidelength; ++y) {
@@ -384,24 +397,26 @@ void Planet::BuildVAO(const Set<TileType> &ts) {
 			}
 		}
 	}
-	vao.Unbind();
+	vao->Unbind();
 }
 
 void Planet::Draw(app::Assets &assets, graphics::Viewport &viewport) {
-	vao.Bind();
+	if (!vao) return;
+
+	vao->Bind();
 	const glm::mat4 &MV = assets.shaders.planet_surface.MV();
 	assets.shaders.planet_surface.SetNormal(glm::vec3(MV * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)));
-	vao.DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 0);
+	vao->DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 0);
 	assets.shaders.planet_surface.SetNormal(glm::vec3(MV * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)));
-	vao.DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 1);
+	vao->DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 1);
 	assets.shaders.planet_surface.SetNormal(glm::vec3(MV * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
-	vao.DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 2);
+	vao->DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 2);
 	assets.shaders.planet_surface.SetNormal(glm::vec3(MV * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)));
-	vao.DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 3);
+	vao->DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 3);
 	assets.shaders.planet_surface.SetNormal(glm::vec3(MV * glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)));
-	vao.DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 4);
+	vao->DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 4);
 	assets.shaders.planet_surface.SetNormal(glm::vec3(MV * glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)));
-	vao.DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 5);
+	vao->DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 5);
 }
 
 

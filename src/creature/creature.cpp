@@ -16,13 +16,16 @@
 #include <glm/gtx/transform.hpp>
 
 #include <iostream>
+#include <glm/gtx/io.hpp>
 
 
 namespace blobs {
 namespace creature {
 
-Creature::Creature()
-: name()
+Creature::Creature(world::Simulation &sim)
+: sim(sim)
+, name()
+, size(1.0)
 , health(1.0)
 , needs()
 , goals()
@@ -40,7 +43,8 @@ void Creature::Hurt(double dt) noexcept {
 }
 
 void Creature::AddGoal(std::unique_ptr<Goal> &&g) {
-	g->Enable(*this);
+	std::cout << "new goal: " << g->Describe() << std::endl;
+	g->Enable();
 	goals.emplace_back(std::move(g));
 }
 
@@ -73,11 +77,18 @@ void Creature::Tick(double dt) {
 	}
 	// if active goal can be interrupted, check priorities
 	if (goals.size() > 1 && goals[0]->Interruptible()) {
+		Goal *old_top = &*goals[0];
 		std::sort(goals.begin(), goals.end(), GoalCompare);
+		Goal *new_top = &*goals[0];
+		if (new_top != old_top) {
+			std::cout << "changing goal from " << old_top->Describe()
+				<< " to " << new_top->Describe() << std::endl;
+		}
 	}
-	goals[0]->Action(*this);
+	goals[0]->Action();
 	for (auto goal = goals.begin(); goal != goals.end();) {
 		if ((*goal)->Complete()) {
+			std::cout << "complete goal: " << (*goal)->Describe() << std::endl;
 			goals.erase(goal);
 		} else {
 			++goal;
@@ -87,10 +98,10 @@ void Creature::Tick(double dt) {
 
 glm::dmat4 Creature::LocalTransform() noexcept {
 	// TODO: surface transform
-	constexpr double half_height = 0.25;
+	const double half_size = size * 0.5;
 	const glm::dvec3 &pos = situation.Position();
-	return glm::translate(glm::dvec3(pos.x, pos.y, pos.z + situation.GetPlanet().Radius() + half_height))
-		* glm::scale(glm::dvec3(half_height, half_height, half_height));
+	return glm::translate(glm::dvec3(pos.x, pos.y, pos.z + half_size))
+		* glm::scale(glm::dvec3(half_size, half_size, half_size));
 }
 
 void Creature::BuildVAO() {
@@ -183,7 +194,8 @@ void Creature::Draw(app::Assets &assets, graphics::Viewport &viewport) {
 
 void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
 	p.AddCreature(&c);
-	c.GetSituation().SetPlanetSurface(p, 0, glm::dvec3(0.0, 0.0, 0.0));
+	c.GetSituation().SetPlanetSurface(p, 0, p.TileCenter(0, p.SideLength() / 2, p.SideLength() / 2));
+	c.Size(0.5);
 
 	// probe surrounding area for common resources
 	int start = p.SideLength() / 2 - 2;
@@ -224,7 +236,7 @@ void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
 		std::cout << "require drinking " << assets.data.resources[liquid].label << std::endl;
 		std::unique_ptr<Need> need(new IngestNeed(liquid, 0.2, 0.01));
 		need->name = assets.data.resources[liquid].label;
-		need->gain = 0.01;
+		need->gain = 0.02;
 		need->inconvenient = 0.6;
 		need->critical = 0.95;
 		c.AddNeed(std::move(need));
@@ -233,7 +245,7 @@ void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
 		std::cout << "require eating " << assets.data.resources[solid].label << std::endl;
 		std::unique_ptr<Need> need(new IngestNeed(solid, 0.1, 0.001));
 		need->name = assets.data.resources[solid].label;
-		need->gain = 0.007;
+		need->gain = 0.017;
 		need->inconvenient = 0.6;
 		need->critical = 0.95;
 		c.AddNeed(std::move(need));
@@ -274,7 +286,11 @@ void Situation::Move(const glm::dvec3 &dp) noexcept {
 	position += dp;
 	if (OnSurface()) {
 		// enforce ground constraint
-		position.z = std::max(0.0, position.z);
+		if (Surface() < 3) {
+			position[(Surface() + 2) % 3] = std::max(0.0, position[(Surface() + 2) % 3]);
+		} else {
+			position[(Surface() + 2) % 3] = std::min(0.0, position[(Surface() + 2) % 3]);
+		}
 	}
 }
 

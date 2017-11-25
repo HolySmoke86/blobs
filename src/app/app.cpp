@@ -211,6 +211,7 @@ Assets::Assets()
 	LoadTileTexture("tundra",   textures.tiles, 11);
 	LoadTileTexture("water",    textures.tiles, 12);
 	LoadTileTexture("wheat",    textures.tiles, 13);
+	textures.tiles.FilterTrilinear();
 
 	textures.skins.Bind();
 	textures.skins.Reserve(256, 256, 9, format);
@@ -223,6 +224,7 @@ Assets::Assets()
 	LoadSkinTexture("7", textures.skins, 6);
 	LoadSkinTexture("8", textures.skins, 7);
 	LoadSkinTexture("9", textures.skins, 8);
+	textures.skins.FilterTrilinear();
 }
 
 Assets::~Assets() {

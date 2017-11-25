@@ -23,13 +23,14 @@ namespace graphics {
 namespace world {
 	class Body;
 	class Planet;
+	class Simulation;
 }
 namespace creature {
 
 class Creature {
 
 public:
-	Creature();
+	explicit Creature(world::Simulation &);
 	~Creature();
 
 	Creature(const Creature &) = delete;
@@ -39,8 +40,14 @@ public:
 	Creature &operator =(Creature &&) = delete;
 
 public:
+	world::Simulation &GetSimulation() noexcept { return sim; }
+	const world::Simulation &GetSimulation() const noexcept { return sim; }
+
 	void Name(const std::string &n) noexcept { name = n; }
 	const std::string &Name() const noexcept { return name; }
+
+	void Size(double s) noexcept { size = s; }
+	double Size() const noexcept { return size; }
 
 	void Health(double h) noexcept { health = h; }
 	double Health() const noexcept { return health; }
@@ -62,6 +69,7 @@ public:
 
 	void Velocity(const glm::dvec3 &v) noexcept { vel = v; }
 	const glm::dvec3 &Velocity() const noexcept { return vel; }
+	bool Moving() const noexcept { return !allzero(vel); }
 
 	glm::dmat4 LocalTransform() noexcept;
 
@@ -69,7 +77,9 @@ public:
 	void Draw(app::Assets &, graphics::Viewport &);
 
 private:
+	world::Simulation &sim;
 	std::string name;
+	double size;
 	double health;
 
 	std::vector<std::unique_ptr<Need>> needs;
