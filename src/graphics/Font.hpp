@@ -1,7 +1,7 @@
 #ifndef BLOBS_GRAPHICS_FONT_HPP_
 #define BLOBS_GRAPHICS_FONT_HPP_
 
-#include "glm.hpp"
+#include "../math/glm.hpp"
 
 #include <string>
 #include <SDL_ttf.h>

@@ -1,9 +1,9 @@
-#include "const.hpp"
 #include "app/Application.hpp"
 #include "app/Assets.hpp"
 #include "app/init.hpp"
 #include "app/MasterState.hpp"
 #include "creature/Creature.hpp"
+#include "math/const.hpp"
 #include "world/Planet.hpp"
 #include "world/Set.hpp"
 #include "world/Simulation.hpp"
@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
 		// sunset
 		//.FirstPerson(3, glm::vec3(0.0f, 0.0f, 0.1f), glm::vec3(1.0f, -0.75f, 0.1f))
 		// from afar
-		.MapView(0, glm::vec3(0.0f, 0.0f, 31.0f), 0.0f)
+		.MapView(0, glm::vec3(0.0f, 0.0f, 10.0f), 0.0f)
 		// from afar, rotating
 		//.Orbital(glm::vec3(-60.0f, 0.0f, 0.0f))
 	;

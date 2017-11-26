@@ -3,7 +3,7 @@
 
 #include "Token.hpp"
 #include "Tokenizer.hpp"
-#include "../graphics/glm.hpp"
+#include "../math/glm.hpp"
 
 #include <iosfwd>
 #include <string>

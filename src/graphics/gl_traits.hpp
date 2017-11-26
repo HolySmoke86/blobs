@@ -1,7 +1,7 @@
 #ifndef BLOBS_GRAPHICS_GL_TRAITS_HPP_
 #define BLOBS_GRAPHICS_GL_TRAITS_HPP_
 
-#include "glm.hpp"
+#include "../math/glm.hpp"
 
 #include <GL/glew.h>
 

@@ -3,8 +3,6 @@
 
 #include "Program.hpp"
 
-#include "glm.hpp"
-
 
 namespace blobs {
 namespace graphics {

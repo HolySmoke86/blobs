@@ -1,7 +1,7 @@
 #include "Camera.hpp"
 #include "Viewport.hpp"
 
-#include "../const.hpp"
+#include "../math/const.hpp"
 #include "../world/Body.hpp"
 
 #include <cmath>

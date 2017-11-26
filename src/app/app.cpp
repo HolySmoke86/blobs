@@ -176,6 +176,7 @@ Assets::Assets()
 , font_path(path + "fonts/")
 , skin_path(path + "skins/")
 , tile_path(path + "tiles/")
+, random(0)
 , fonts{
 	graphics::Font(font_path + "DejaVuSans.ttf", 32),
 	graphics::Font(font_path + "DejaVuSans.ttf", 24),
@@ -251,6 +252,8 @@ void Assets::ReadResources(io::TokenStreamReader &in) {
 			in.Skip(io::Token::EQUALS);
 			if (name == "label") {
 				in.ReadString(data.resources[id].label);
+			} else if (name == "density") {
+				data.resources[id].density = in.GetDouble();
 			} else if (name == "state") {
 				in.ReadIdentifier(name);
 				if (name == "solid") {

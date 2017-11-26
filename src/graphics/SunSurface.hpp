@@ -4,8 +4,6 @@
 #include "Program.hpp"
 #include "SimpleVAO.hpp"
 
-#include "glm.hpp"
-
 #include <cstdint>
 
 

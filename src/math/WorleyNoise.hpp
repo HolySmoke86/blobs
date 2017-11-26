@@ -1,11 +1,11 @@
-#ifndef BLOBS_RAND_WORLEYNOISE_HPP_
-#define BLOBS_RAND_WORLEYNOISE_HPP_
+#ifndef BLOBS_MATH_WORLEYNOISE_HPP_
+#define BLOBS_MATH_WORLEYNOISE_HPP_
 
-#include "../graphics/glm.hpp"
+#include "glm.hpp"
 
 
 namespace blobs {
-namespace rand {
+namespace math {
 
 /// implementation of Worley noise (aka Cell or Voroni noise)
 class WorleyNoise {

@@ -1,17 +1,17 @@
 #include "GaloisLFSRTest.hpp"
 
-#include "rand/GaloisLFSR.hpp"
+#include "math/GaloisLFSR.hpp"
 
 #include <algorithm>
 #include <sstream>
 
-CPPUNIT_TEST_SUITE_REGISTRATION(blobs::rand::test::GaloisLFSRTest);
+CPPUNIT_TEST_SUITE_REGISTRATION(blobs::math::test::GaloisLFSRTest);
 
 using namespace std;
 
 
 namespace blobs {
-namespace rand {
+namespace math {
 namespace test {
 
 void GaloisLFSRTest::setUp() {

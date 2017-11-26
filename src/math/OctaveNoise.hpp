@@ -1,11 +1,11 @@
-#ifndef BLOBS_RAND_OCTAVENOISE_HPP_
-#define BLOBS_RAND_OCTAVENOISE_HPP_
+#ifndef BLOBS_MATH_OCTAVENOISE_HPP_
+#define BLOBS_MATH_OCTAVENOISE_HPP_
 
-#include "../graphics/glm.hpp"
+#include "glm.hpp"
 
 
 namespace blobs {
-namespace rand {
+namespace math {
 
 template<class Noise>
 float OctaveNoise(

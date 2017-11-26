@@ -1,7 +1,7 @@
 #ifndef BLOBS_TEST_ASSETS_HPP_
 #define BLOBS_TEST_ASSETS_HPP_
 
-#include "graphics/glm.hpp"
+#include "math/glm.hpp"
 
 #include <string>
 #include <limits>

@@ -1,7 +1,7 @@
 #ifndef BLOBS_UI_ALIGN_HPP_
 #define BLOBS_UI_ALIGN_HPP_
 
-#include "../graphics/glm.hpp"
+#include "../math/glm.hpp"
 
 
 namespace blobs {

@@ -2,7 +2,7 @@
 #define BLOBS_WORLD_BODY_HPP_
 
 #include "Orbit.hpp"
-#include "../graphics/glm.hpp"
+#include "../math/glm.hpp"
 
 #include <vector>
 

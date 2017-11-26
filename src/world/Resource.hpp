@@ -12,7 +12,9 @@ struct Resource {
 	std::string name;
 	std::string label;
 
-	int id;
+	double density = 1.0;
+
+	int id = -1;
 
 	enum State {
 		SOLID = 0,
@@ -22,7 +24,7 @@ struct Resource {
 	};
 	// the resource's natural state
 	// TODO: something about temperature and pressure and stuff
-	int state;
+	int state = SOLID;
 
 };
 

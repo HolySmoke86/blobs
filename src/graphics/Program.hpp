@@ -1,7 +1,7 @@
 #ifndef BLOBS_GRAPHICS_PROGRAM_HPP_
 #define BLOBS_GRAPHICS_PROGRAM_HPP_
 
-#include "glm.hpp"
+#include "../math/glm.hpp"
 
 #include <iosfwd>
 #include <list>

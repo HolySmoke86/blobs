@@ -1,13 +1,13 @@
-#ifndef BLOBS_RAND_SIMPLEXNOISE_HPP_
-#define BLOBS_RAND_SIMPLEXNOISE_HPP_
+#ifndef BLOBS_MATH_SIMPLEXNOISE_HPP_
+#define BLOBS_MATH_SIMPLEXNOISE_HPP_
 
-#include "../graphics/glm.hpp"
+#include "glm.hpp"
 
 #include <cstdint>
 
 
 namespace blobs {
-namespace rand {
+namespace math {
 
 class SimplexNoise {
 

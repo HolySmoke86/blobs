@@ -5,8 +5,8 @@
 
 #include "Set.hpp"
 #include "Tile.hpp"
-#include "../graphics/glm.hpp"
 #include "../graphics/SimpleVAO.hpp"
+#include "../math/glm.hpp"
 
 #include <cassert>
 #include <memory>

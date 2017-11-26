@@ -1,21 +1,21 @@
 #include "StabilityTest.hpp"
 
-#include "rand/GaloisLFSR.hpp"
-#include "rand/SimplexNoise.hpp"
-#include "rand/WorleyNoise.hpp"
+#include "math/GaloisLFSR.hpp"
+#include "math/SimplexNoise.hpp"
+#include "math/WorleyNoise.hpp"
 
 #include <cstdint>
 #include <string>
 #include <sstream>
 #include <glm/gtx/io.hpp>
 
-CPPUNIT_TEST_SUITE_REGISTRATION(blobs::rand::test::StabilityTest);
+CPPUNIT_TEST_SUITE_REGISTRATION(blobs::math::test::StabilityTest);
 
 using namespace std;
 
 
 namespace blobs {
-namespace rand {
+namespace math {
 namespace test {
 
 void StabilityTest::setUp() {

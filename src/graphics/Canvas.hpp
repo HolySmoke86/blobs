@@ -1,9 +1,9 @@
 #ifndef BLOBS_GRAPHICS_CANVAS_HPP_
 #define BLOBS_GRAPHICS_CANVAS_HPP_
 
-#include "glm.hpp"
 #include "Program.hpp"
 #include "SimpleVAO.hpp"
+#include "../math/glm.hpp"
 
 #include <cstdint>
 

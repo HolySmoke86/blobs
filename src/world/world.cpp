@@ -8,12 +8,12 @@
 #include "Tile.hpp"
 #include "TileType.hpp"
 
-#include "../const.hpp"
 #include "../app/Assets.hpp"
 #include "../creature/Creature.hpp"
 #include "../graphics/Viewport.hpp"
-#include "../rand/OctaveNoise.hpp"
-#include "../rand/SimplexNoise.hpp"
+#include "../math/const.hpp"
+#include "../math/OctaveNoise.hpp"
+#include "../math/SimplexNoise.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -421,8 +421,8 @@ void Planet::Draw(app::Assets &assets, graphics::Viewport &viewport) {
 
 
 void GenerateEarthlike(const Set<TileType> &tiles, Planet &p) noexcept {
-	rand::SimplexNoise elevation_gen(0);
-	rand::SimplexNoise variation_gen(45623752346);
+	math::SimplexNoise elevation_gen(0);
+	math::SimplexNoise variation_gen(45623752346);
 
 	const int ice = tiles["ice"].id;
 	const int ocean = tiles["ocean"].id;
@@ -460,7 +460,7 @@ void GenerateEarthlike(const Set<TileType> &tiles, Planet &p) noexcept {
 					p.TileAt(surface, x, y).type = ice;
 					continue;
 				}
-				float elevation = rand::OctaveNoise(
+				float elevation = math::OctaveNoise(
 					elevation_gen,
 					to_tile / p.Radius(),
 					3,   // octaves
@@ -469,7 +469,7 @@ void GenerateEarthlike(const Set<TileType> &tiles, Planet &p) noexcept {
 					2,   // amplitude
 					2    // growth
 				);
-				float variation = rand::OctaveNoise(
+				float variation = math::OctaveNoise(
 					variation_gen,
 					to_tile / p.Radius(),
 					3,   // octaves

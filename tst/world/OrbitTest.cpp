@@ -2,7 +2,7 @@
 
 #include "../assert.hpp"
 
-#include "const.hpp"
+#include "math/const.hpp"
 #include "world/Orbit.hpp"
 
 CPPUNIT_TEST_SUITE_REGISTRATION(blobs::world::test::OrbitTest);

@@ -1,14 +1,14 @@
-#ifndef BLOBS_TEST_RAND_STABILITYTEST_HPP
-#define BLOBS_TEST_RAND_STABILITYTEST_HPP
+#ifndef BLOBS_TEST_MATH_STABILITYTEST_HPP
+#define BLOBS_TEST_MATH_STABILITYTEST_HPP
 
-#include "graphics/glm.hpp"
+#include "math/glm.hpp"
 
 #include <cppunit/extensions/HelperMacros.h>
 
 
 
 namespace blobs {
-namespace rand {
+namespace math {
 
 class SimplexNoise;
 class WorleyNoise;

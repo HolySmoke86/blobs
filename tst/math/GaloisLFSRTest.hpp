@@ -1,5 +1,5 @@
-#ifndef BLOBS_TEST_RAND_GALOISLFSRTEST_HPP
-#define BLOBS_TEST_RAND_GALOISLFSRTEST_HPP
+#ifndef BLOBS_TEST_MATH_GALOISLFSRTEST_HPP
+#define BLOBS_TEST_MATH_GALOISLFSRTEST_HPP
 
 #include <cppunit/extensions/HelperMacros.h>
 
@@ -8,7 +8,7 @@
 
 
 namespace blobs {
-namespace rand {
+namespace math {
 namespace test {
 
 class GaloisLFSRTest

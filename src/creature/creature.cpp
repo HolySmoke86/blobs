@@ -1,4 +1,5 @@
 #include "Creature.hpp"
+#include "Genome.hpp"
 #include "Situation.hpp"
 #include "Steering.hpp"
 
@@ -25,6 +26,8 @@ namespace creature {
 Creature::Creature(world::Simulation &sim)
 : sim(sim)
 , name()
+, genome()
+, mass(1.0)
 , size(1.0)
 , health(1.0)
 , needs()
@@ -195,7 +198,6 @@ void Creature::Draw(app::Assets &assets, graphics::Viewport &viewport) {
 void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
 	p.AddCreature(&c);
 	c.GetSituation().SetPlanetSurface(p, 0, p.TileCenter(0, p.SideLength() / 2, p.SideLength() / 2));
-	c.Size(0.5);
 
 	// probe surrounding area for common resources
 	int start = p.SideLength() / 2 - 2;
@@ -223,33 +225,67 @@ void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
 		}
 	}
 
+	Genome genome;
 	if (p.HasAtmosphere()) {
-		std::cout << "require breathing " << assets.data.resources[p.Atmosphere()].label << std::endl;
-		std::unique_ptr<Need> need(new InhaleNeed(p.Atmosphere(), 0.5, 0.1));
-		need->name = assets.data.resources[p.Atmosphere()].label;
-		need->gain = 0.2;
-		need->inconvenient = 0.4;
-		need->critical = 0.95;
-		c.AddNeed(std::move(need));
+		genome.composition.push_back({
+			p.Atmosphere(),    // resource
+			{ 0.01, 0.00001 }, // mass
+			{ 0.5,  0.001 },   // intake
+			{ 0.1,  0.0005 }   // penalty
+		});
 	}
 	if (liquid > -1) {
-		std::cout << "require drinking " << assets.data.resources[liquid].label << std::endl;
-		std::unique_ptr<Need> need(new IngestNeed(liquid, 0.2, 0.01));
-		need->name = assets.data.resources[liquid].label;
-		need->gain = 0.02;
-		need->inconvenient = 0.6;
-		need->critical = 0.95;
-		c.AddNeed(std::move(need));
+		genome.composition.push_back({
+			liquid,          // resource
+			{ 0.6,  0.01 },  // mass
+			{ 0.2,  0.001 }, // intake
+			{ 0.01, 0.002 }  // penalty
+		});
 	}
 	if (solid > -1) {
-		std::cout << "require eating " << assets.data.resources[solid].label << std::endl;
-		std::unique_ptr<Need> need(new IngestNeed(solid, 0.1, 0.001));
-		need->name = assets.data.resources[solid].label;
-		need->gain = 0.017;
-		need->inconvenient = 0.6;
+		genome.composition.push_back({
+			solid,           // resource
+			{ 0.4,   0.01 },  // mass
+			{ 0.1,   0.001 }, // intake
+			{ 0.001, 0.0001 } // penalty
+		});
+	}
+
+	genome.Configure(assets, c);
+	c.GetSteering().MaxAcceleration(1.4);
+	c.GetSteering().MaxSpeed(4.4);
+}
+
+void Genome::Configure(app::Assets &assets, Creature &c) const {
+	c.GetGenome() = *this;
+	double mass = 0.0;
+	double volume = 0.0;
+	for (const auto &comp : composition) {
+		double comp_mass = comp.mass.FakeNormal(assets.random.SNorm());
+		double intake = comp.intake.FakeNormal(assets.random.SNorm());
+		double penalty = comp.intake.FakeNormal(assets.random.SNorm());
+
+		mass += comp_mass;
+		volume += comp_mass / assets.data.resources[comp.resource].density;
+
+		std::unique_ptr<Need> need;
+		if (assets.data.resources[comp.resource].state == world::Resource::SOLID) {
+			need.reset(new IngestNeed(comp.resource, intake, penalty));
+			need->gain = intake * 0.05;
+		} else if (assets.data.resources[comp.resource].state == world::Resource::LIQUID) {
+			need.reset(new IngestNeed(comp.resource, intake, penalty));
+			need->gain = intake * 0.1;
+		} else {
+			need.reset(new InhaleNeed(comp.resource, intake, penalty));
+			need->gain = intake * 0.5;
+		}
+		need->name = assets.data.resources[comp.resource].label;
+		need->inconvenient = 0.5;
 		need->critical = 0.95;
 		c.AddNeed(std::move(need));
 	}
+	c.Mass(mass);
+	c.Size(std::cbrt(volume));
 }
 
 Situation::Situation()

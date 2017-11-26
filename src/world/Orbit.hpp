@@ -1,7 +1,7 @@
 #ifndef BLOBS_WORLD_ORBIT_HPP_
 #define BLOBS_WORLD_ORBIT_HPP_
 
-#include "../graphics/glm.hpp"
+#include "../math/glm.hpp"
 
 
 namespace blobs {

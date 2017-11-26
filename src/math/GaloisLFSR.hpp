@@ -1,5 +1,5 @@
-#ifndef BLOBS_RAND_GALOISLFSR_HPP_
-#define BLOBS_RAND_GALOISLFSR_HPP_
+#ifndef BLOBS_MATH_GALOISLFSR_HPP_
+#define BLOBS_MATH_GALOISLFSR_HPP_
 
 #include <cassert>
 #include <cstdint>
@@ -7,7 +7,7 @@
 
 
 namespace blobs {
-namespace rand {
+namespace math {
 
 class GaloisLFSR {
 
@@ -55,12 +55,12 @@ public:
 		return (*this)(next);
 	}
 
-	float SNorm() noexcept {
-		return float(Next<std::uint32_t>()) * (1.0f / 2147483647.5f) - 1.0f;
+	double SNorm() noexcept {
+		return 2.0 * UNorm() - 1.0;
 	}
 
-	float UNorm() noexcept {
-		return float(Next<std::uint32_t>()) * (1.0f / 4294967295.0f);
+	double UNorm() noexcept {
+		return double(Next<std::uint64_t>()) * (1.0 / double(std::numeric_limits<std::uint64_t>::max()));
 	}
 
 	template<class Container>

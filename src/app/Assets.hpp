@@ -8,6 +8,7 @@
 #include "../graphics/Font.hpp"
 #include "../graphics/PlanetSurface.hpp"
 #include "../graphics/SunSurface.hpp"
+#include "../math/GaloisLFSR.hpp"
 #include "../world/Resource.hpp"
 #include "../world/Set.hpp"
 #include "../world/TileType.hpp"
@@ -28,6 +29,8 @@ struct Assets {
 	std::string font_path;
 	std::string skin_path;
 	std::string tile_path;
+
+	math::GaloisLFSR random;
 
 	struct {
 		world::Set<world::Resource> resources;

@@ -1,7 +1,7 @@
 #ifndef BLOBS_GRAPHICS_CAMERA_HPP_
 #define BLOBS_GRAPHICS_CAMERA_HPP_
 
-#include "glm.hpp"
+#include "../math/glm.hpp"
 
 
 namespace blobs {

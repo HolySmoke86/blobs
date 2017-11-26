@@ -14,7 +14,7 @@ constexpr float one_sixth = 1.0f/6.0f;
 }
 
 namespace blobs {
-namespace rand {
+namespace math {
 
 SimplexNoise::SimplexNoise(std::uint64_t seed) noexcept
 : grad({

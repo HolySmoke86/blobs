@@ -1,12 +1,13 @@
 #ifndef BLOBS_CREATURE_CREATURE_HPP_
 #define BLOBS_CREATURE_CREATURE_HPP_
 
+#include "Genome.hpp"
 #include "Goal.hpp"
 #include "Need.hpp"
 #include "Situation.hpp"
 #include "Steering.hpp"
-#include "../graphics/glm.hpp"
 #include "../graphics/SimpleVAO.hpp"
+#include "../math/glm.hpp"
 
 #include <memory>
 #include <string>
@@ -46,6 +47,12 @@ public:
 	void Name(const std::string &n) noexcept { name = n; }
 	const std::string &Name() const noexcept { return name; }
 
+	Genome &GetGenome() noexcept { return genome; }
+	const Genome &GetGenome() const noexcept { return genome; }
+
+	void Mass(double m) noexcept { mass = m; }
+	double Mass() const noexcept { return mass; }
+
 	void Size(double s) noexcept { size = s; }
 	double Size() const noexcept { return size; }
 
@@ -69,7 +76,7 @@ public:
 
 	void Velocity(const glm::dvec3 &v) noexcept { vel = v; }
 	const glm::dvec3 &Velocity() const noexcept { return vel; }
-	bool Moving() const noexcept { return !allzero(vel); }
+	bool Moving() const noexcept { return glm::length2(vel) < 0.000001; }
 
 	glm::dmat4 LocalTransform() noexcept;
 
@@ -79,6 +86,10 @@ public:
 private:
 	world::Simulation &sim;
 	std::string name;
+
+	Genome genome;
+
+	double mass;
 	double size;
 	double health;
 
