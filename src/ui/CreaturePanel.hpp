@@ -45,6 +45,9 @@ private:
 	creature::Creature *c;
 
 	Label *name;
+	Label *age;
+	Label *mass;
+	Label *goal;
 	Panel *needs;
 	Panel panel;
 

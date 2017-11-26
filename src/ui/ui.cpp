@@ -7,6 +7,8 @@
 #include "../creature/Need.hpp"
 #include "../graphics/Viewport.hpp"
 
+#include <iomanip>
+#include <sstream>
 #include <glm/gtx/transform.hpp>
 
 
@@ -17,6 +19,9 @@ CreaturePanel::CreaturePanel(const app::Assets &assets)
 : assets(assets)
 , c(nullptr)
 , name(new Label(assets.fonts.large))
+, age(new Label(assets.fonts.medium))
+, mass(new Label(assets.fonts.medium))
+, goal(new Label(assets.fonts.medium))
 , needs(new Panel)
 , panel()
 , health_meter(new Meter)
@@ -33,9 +38,41 @@ CreaturePanel::CreaturePanel(const app::Assets &assets)
 	health_panel
 		->Add(health_label)
 		->Add(health_meter)
+		->Spacing(10.0f)
 		->Direction(Panel::HORIZONTAL);
+
+	Label *age_label = new Label(assets.fonts.medium);
+	age_label->Text("Age");
+	Panel *age_panel = new Panel;
+	age_panel
+		->Add(age_label)
+		->Add(age)
+		->Spacing(10.0f)
+		->Direction(Panel::HORIZONTAL);
+
+	Label *mass_label = new Label(assets.fonts.medium);
+	mass_label->Text("Mass");
+	Panel *mass_panel = new Panel;
+	mass_panel
+		->Add(mass_label)
+		->Add(mass)
+		->Spacing(10.0f)
+		->Direction(Panel::HORIZONTAL);
+
+	Label *goal_label = new Label(assets.fonts.medium);
+	goal_label->Text("Goal");
+	Panel *goal_panel = new Panel;
+	goal_panel
+		->Add(goal_label)
+		->Add(goal)
+		->Spacing(10.0f)
+		->Direction(Panel::HORIZONTAL);
+
 	panel
 		.Add(name)
+		->Add(age_panel)
+		->Add(mass_panel)
+		->Add(goal_panel)
 		->Add(health_panel)
 		->Add(needs)
 		->Padding(glm::vec2(10.0f))
@@ -88,6 +125,17 @@ void CreaturePanel::Hide() noexcept {
 void CreaturePanel::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
 	if (!c) return;
 
+	age->Text(std::to_string(int(c->Age())) + "s");
+	{
+		std::stringstream ss;
+		ss << std::fixed << std::setprecision(3) << c->Mass() << "kg";
+		mass->Text(ss.str());
+	}
+	if (c->Goals().empty()) {
+		goal->Text("none");
+	} else {
+		goal->Text(c->Goals()[0]->Describe());
+	}
 	health_meter->Value(c->Health());
 
 	if (need_meters.size() != c->Needs().size()) {

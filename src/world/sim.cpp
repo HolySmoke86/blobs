@@ -8,10 +8,9 @@
 namespace blobs {
 namespace world {
 
-Simulation::Simulation(Body &r, const Set<Resource> &res, const Set<TileType> &tile)
+Simulation::Simulation(Body &r, app::Assets &assets)
 : root(r)
-, resources(res)
-, tile_types(tile)
+, assets(assets)
 , bodies()
 , planets()
 , suns()

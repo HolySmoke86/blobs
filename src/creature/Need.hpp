@@ -22,6 +22,8 @@ struct Need {
 	double inconvenient = 0.0;
 	// the value at which this need starts to hurt
 	double critical = 0.0;
+	// factor of the intake that may stay in the body
+	double growth = 0.0;
 
 	virtual ~Need() noexcept;
 

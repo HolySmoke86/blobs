@@ -175,7 +175,9 @@ Panel *Panel::Direction(Dir d) {
 }
 
 glm::vec2 Panel::Size() {
-	return (2.0f * padding) + glm::vec2(0.0f, (widgets.size() - 1) * spacing) + size;
+	glm::vec2 space(0.0f);
+	space[dir] = (widgets.size() - 1) * spacing;
+	return (2.0f * padding) + space + size;
 }
 
 void Panel::Relayout() {

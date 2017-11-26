@@ -1,7 +1,9 @@
 #include "Goal.hpp"
+#include "IdleGoal.hpp"
 #include "LocateResourceGoal.hpp"
 
 #include "Creature.hpp"
+#include "../app/Assets.hpp"
 #include "../world/Planet.hpp"
 #include "../world/Resource.hpp"
 #include "../world/Simulation.hpp"
@@ -41,6 +43,14 @@ const Steering &Goal::GetSteering() const noexcept {
 	return c.GetSteering();
 }
 
+app::Assets &Goal::Assets() noexcept {
+	return c.GetSimulation().Assets();
+}
+
+const app::Assets &Goal::Assets() const noexcept {
+	return c.GetSimulation().Assets();
+}
+
 void Goal::SetComplete() noexcept {
 	if (!complete) {
 		complete = true;
@@ -54,6 +64,37 @@ void Goal::OnComplete(std::function<void(Goal &)> cb) noexcept {
 	on_complete = cb;
 	if (complete) {
 		on_complete(*this);
+	}
+}
+
+
+IdleGoal::IdleGoal(Creature &c)
+: Goal(c) {
+	Urgency(-1.0);
+	Interruptible(true);
+}
+
+IdleGoal::~IdleGoal() {
+}
+
+std::string IdleGoal::Describe() const {
+	return "idle";
+}
+
+void IdleGoal::Enable() {
+}
+
+void IdleGoal::Tick(double dt) {
+}
+
+void IdleGoal::Action() {
+	double fert = GetCreature().Fertility();
+	double rand = Assets().random.UNorm();
+	if (fert > rand) {
+		std::cout << "[" << int(GetCreature().GetSimulation().Time())
+			<< "s] splitting " << GetCreature().Name()
+			<< " because " << fert << " > " << rand << std::endl;
+		Split(GetCreature());
 	}
 }
 
@@ -152,7 +193,6 @@ void LocateResourceGoal::SearchVicinity() {
 		target_srf = srf;
 		target_tile = best_pos;
 		GetSteering().GoTo(target_pos);
-		std::cout << "found resource at " << target_pos << std::endl;
 	} else {
 		// oh crap
 	}

@@ -6,6 +6,9 @@
 
 
 namespace blobs {
+namespace app {
+	struct Assets;
+}
 namespace creature {
 
 class Creature;
@@ -28,6 +31,8 @@ public:
 	const Situation &GetSituation() const noexcept;
 	Steering &GetSteering() noexcept;
 	const Steering &GetSteering() const noexcept;
+	app::Assets &Assets() noexcept;
+	const app::Assets &Assets() const noexcept;
 
 	double Urgency() const noexcept { return urgency; }
 	void Urgency(double u) noexcept { urgency = u; }

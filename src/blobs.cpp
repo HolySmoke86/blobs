@@ -16,6 +16,35 @@
 
 using namespace blobs;
 
+namespace {
+
+struct SwitchPanel {
+	SwitchPanel(world::Planet &p, app::Application &app, app::MasterState &state)
+	: planet(p), app(app), state(state) { }
+
+	void operator ()(creature::Creature &c) {
+		if (planet.Creatures().empty()) {
+			std::cout << "no more creatures, game over" << std::endl;
+			while (app.HasState()) {
+				app.PopState();
+			}
+		} else {
+			for (auto a : planet.Creatures()) {
+				if (a != &c) {
+					state.GetCreaturePanel().Show(*a);
+					a->OnDeath([&](creature::Creature &b) { (*this)(b); });
+					break;
+				}
+			}
+		}
+	}
+
+	world::Planet &planet;
+	app::Application &app;
+	app::MasterState &state;
+};
+}
+
 int main(int argc, char *argv[]) {
 	app::Init init(true, 8);
 	app::Assets assets;
@@ -49,7 +78,7 @@ int main(int argc, char *argv[]) {
 	second_planet.AxialTilt(glm::dvec2(PI * 0.95, 0.0));
 	second_planet.AngularMomentum(1.0e8);
 
-	world::Simulation sim(sun, assets.data.resources, assets.data.tile_types);
+	world::Simulation sim(sun, assets);
 	sim.AddSun(sun);
 	sim.AddPlanet(planet);
 	sim.AddPlanet(second_planet);
@@ -68,9 +97,9 @@ int main(int argc, char *argv[]) {
 	std::cout << "moon cycles per year: " << (planet.OrbitalPeriod() / moon.OrbitalPeriod()) << std::endl;
 
 	auto blob = new creature::Creature(sim);
-	Spawn(*blob, planet, assets);
-	blob->BuildVAO();
 	blob->Name("Blob");
+	Spawn(*blob, planet);
+	blob->BuildVAO();
 
 	app::MasterState state(assets, sim);
 	state.GetCamera()
@@ -92,6 +121,8 @@ int main(int argc, char *argv[]) {
 	state.GetCreaturePanel().Show(*blob);
 
 	app::Application app(init.window, init.viewport);
+	SwitchPanel swp(planet, app, state);
+	blob->OnDeath([&](creature::Creature &c) { swp(c); });
 	app.PushState(&state);
 	app.Run();
 

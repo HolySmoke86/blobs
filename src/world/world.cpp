@@ -144,6 +144,14 @@ void Body::Tick(double dt) {
 	for (creature::Creature *c : Creatures()) {
 		c->Tick(dt);
 	}
+	for (auto c = Creatures().begin(); c != Creatures().end();) {
+		if ((*c)->Removable()) {
+			delete *c;
+			c = Creatures().erase(c);
+		} else {
+			++c;
+		}
+	}
 }
 
 void Body::Cache() noexcept {

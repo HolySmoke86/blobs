@@ -2,6 +2,7 @@
 #define BLOBS_WORLD_SIMULATION_HPP_
 
 #include "Set.hpp"
+#include "../app/Assets.hpp"
 
 #include <set>
 
@@ -18,7 +19,7 @@ class TileType;
 class Simulation {
 
 public:
-	explicit Simulation(Body &root, const Set<Resource> &, const Set<TileType> &);
+	explicit Simulation(Body &root, app::Assets &);
 	~Simulation();
 
 	Simulation(const Simulation &) = delete;
@@ -37,8 +38,10 @@ public:
 	Body &Root() noexcept { return root; }
 	const Body &Root() const noexcept { return root; }
 
-	const Set<Resource> &Resources() const noexcept { return resources; }
-	const Set<TileType> &TileTypes() const noexcept { return tile_types; }
+	app::Assets &Assets() noexcept { return assets; }
+	const app::Assets &Assets() const noexcept { return assets; }
+	const Set<Resource> &Resources() const noexcept { return assets.data.resources; }
+	const Set<TileType> &TileTypes() const noexcept { return assets.data.tile_types; }
 
 	const std::set<Body *> &Bodies() const noexcept { return bodies; }
 	const std::set<Planet *> &Planets() const noexcept { return planets; }
@@ -48,8 +51,7 @@ public:
 
 private:
 	Body &root;
-	const Set<Resource> &resources;
-	const Set<TileType> &tile_types;
+	app::Assets &assets;
 	std::set<Body *> bodies;
 	std::set<Planet *> planets;
 	std::set<Sun *> suns;

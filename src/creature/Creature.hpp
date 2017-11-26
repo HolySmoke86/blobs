@@ -31,6 +31,9 @@ namespace creature {
 class Creature {
 
 public:
+	using Callback = std::function<void(Creature &)>;
+
+public:
 	explicit Creature(world::Simulation &);
 	~Creature();
 
@@ -50,15 +53,28 @@ public:
 	Genome &GetGenome() noexcept { return genome; }
 	const Genome &GetGenome() const noexcept { return genome; }
 
-	void Mass(double m) noexcept { mass = m; }
-	double Mass() const noexcept { return mass; }
+	Genome::Properties<double> &GetProperties() noexcept { return properties; }
+	const Genome::Properties<double> &GetProperties() const noexcept { return properties; }
 
-	void Size(double s) noexcept { size = s; }
-	double Size() const noexcept { return size; }
+	void Mass(double m) noexcept { mass = m; size = std::cbrt(mass / density); }
+	double Mass() const noexcept { return mass; }
+	void Grow(double amount) noexcept;
+
+	void Density(double d) noexcept { density = d; size = std::cbrt(mass / density); }
+	double Density() const noexcept { return density; }
+
+	double Size() const noexcept;
+	double Age() const noexcept;
+	// change of giving birth per tick
+	double Fertility() const noexcept;
 
 	void Health(double h) noexcept { health = h; }
 	double Health() const noexcept { return health; }
 	void Hurt(double d) noexcept;
+	void Die() noexcept;
+	void OnDeath(Callback cb) noexcept { on_death = cb; }
+	void Remove() noexcept { removable = true; }
+	bool Removable() const noexcept { return removable; }
 
 	void AddNeed(std::unique_ptr<Need> &&n) { needs.emplace_back(std::move(n)); }
 	const std::vector<std::unique_ptr<Need>> &Needs() const noexcept { return needs; }
@@ -76,22 +92,28 @@ public:
 
 	void Velocity(const glm::dvec3 &v) noexcept { vel = v; }
 	const glm::dvec3 &Velocity() const noexcept { return vel; }
-	bool Moving() const noexcept { return glm::length2(vel) < 0.000001; }
+	bool Moving() const noexcept { return glm::length2(vel) < 0.00000001; }
 
 	glm::dmat4 LocalTransform() noexcept;
 
 	void BuildVAO();
-	void Draw(app::Assets &, graphics::Viewport &);
+	void Draw(graphics::Viewport &);
 
 private:
 	world::Simulation &sim;
 	std::string name;
 
 	Genome genome;
+	Genome::Properties<double> properties;
 
 	double mass;
+	double density;
 	double size;
+
+	double birth;
 	double health;
+	Callback on_death;
+	bool removable;
 
 	std::vector<std::unique_ptr<Need>> needs;
 	std::vector<std::unique_ptr<Goal>> goals;
@@ -111,7 +133,10 @@ private:
 };
 
 /// put creature on planet and configure it to (hopefully) survive
-void Spawn(Creature &, world::Planet &, app::Assets &);
+void Spawn(Creature &, world::Planet &);
+
+/// split the creature into two
+void Split(Creature &);
 
 }
 }

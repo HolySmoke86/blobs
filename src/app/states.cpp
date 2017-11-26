@@ -125,7 +125,7 @@ void MasterState::OnRender(graphics::Viewport &viewport) {
 	// TODO: extend to nearby bodies as well
 	for (auto c : cam.Reference().Creatures()) {
 		assets.shaders.creature_skin.SetM(cam.Model(cam.Reference()) * glm::mat4(c->LocalTransform()));
-		c->Draw(assets, viewport);
+		c->Draw(viewport);
 	}
 
 	viewport.ClearDepth();

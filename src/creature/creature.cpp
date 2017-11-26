@@ -4,6 +4,7 @@
 #include "Steering.hpp"
 
 #include "Goal.hpp"
+#include "IdleGoal.hpp"
 #include "InhaleNeed.hpp"
 #include "IngestNeed.hpp"
 #include "Need.hpp"
@@ -28,8 +29,12 @@ Creature::Creature(world::Simulation &sim)
 , name()
 , genome()
 , mass(1.0)
+, density(1.0)
 , size(1.0)
+, birth(sim.Time())
 , health(1.0)
+, on_death()
+, removable(false)
 , needs()
 , goals()
 , situation()
@@ -41,12 +46,47 @@ Creature::Creature(world::Simulation &sim)
 Creature::~Creature() {
 }
 
+void Creature::Grow(double amount) noexcept {
+	Mass(std::min(properties.max_mass, mass + amount));
+}
+
 void Creature::Hurt(double dt) noexcept {
 	health = std::max(0.0, health - dt);
+	if (health == 0.0) {
+		Die();
+	}
+}
+
+void Creature::Die() noexcept {
+	needs.clear();
+	goals.clear();
+	steering.Halt();
+	if (on_death) {
+		on_death(*this);
+	}
+	Remove();
+}
+
+double Creature::Size() const noexcept {
+	return size;
+}
+
+double Creature::Age() const noexcept {
+	return sim.Time() - birth;
+}
+
+double Creature::Fertility() const noexcept {
+	double age = Age();
+	if (mass < properties.fertile_mass
+		|| age < properties.fertile_age
+		|| age > properties.infertile_age) {
+		return 0.0;
+	}
+	return properties.fertility / 3600.0;
 }
 
 void Creature::AddGoal(std::unique_ptr<Goal> &&g) {
-	std::cout << "new goal: " << g->Describe() << std::endl;
+	std::cout << "[" << int(sim.Time()) << "s] " << name << " new goal: " << g->Describe() << std::endl;
 	g->Enable();
 	goals.emplace_back(std::move(g));
 }
@@ -84,14 +124,16 @@ void Creature::Tick(double dt) {
 		std::sort(goals.begin(), goals.end(), GoalCompare);
 		Goal *new_top = &*goals[0];
 		if (new_top != old_top) {
-			std::cout << "changing goal from " << old_top->Describe()
+			std::cout << "[" << int(sim.Time()) << "s] " << name
+				<< " changing goal from " << old_top->Describe()
 				<< " to " << new_top->Describe() << std::endl;
 		}
 	}
 	goals[0]->Action();
 	for (auto goal = goals.begin(); goal != goals.end();) {
 		if ((*goal)->Complete()) {
-			std::cout << "complete goal: " << (*goal)->Describe() << std::endl;
+			std::cout << "[" << int(sim.Time()) << "s] " << name
+				<< " complete goal: " << (*goal)->Describe() << std::endl;
 			goals.erase(goal);
 		} else {
 			++goal;
@@ -189,13 +231,13 @@ void Creature::BuildVAO() {
 	vao.Unbind();
 }
 
-void Creature::Draw(app::Assets &assets, graphics::Viewport &viewport) {
+void Creature::Draw(graphics::Viewport &viewport) {
 	vao.Bind();
 	vao.DrawTriangles(6 * 6);
 }
 
 
-void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
+void Spawn(Creature &c, world::Planet &p) {
 	p.AddCreature(&c);
 	c.GetSituation().SetPlanetSurface(p, 0, p.TileCenter(0, p.SideLength() / 2, p.SideLength() / 2));
 
@@ -205,7 +247,7 @@ void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
 	std::map<int, double> yields;
 	for (int y = start; y < end; ++y) {
 		for (int x = start; x < end; ++x) {
-			const world::TileType &t = assets.data.tile_types[p.TileAt(0, x, y).type];
+			const world::TileType &t = p.TypeAt(0, x, y);
 			for (auto yield : t.resources) {
 				yields[yield.resource] += yield.ubiquity;
 			}
@@ -214,11 +256,11 @@ void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
 	int liquid = -1;
 	int solid = -1;
 	for (auto e : yields) {
-		if (assets.data.resources[e.first].state == world::Resource::LIQUID) {
+		if (c.GetSimulation().Resources()[e.first].state == world::Resource::LIQUID) {
 			if (liquid < 0 || e.second > yields[liquid]) {
 				liquid = e.first;
 			}
-		} else if (assets.data.resources[e.first].state == world::Resource::SOLID) {
+		} else if (c.GetSimulation().Resources()[e.first].state == world::Resource::SOLID) {
 			if (solid < 0 || e.second > yields[solid]) {
 				solid = e.first;
 			}
@@ -226,12 +268,21 @@ void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
 	}
 
 	Genome genome;
+	genome.properties.birth_mass = { 0.5, 0.1 };
+	genome.properties.fertile_mass = { 1.0, 0.1 };
+	genome.properties.max_mass = { 1.2, 0.1 };
+	genome.properties.fertile_age = { 60.0, 5.0 };
+	genome.properties.infertile_age = { 700.0, 30.0 };
+	genome.properties.death_age = { 900.0, 90.0 };
+	genome.properties.fertility = { 0.5, 0.01 };
+
 	if (p.HasAtmosphere()) {
 		genome.composition.push_back({
 			p.Atmosphere(),    // resource
 			{ 0.01, 0.00001 }, // mass
 			{ 0.5,  0.001 },   // intake
-			{ 0.1,  0.0005 }   // penalty
+			{ 0.1,  0.0005 },  // penalty
+			{ 0.0,  0.0 },     // growth
 		});
 	}
 	if (liquid > -1) {
@@ -239,54 +290,99 @@ void Spawn(Creature &c, world::Planet &p, app::Assets &assets) {
 			liquid,          // resource
 			{ 0.6,  0.01 },  // mass
 			{ 0.2,  0.001 }, // intake
-			{ 0.01, 0.002 }  // penalty
+			{ 0.01, 0.002 }, // penalty
+			{ 0.1, 0.0 },   // growth
 		});
 	}
 	if (solid > -1) {
 		genome.composition.push_back({
-			solid,           // resource
-			{ 0.4,   0.01 },  // mass
-			{ 0.1,   0.001 }, // intake
-			{ 0.001, 0.0001 } // penalty
+			solid,             // resource
+			{ 0.4,   0.01 },   // mass
+			//{ 0.1,   0.001 },  // intake
+			{ 0.4,   0.001 },  // intake
+			{ 0.001, 0.0001 }, // penalty
+			{ 10.0,  0.002 },   // growth
 		});
 	}
 
-	genome.Configure(assets, c);
-	c.GetSteering().MaxAcceleration(1.4);
-	c.GetSteering().MaxSpeed(4.4);
+	genome.Configure(c);
 }
 
-void Genome::Configure(app::Assets &assets, Creature &c) const {
+void Genome::Configure(Creature &c) const {
 	c.GetGenome() = *this;
+
+	math::GaloisLFSR &random = c.GetSimulation().Assets().random;
+
+	c.GetProperties().birth_mass = properties.birth_mass.FakeNormal(random.SNorm());
+	c.GetProperties().fertile_mass = properties.fertile_mass.FakeNormal(random.SNorm());
+	c.GetProperties().max_mass = properties.max_mass.FakeNormal(random.SNorm());
+	c.GetProperties().fertile_age = properties.fertile_age.FakeNormal(random.SNorm());
+	c.GetProperties().infertile_age = properties.infertile_age.FakeNormal(random.SNorm());
+	c.GetProperties().death_age = properties.death_age.FakeNormal(random.SNorm());
+	c.GetProperties().fertility = properties.fertility.FakeNormal(random.SNorm());
+
 	double mass = 0.0;
 	double volume = 0.0;
 	for (const auto &comp : composition) {
-		double comp_mass = comp.mass.FakeNormal(assets.random.SNorm());
-		double intake = comp.intake.FakeNormal(assets.random.SNorm());
-		double penalty = comp.intake.FakeNormal(assets.random.SNorm());
+		double comp_mass = comp.mass.FakeNormal(random.SNorm());
+		double intake = comp.intake.FakeNormal(random.SNorm());
+		double penalty = comp.penalty.FakeNormal(random.SNorm());
 
 		mass += comp_mass;
-		volume += comp_mass / assets.data.resources[comp.resource].density;
+		volume += comp_mass / c.GetSimulation().Resources()[comp.resource].density;
 
 		std::unique_ptr<Need> need;
-		if (assets.data.resources[comp.resource].state == world::Resource::SOLID) {
+		if (c.GetSimulation().Resources()[comp.resource].state == world::Resource::SOLID) {
 			need.reset(new IngestNeed(comp.resource, intake, penalty));
 			need->gain = intake * 0.05;
-		} else if (assets.data.resources[comp.resource].state == world::Resource::LIQUID) {
+		} else if (c.GetSimulation().Resources()[comp.resource].state == world::Resource::LIQUID) {
 			need.reset(new IngestNeed(comp.resource, intake, penalty));
 			need->gain = intake * 0.1;
 		} else {
 			need.reset(new InhaleNeed(comp.resource, intake, penalty));
 			need->gain = intake * 0.5;
 		}
-		need->name = assets.data.resources[comp.resource].label;
+		need->name = c.GetSimulation().Resources()[comp.resource].label;
+		need->growth = comp.growth.FakeNormal(random.SNorm());
 		need->inconvenient = 0.5;
 		need->critical = 0.95;
 		c.AddNeed(std::move(need));
 	}
-	c.Mass(mass);
-	c.Size(std::cbrt(volume));
+
+	c.Mass(c.GetProperties().birth_mass);
+	c.Density(mass / volume);
+	c.GetSteering().MaxAcceleration(1.4);
+	c.GetSteering().MaxSpeed(4.4);
+	c.AddGoal(std::unique_ptr<Goal>(new IdleGoal(c)));
 }
+
+
+void Split(Creature &c) {
+	Creature *a = new Creature(c.GetSimulation());
+	const Situation &s = c.GetSituation();
+	// TODO: generate names
+	a->Name("Blobby");
+	// TODO: mutate
+	c.GetGenome().Configure(*a);
+	s.GetPlanet().AddCreature(a);
+	// TODO: duplicate situation somehow
+	a->GetSituation().SetPlanetSurface(
+		s.GetPlanet(), s.Surface(),
+		s.Position() + glm::dvec3(0.0, a->Size() * 0.51, 0.0));
+	a->BuildVAO();
+
+	Creature *b = new Creature(c.GetSimulation());
+	b->Name("Sir Blobalot");
+	c.GetGenome().Configure(*b);
+	s.GetPlanet().AddCreature(b);
+	b->GetSituation().SetPlanetSurface(
+		s.GetPlanet(), s.Surface(),
+		s.Position() + glm::dvec3(0.0, b->Size() * -0.51, 0.0));
+	b->BuildVAO();
+
+	c.Die();
+}
+
 
 Situation::Situation()
 : planet(nullptr)

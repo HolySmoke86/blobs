@@ -18,6 +18,12 @@ public:
 	Situation();
 	~Situation();
 
+	Situation(const Situation &) = delete;
+	Situation &operator =(const Situation &) = delete;
+
+	Situation(Situation &&) = delete;
+	Situation &operator =(Situation &&) = delete;
+
 public:
 	bool OnPlanet() const noexcept;
 	world::Planet &GetPlanet() const noexcept { return *planet; }
