@@ -47,6 +47,8 @@ private:
 	Label *name;
 	Label *age;
 	Label *mass;
+	Label *pos;
+	Label *tile;
 	Label *goal;
 	Panel *needs;
 	Panel panel;

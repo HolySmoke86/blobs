@@ -31,6 +31,7 @@ private:
 	glm::dvec3 target_pos;
 	int target_srf;
 	glm::ivec2 target_tile;
+	bool searching;
 
 };
 

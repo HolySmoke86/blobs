@@ -21,6 +21,8 @@ CreaturePanel::CreaturePanel(const app::Assets &assets)
 , name(new Label(assets.fonts.large))
 , age(new Label(assets.fonts.medium))
 , mass(new Label(assets.fonts.medium))
+, pos(new Label(assets.fonts.medium))
+, tile(new Label(assets.fonts.medium))
 , goal(new Label(assets.fonts.medium))
 , needs(new Panel)
 , panel()
@@ -41,6 +43,7 @@ CreaturePanel::CreaturePanel(const app::Assets &assets)
 		->Spacing(10.0f)
 		->Direction(Panel::HORIZONTAL);
 
+	age->Text("0000s");
 	Label *age_label = new Label(assets.fonts.medium);
 	age_label->Text("Age");
 	Panel *age_panel = new Panel;
@@ -50,6 +53,7 @@ CreaturePanel::CreaturePanel(const app::Assets &assets)
 		->Spacing(10.0f)
 		->Direction(Panel::HORIZONTAL);
 
+	mass->Text("00.000kg");
 	Label *mass_label = new Label(assets.fonts.medium);
 	mass_label->Text("Mass");
 	Panel *mass_panel = new Panel;
@@ -59,6 +63,27 @@ CreaturePanel::CreaturePanel(const app::Assets &assets)
 		->Spacing(10.0f)
 		->Direction(Panel::HORIZONTAL);
 
+	pos->Text("<00.0, 00.0, 00.0>");
+	Label *pos_label = new Label(assets.fonts.medium);
+	pos_label->Text("Pos");
+	Panel *pos_panel = new Panel;
+	pos_panel
+		->Add(pos_label)
+		->Add(pos)
+		->Spacing(10.0f)
+		->Direction(Panel::HORIZONTAL);
+
+	tile->Text("<00, 00> (mountains)");
+	Label *tile_label = new Label(assets.fonts.medium);
+	tile_label->Text("Tile");
+	Panel *tile_panel = new Panel;
+	tile_panel
+		->Add(tile_label)
+		->Add(tile)
+		->Spacing(10.0f)
+		->Direction(Panel::HORIZONTAL);
+
+	goal->Text("long goal description");
 	Label *goal_label = new Label(assets.fonts.medium);
 	goal_label->Text("Goal");
 	Panel *goal_panel = new Panel;
@@ -72,6 +97,8 @@ CreaturePanel::CreaturePanel(const app::Assets &assets)
 		.Add(name)
 		->Add(age_panel)
 		->Add(mass_panel)
+		->Add(pos_panel)
+		->Add(tile_panel)
 		->Add(goal_panel)
 		->Add(health_panel)
 		->Add(needs)
@@ -130,6 +157,21 @@ void CreaturePanel::Draw(app::Assets &assets, graphics::Viewport &viewport) noex
 		std::stringstream ss;
 		ss << std::fixed << std::setprecision(3) << c->Mass() << "kg";
 		mass->Text(ss.str());
+	}
+	{
+		const glm::dvec3 &p = c->GetSituation().Position();
+		std::stringstream ss;
+		ss << std::fixed << std::setprecision(1)
+			<< "<" << p.x << ", " << p.y << ", " << p.z << ">";
+		pos->Text(ss.str());
+	}
+	{
+		glm::ivec2 t = c->GetSituation().SurfacePosition();
+		std::stringstream ss;
+		ss << std::fixed << std::setprecision(1)
+			<< "<" << t.x << ", " << t.y
+			<< "> (" << c->GetSituation().GetTileType().label << ")";
+		tile->Text(ss.str());
 	}
 	if (c->Goals().empty()) {
 		goal->Text("none");

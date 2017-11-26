@@ -105,7 +105,8 @@ LocateResourceGoal::LocateResourceGoal(Creature &c, int res)
 , found(false)
 , target_pos(0.0)
 , target_srf(0)
-, target_tile(0) {
+, target_tile(0)
+, searching(false) {
 }
 
 LocateResourceGoal::~LocateResourceGoal() noexcept {
@@ -124,7 +125,17 @@ void LocateResourceGoal::Tick(double dt) {
 
 void LocateResourceGoal::Action() {
 	if (!found) {
-		LocateResource();
+		if (!searching) {
+			LocateResource();
+		} else {
+			double dist = glm::length2(GetSituation().Position() - target_pos);
+			if (dist < 0.0001) {
+				GetSteering().Halt();
+				searching = false;
+			} else {
+				GetSteering().GoTo(target_pos);
+			}
+		}
 	} else if (OnTargetTile()) {
 		GetSteering().Halt();
 		if (!GetCreature().Moving()) {
@@ -143,6 +154,7 @@ void LocateResourceGoal::LocateResource() {
 			// hoooray
 			GetSteering().Halt();
 			found = true;
+			searching = false;
 			target_pos = GetSituation().Position();
 			target_srf = GetSituation().Surface();
 			target_tile = GetSituation().GetPlanet().SurfacePosition(target_srf, target_pos);
@@ -163,14 +175,14 @@ void LocateResourceGoal::SearchVicinity() {
 	glm::ivec2 loc = planet.SurfacePosition(srf, pos);
 	glm::ivec2 seek_radius(2);
 	glm::ivec2 begin(glm::max(glm::ivec2(0), loc - seek_radius));
-	glm::ivec2 end(glm::min(glm::ivec2(planet.SideLength()), loc + seek_radius));
+	glm::ivec2 end(glm::min(glm::ivec2(planet.SideLength() - 1), loc + seek_radius));
 
 	const world::TileType::Yield *best = nullptr;
 	glm::ivec2 best_pos;
 	double best_distance;
 
-	for (int y = begin.y; y < end.y; ++y) {
-		for (int x = begin.x; x < end.x; ++x) {
+	for (int y = begin.y; y <= end.y; ++y) {
+		for (int x = begin.x; x <= end.x; ++x) {
 			const world::TileType &type = planet.TypeAt(srf, x, y);
 			auto yield = type.FindResource(res);
 			if (yield != type.resources.cend()) {
@@ -189,12 +201,18 @@ void LocateResourceGoal::SearchVicinity() {
 	}
 	if (best) {
 		found = true;
+		searching = false;
 		target_pos = planet.TileCenter(srf, best_pos.x, best_pos.y);
 		target_srf = srf;
 		target_tile = best_pos;
 		GetSteering().GoTo(target_pos);
-	} else {
-		// oh crap
+	} else if (!searching) {
+		found = false;
+		searching = true;
+		target_pos = GetSituation().Position();
+		target_pos[(srf + 0) % 3] += Assets().random.SNorm();
+		target_pos[(srf + 1) % 3] += Assets().random.SNorm();
+		GetSteering().GoTo(target_pos);
 	}
 }
 
@@ -202,7 +220,8 @@ bool LocateResourceGoal::OnTargetTile() const noexcept {
 	const Situation &s = GetSituation();
 	return s.OnSurface()
 		&& s.Surface() == target_srf
-		&& s.GetPlanet().SurfacePosition(s.Surface(), s.Position()) == target_tile;
+		&& s.OnTile()
+		&& s.SurfacePosition() == target_tile;
 }
 
 }

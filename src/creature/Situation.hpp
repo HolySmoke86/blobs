@@ -30,6 +30,8 @@ public:
 	bool OnSurface() const noexcept;
 	int Surface() const noexcept { return surface; }
 	const glm::dvec3 &Position() const noexcept { return position; }
+	bool OnTile() const noexcept;
+	glm::ivec2 SurfacePosition() const noexcept;
 	world::Tile &GetTile() const noexcept;
 	const world::TileType &GetTileType() const noexcept;
 

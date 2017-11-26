@@ -53,6 +53,8 @@ void Creature::Grow(double amount) noexcept {
 void Creature::Hurt(double dt) noexcept {
 	health = std::max(0.0, health - dt);
 	if (health == 0.0) {
+		std::cout << "[" << int(sim.Time()) << "s] "
+		<< name << " died" << std::endl;
 		Die();
 	}
 }
@@ -104,6 +106,11 @@ void Creature::Tick(double dt) {
 	glm::dvec3 acc(steering.Acceleration(*this));
 	situation.Move(vel * dt);
 	vel += acc * dt;
+
+	if (Age() > properties.death_age) {
+		std::cout << "[" << int(sim.Time()) << "s] "
+		<< name << " died of old age" << std::endl;
+	}
 
 	for (auto &need : needs) {
 		need->Tick(dt);
@@ -402,16 +409,25 @@ bool Situation::OnSurface() const noexcept {
 	return type == PLANET_SURFACE;
 }
 
+bool Situation::OnTile() const noexcept {
+	glm::ivec2 t(planet->SurfacePosition(surface, position));
+	return type == PLANET_SURFACE
+		&& t.x >= 0 && t.x < planet->SideLength()
+		&& t.y >= 0 && t.y < planet->SideLength();
+}
+
+glm::ivec2 Situation::SurfacePosition() const noexcept {
+	return planet->SurfacePosition(surface, position);
+}
+
 world::Tile &Situation::GetTile() const noexcept {
-	double side_length = planet->SideLength();
-	double offset = side_length * 0.5;
-	double x = std::max(0.0, std::min(side_length, position.x + offset));
-	double y = std::max(0.0, std::min(side_length, position.y + offset));
-	return planet->TileAt(surface, int(x), int(y));
+	glm::ivec2 t(planet->SurfacePosition(surface, position));
+	return planet->TileAt(surface, t.x, t.y);
 }
 
 const world::TileType &Situation::GetTileType() const noexcept {
-	return planet->GetSimulation().TileTypes()[GetTile().type];
+	glm::ivec2 t(planet->SurfacePosition(surface, position));
+	return planet->TypeAt(surface, t.x, t.y);
 }
 
 void Situation::Move(const glm::dvec3 &dp) noexcept {
