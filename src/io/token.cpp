@@ -484,12 +484,12 @@ bool TokenStreamReader::AsBool() const {
 	}
 }
 
-float TokenStreamReader::GetDouble() {
+double TokenStreamReader::GetDouble() {
 	Next();
 	return AsDouble();
 }
 
-float TokenStreamReader::AsDouble() const {
+double TokenStreamReader::AsDouble() const {
 	Assert(Token::NUMBER);
 	return stod(GetValue());
 }

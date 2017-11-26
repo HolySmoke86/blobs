@@ -52,8 +52,8 @@ public:
 
 	bool GetBool();
 	bool AsBool() const;
-	float GetDouble();
-	float AsDouble() const;
+	double GetDouble();
+	double AsDouble() const;
 	float GetFloat();
 	float AsFloat() const;
 	int GetInt();
