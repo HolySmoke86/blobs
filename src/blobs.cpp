@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
 	std::cout << "moon cycles per year: " << (planet.OrbitalPeriod() / moon.OrbitalPeriod()) << std::endl;
 
 	auto blob = new creature::Creature(sim);
-	blob->Name("Blob");
+	blob->Name(assets.name.Sequential());
 	Spawn(*blob, planet);
 	blob->BuildVAO();
 

@@ -1,6 +1,7 @@
 #ifndef BLOBS_APP_ASSETS_HPP_
 #define BLOBS_APP_ASSETS_HPP_
 
+#include "../creature/NameGenerator.hpp"
 #include "../graphics/AlphaSprite.hpp"
 #include "../graphics/ArrayTexture.hpp"
 #include "../graphics/Canvas.hpp"
@@ -31,6 +32,8 @@ struct Assets {
 	std::string tile_path;
 
 	math::GaloisLFSR random;
+
+	creature::NameGenerator name;
 
 	struct {
 		world::Set<world::Resource> resources;

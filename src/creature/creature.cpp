@@ -1,6 +1,7 @@
 #include "Creature.hpp"
 #include "Genome.hpp"
 #include "Memory.hpp"
+#include "NameGenerator.hpp"
 #include "Situation.hpp"
 #include "Steering.hpp"
 
@@ -16,6 +17,7 @@
 #include "../world/TileType.hpp"
 
 #include <algorithm>
+#include <sstream>
 #include <glm/gtx/transform.hpp>
 
 #include <iostream>
@@ -371,7 +373,7 @@ void Split(Creature &c) {
 	Creature *a = new Creature(c.GetSimulation());
 	const Situation &s = c.GetSituation();
 	// TODO: generate names
-	a->Name("Blobby");
+	a->Name(c.GetSimulation().Assets().name.Sequential());
 	// TODO: mutate
 	c.GetGenome().Configure(*a);
 	s.GetPlanet().AddCreature(a);
@@ -382,7 +384,7 @@ void Split(Creature &c) {
 	a->BuildVAO();
 
 	Creature *b = new Creature(c.GetSimulation());
-	b->Name("Sir Blobalot");
+	b->Name(c.GetSimulation().Assets().name.Sequential());
 	c.GetGenome().Configure(*b);
 	s.GetPlanet().AddCreature(b);
 	b->GetSituation().SetPlanetSurface(
@@ -424,6 +426,20 @@ void Memory::TrackStay(const Location &l, double t) {
 			t
 		});
 	}
+}
+
+
+NameGenerator::NameGenerator()
+: counter(0) {
+}
+
+NameGenerator::~NameGenerator() {
+}
+
+std::string NameGenerator::Sequential() {
+	std::stringstream ss;
+	ss << "Blob " << ++counter;
+	return ss.str();
 }
 
 
