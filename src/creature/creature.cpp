@@ -1,5 +1,6 @@
 #include "Creature.hpp"
 #include "Genome.hpp"
+#include "Memory.hpp"
 #include "Situation.hpp"
 #include "Steering.hpp"
 
@@ -35,6 +36,7 @@ Creature::Creature(world::Simulation &sim)
 , health(1.0)
 , on_death()
 , removable(false)
+, memory(*this)
 , needs()
 , goals()
 , situation()
@@ -112,6 +114,7 @@ void Creature::Tick(double dt) {
 		<< name << " died of old age" << std::endl;
 	}
 
+	memory.Tick(dt);
 	for (auto &need : needs) {
 		need->Tick(dt);
 	}
@@ -388,6 +391,39 @@ void Split(Creature &c) {
 	b->BuildVAO();
 
 	c.Die();
+}
+
+
+Memory::Memory(Creature &c)
+: c(c) {
+}
+
+Memory::~Memory() {
+}
+
+void Memory::Tick(double dt) {
+	Situation &s = c.GetSituation();
+	if (s.OnSurface()) {
+		TrackStay({ &s.GetPlanet(), s.Surface(), s.SurfacePosition() }, dt);
+	}
+}
+
+void Memory::TrackStay(const Location &l, double t) {
+	const world::TileType &type = l.planet->TypeAt(l.surface, l.coords.x, l.coords.y);
+	auto entry = known_types.find(type.id);
+	if (entry != known_types.end()) {
+		entry->second.last_been = c.GetSimulation().Time();
+		entry->second.last_loc = l;
+		entry->second.time_spent += t;
+	} else {
+		known_types.emplace(type.id, Stay{
+			c.GetSimulation().Time(),
+			l,
+			c.GetSimulation().Time(),
+			l,
+			t
+		});
+	}
 }
 
 

@@ -3,6 +3,7 @@
 
 #include "Genome.hpp"
 #include "Goal.hpp"
+#include "Memory.hpp"
 #include "Need.hpp"
 #include "Situation.hpp"
 #include "Steering.hpp"
@@ -76,6 +77,9 @@ public:
 	void Remove() noexcept { removable = true; }
 	bool Removable() const noexcept { return removable; }
 
+	Memory &GetMemory() noexcept { return memory; }
+	const Memory &GetMemory() const noexcept { return memory; }
+
 	void AddNeed(std::unique_ptr<Need> &&n) { needs.emplace_back(std::move(n)); }
 	const std::vector<std::unique_ptr<Need>> &Needs() const noexcept { return needs; }
 
@@ -114,6 +118,8 @@ private:
 	double health;
 	Callback on_death;
 	bool removable;
+
+	Memory memory;
 
 	std::vector<std::unique_ptr<Need>> needs;
 	std::vector<std::unique_ptr<Goal>> goals;
