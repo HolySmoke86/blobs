@@ -138,7 +138,7 @@ void LocateResourceGoal::Action() {
 		}
 	} else if (OnTargetTile()) {
 		GetSteering().Halt();
-		if (!GetCreature().Moving()) {
+		if (!GetSituation().Moving()) {
 			SetComplete();
 		}
 	} else {

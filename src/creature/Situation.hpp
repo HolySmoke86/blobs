@@ -15,6 +15,24 @@ namespace creature {
 class Situation {
 
 public:
+	struct State {
+		glm::dvec3 pos;
+		glm::dvec3 vel;
+		State(
+			const glm::dvec3 &pos = glm::dvec3(0.0),
+			const glm::dvec3 &vel = glm::dvec3(0.0))
+		: pos(pos), vel(vel) { }
+	};
+	struct Derivative {
+		glm::dvec3 vel;
+		glm::dvec3 acc;
+		Derivative(
+			const glm::dvec3 &vel = glm::dvec3(0.0),
+			const glm::dvec3 &acc = glm::dvec3(0.0))
+		: vel(vel), acc(acc) { }
+	};
+
+public:
 	Situation();
 	~Situation();
 
@@ -29,18 +47,22 @@ public:
 	world::Planet &GetPlanet() const noexcept { return *planet; }
 	bool OnSurface() const noexcept;
 	int Surface() const noexcept { return surface; }
-	const glm::dvec3 &Position() const noexcept { return position; }
+	const glm::dvec3 &Position() const noexcept { return state.pos; }
 	bool OnTile() const noexcept;
 	glm::ivec2 SurfacePosition() const noexcept;
 	world::Tile &GetTile() const noexcept;
 	const world::TileType &GetTileType() const noexcept;
 
+	void SetState(const State &s) noexcept { state = s; }
+	const State &GetState() const noexcept { return state; }
+
+	bool Moving() const noexcept { return glm::length2(state.vel) < 0.00000001; }
 	void Move(const glm::dvec3 &dp) noexcept;
 	void SetPlanetSurface(world::Planet &, int srf, const glm::dvec3 &pos) noexcept;
 
 public:
 	world::Planet *planet;
-	glm::dvec3 position;
+	State state;
 	int surface;
 	enum {
 		LOST,

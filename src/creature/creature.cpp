@@ -43,7 +43,6 @@ Creature::Creature(world::Simulation &sim)
 , goals()
 , situation()
 , steering()
-, vel(0.0)
 , vao() {
 }
 
@@ -106,10 +105,20 @@ bool GoalCompare(const std::unique_ptr<Goal> &a, const std::unique_ptr<Goal> &b)
 }
 
 void Creature::Tick(double dt) {
-	// TODO: better integration method
-	glm::dvec3 acc(steering.Acceleration(*this));
-	situation.Move(vel * dt);
-	vel += acc * dt;
+	{
+		Situation::State state(situation.GetState());
+		Situation::Derivative a(Step(Situation::Derivative(), 0.0));
+		Situation::Derivative b(Step(a, dt * 0.5));
+		Situation::Derivative c(Step(b, dt * 0.5));
+		Situation::Derivative d(Step(c, dt));
+		Situation::Derivative f(
+			(1.0 / 6.0) * (a.vel + 2.0 * (b.vel + c.vel) + d.vel),
+			(1.0 / 6.0) * (a.acc + 2.0 * (b.acc + c.acc) + d.acc)
+		);
+		state.pos += f.vel * dt;
+		state.vel += f.acc * dt;
+		situation.SetState(state);
+	}
 
 	if (Age() > properties.death_age) {
 		std::cout << "[" << int(sim.Time()) << "s] "
@@ -151,6 +160,13 @@ void Creature::Tick(double dt) {
 			++goal;
 		}
 	}
+}
+
+Situation::Derivative Creature::Step(const Situation::Derivative &ds, double dt) const noexcept {
+	Situation::State s = situation.GetState();
+	s.pos += ds.vel * dt;
+	s.vel += ds.acc * dt;
+	return { s.vel, steering.Acceleration(s) };
 }
 
 glm::dmat4 Creature::LocalTransform() noexcept {
@@ -445,7 +461,7 @@ std::string NameGenerator::Sequential() {
 
 Situation::Situation()
 : planet(nullptr)
-, position(0.0)
+, state(glm::dvec3(0.0), glm::dvec3(0.0))
 , surface(0)
 , type(LOST) {
 }
@@ -462,34 +478,34 @@ bool Situation::OnSurface() const noexcept {
 }
 
 bool Situation::OnTile() const noexcept {
-	glm::ivec2 t(planet->SurfacePosition(surface, position));
+	glm::ivec2 t(planet->SurfacePosition(surface, state.pos));
 	return type == PLANET_SURFACE
 		&& t.x >= 0 && t.x < planet->SideLength()
 		&& t.y >= 0 && t.y < planet->SideLength();
 }
 
 glm::ivec2 Situation::SurfacePosition() const noexcept {
-	return planet->SurfacePosition(surface, position);
+	return planet->SurfacePosition(surface, state.pos);
 }
 
 world::Tile &Situation::GetTile() const noexcept {
-	glm::ivec2 t(planet->SurfacePosition(surface, position));
+	glm::ivec2 t(planet->SurfacePosition(surface, state.pos));
 	return planet->TileAt(surface, t.x, t.y);
 }
 
 const world::TileType &Situation::GetTileType() const noexcept {
-	glm::ivec2 t(planet->SurfacePosition(surface, position));
+	glm::ivec2 t(planet->SurfacePosition(surface, state.pos));
 	return planet->TypeAt(surface, t.x, t.y);
 }
 
 void Situation::Move(const glm::dvec3 &dp) noexcept {
-	position += dp;
+	state.pos += dp;
 	if (OnSurface()) {
 		// enforce ground constraint
 		if (Surface() < 3) {
-			position[(Surface() + 2) % 3] = std::max(0.0, position[(Surface() + 2) % 3]);
+			state.pos[(Surface() + 2) % 3] = std::max(0.0, state.pos[(Surface() + 2) % 3]);
 		} else {
-			position[(Surface() + 2) % 3] = std::min(0.0, position[(Surface() + 2) % 3]);
+			state.pos[(Surface() + 2) % 3] = std::min(0.0, state.pos[(Surface() + 2) % 3]);
 		}
 	}
 }
@@ -498,7 +514,7 @@ void Situation::SetPlanetSurface(world::Planet &p, int srf, const glm::dvec3 &po
 	type = PLANET_SURFACE;
 	planet = &p;
 	surface = srf;
-	position = pos;
+	state.pos = pos;
 }
 
 
@@ -524,15 +540,15 @@ void Steering::GoTo(const glm::dvec3 &t) noexcept {
 	seeking = true;
 }
 
-glm::dvec3 Steering::Acceleration(Creature &c) const noexcept {
+glm::dvec3 Steering::Acceleration(const Situation::State &s) const noexcept {
 	glm::dvec3 acc(0.0);
 	if (halting) {
-		SumForce(acc, c.Velocity() * -max_accel);
+		SumForce(acc, s.vel * -max_accel);
 	}
 	if (seeking) {
-		glm::dvec3 diff = seek_target - c.GetSituation().Position();
+		glm::dvec3 diff = seek_target - s.pos;
 		if (!allzero(diff)) {
-			SumForce(acc, ((normalize(diff) * max_speed) - c.Velocity()) * max_accel);
+			SumForce(acc, ((normalize(diff) * max_speed) - s.vel) * max_accel);
 		}
 	}
 	return acc;

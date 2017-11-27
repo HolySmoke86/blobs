@@ -94,14 +94,13 @@ public:
 	Steering &GetSteering() noexcept { return steering; }
 	const Steering &GetSteering() const noexcept { return steering; }
 
-	void Velocity(const glm::dvec3 &v) noexcept { vel = v; }
-	const glm::dvec3 &Velocity() const noexcept { return vel; }
-	bool Moving() const noexcept { return glm::length2(vel) < 0.00000001; }
-
 	glm::dmat4 LocalTransform() noexcept;
 
 	void BuildVAO();
 	void Draw(graphics::Viewport &);
+
+private:
+	Situation::Derivative Step(const Situation::Derivative &ds, double dt) const noexcept;
 
 private:
 	world::Simulation &sim;
@@ -126,8 +125,6 @@ private:
 
 	Situation situation;
 	Steering steering;
-
-	glm::dvec3 vel;
 
 	struct Attributes {
 		glm::vec3 position;
