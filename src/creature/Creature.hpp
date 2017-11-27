@@ -108,6 +108,7 @@ private:
 
 	Genome genome;
 	Genome::Properties<double> properties;
+	int cur_prop;
 
 	double mass;
 	double density;

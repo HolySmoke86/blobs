@@ -142,6 +142,7 @@ void Body::Tick(double dt) {
 	rotation += dt * AngularMomentum() / Inertia();
 	Cache();
 	for (creature::Creature *c : Creatures()) {
+		// TODO: this is self modifying, fix it fix it fix it
 		c->Tick(dt);
 	}
 	for (auto c = Creatures().begin(); c != Creatures().end();) {

@@ -31,6 +31,8 @@ Creature::Creature(world::Simulation &sim)
 : sim(sim)
 , name()
 , genome()
+, properties()
+, cur_prop(0)
 , mass(1.0)
 , density(1.0)
 , size(1.0)
@@ -50,7 +52,7 @@ Creature::~Creature() {
 }
 
 void Creature::Grow(double amount) noexcept {
-	Mass(std::min(properties.max_mass, mass + amount));
+	Mass(std::min(properties.props[cur_prop].mass, mass + amount));
 }
 
 void Creature::Hurt(double dt) noexcept {
@@ -81,13 +83,8 @@ double Creature::Age() const noexcept {
 }
 
 double Creature::Fertility() const noexcept {
-	double age = Age();
-	if (mass < properties.fertile_mass
-		|| age < properties.fertile_age
-		|| age > properties.infertile_age) {
-		return 0.0;
-	}
-	return properties.fertility / 3600.0;
+	// TODO: lerp based on age?
+	return properties.props[cur_prop].fertility / 3600.0;
 }
 
 void Creature::AddGoal(std::unique_ptr<Goal> &&g) {
@@ -105,6 +102,15 @@ bool GoalCompare(const std::unique_ptr<Goal> &a, const std::unique_ptr<Goal> &b)
 }
 
 void Creature::Tick(double dt) {
+	if (cur_prop < 5 && Age() > properties.props[cur_prop + 1].age) {
+		++cur_prop;
+		if (cur_prop == 5) {
+			std::cout << "[" << int(sim.Time()) << "s] "
+				<< name << " died of old age" << std::endl;
+			Die();
+		}
+	}
+
 	{
 		Situation::State state(situation.GetState());
 		Situation::Derivative a(Step(Situation::Derivative(), 0.0));
@@ -118,11 +124,6 @@ void Creature::Tick(double dt) {
 		state.pos += f.vel * dt;
 		state.vel += f.acc * dt;
 		situation.SetState(state);
-	}
-
-	if (Age() > properties.death_age) {
-		std::cout << "[" << int(sim.Time()) << "s] "
-		<< name << " died of old age" << std::endl;
 	}
 
 	memory.Tick(dt);
@@ -296,13 +297,30 @@ void Spawn(Creature &c, world::Planet &p) {
 	}
 
 	Genome genome;
-	genome.properties.birth_mass = { 0.5, 0.1 };
-	genome.properties.fertile_mass = { 1.0, 0.1 };
-	genome.properties.max_mass = { 1.2, 0.1 };
-	genome.properties.fertile_age = { 60.0, 5.0 };
-	genome.properties.infertile_age = { 700.0, 30.0 };
-	genome.properties.death_age = { 900.0, 90.0 };
-	genome.properties.fertility = { 0.5, 0.01 };
+
+	genome.properties.Birth().age = { 0.0, 0.0 };
+	genome.properties.Birth().mass = { 0.5, 0.05 };
+	genome.properties.Birth().fertility = { 0.0, 0.0 };
+
+	genome.properties.Child().age = { 30.0, 1.0 };
+	genome.properties.Child().mass = { 0.7, 0.05 };
+	genome.properties.Child().fertility = { 0.0, 0.0 };
+
+	genome.properties.Youth().age = { 60.0, 5.0 };
+	genome.properties.Youth().mass = { 0.9, 0.1 };
+	genome.properties.Youth().fertility = { 0.5, 0.03 };
+
+	genome.properties.Adult().age = { 120.0, 10.0 };
+	genome.properties.Adult().mass = { 1.2, 0.1 };
+	genome.properties.Adult().fertility = { 0.4, 0.01 };
+
+	genome.properties.Elder().age = { 360.0, 30.0 };
+	genome.properties.Elder().mass = { 1.0, 0.05 };
+	genome.properties.Elder().fertility = { 0.1, 0.01 };
+
+	genome.properties.Death().age = { 480.0, 60.0 };
+	genome.properties.Death().mass = { 0.9, 0.05 };
+	genome.properties.Death().fertility = { 0.0, 0.0 };
 
 	if (p.HasAtmosphere()) {
 		genome.composition.push_back({
@@ -341,13 +359,7 @@ void Genome::Configure(Creature &c) const {
 
 	math::GaloisLFSR &random = c.GetSimulation().Assets().random;
 
-	c.GetProperties().birth_mass = properties.birth_mass.FakeNormal(random.SNorm());
-	c.GetProperties().fertile_mass = properties.fertile_mass.FakeNormal(random.SNorm());
-	c.GetProperties().max_mass = properties.max_mass.FakeNormal(random.SNorm());
-	c.GetProperties().fertile_age = properties.fertile_age.FakeNormal(random.SNorm());
-	c.GetProperties().infertile_age = properties.infertile_age.FakeNormal(random.SNorm());
-	c.GetProperties().death_age = properties.death_age.FakeNormal(random.SNorm());
-	c.GetProperties().fertility = properties.fertility.FakeNormal(random.SNorm());
+	c.GetProperties() = Instantiate(properties, random);
 
 	double mass = 0.0;
 	double volume = 0.0;
@@ -377,7 +389,7 @@ void Genome::Configure(Creature &c) const {
 		c.AddNeed(std::move(need));
 	}
 
-	c.Mass(c.GetProperties().birth_mass);
+	c.Mass(c.GetProperties().props[0].mass);
 	c.Density(mass / volume);
 	c.GetSteering().MaxAcceleration(1.4);
 	c.GetSteering().MaxSpeed(4.4);
