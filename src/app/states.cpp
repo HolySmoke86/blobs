@@ -70,6 +70,16 @@ void MasterState::OnKeyDown(const SDL_KeyboardEvent &e) {
 }
 
 void MasterState::OnRender(graphics::Viewport &viewport) {
+	if (cp.Shown()) {
+		cam.TopDown(cp.GetCreature(), 10.0f);
+		assets.shaders.planet_surface.Activate();
+		assets.shaders.planet_surface.SetV(cam.View());
+		assets.shaders.sun_surface.Activate();
+		assets.shaders.sun_surface.SetV(cam.View());
+		assets.shaders.creature_skin.Activate();
+		assets.shaders.creature_skin.SetV(cam.View());
+	}
+
 	int num_lights = 0;
 	for (auto sun : sim.Suns()) {
 		// TODO: source sun's light color and strength

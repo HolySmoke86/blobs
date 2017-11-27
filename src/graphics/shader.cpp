@@ -282,6 +282,14 @@ void PlanetSurface::SetM(const glm::mat4 &mm) noexcept {
 	prog.Uniform(mvp_handle, mvp);
 }
 
+void PlanetSurface::SetV(const glm::mat4 &vv) noexcept {
+	v = vv;
+	mv = v * m;
+	mvp = p * mv;
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
 void PlanetSurface::SetVP(const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
 	v = vv;
 	p = pp;
@@ -458,6 +466,14 @@ void SunSurface::SetM(const glm::mat4 &mm) noexcept {
 	prog.Uniform(mvp_handle, mvp);
 }
 
+void SunSurface::SetV(const glm::mat4 &vv) noexcept {
+	v = vv;
+	mv = v * m;
+	mvp = p * mv;
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
 void SunSurface::SetVP(const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
 	v = vv;
 	p = pp;
@@ -588,6 +604,14 @@ void CreatureSkin::SetM(const glm::mat4 &mm) noexcept {
 	mv = v * m;
 	mvp = p * mv;
 	prog.Uniform(m_handle, m);
+	prog.Uniform(mv_handle, mv);
+	prog.Uniform(mvp_handle, mvp);
+}
+
+void CreatureSkin::SetV(const glm::mat4 &vv) noexcept {
+	v = vv;
+	mv = v * m;
+	mvp = p * mv;
 	prog.Uniform(mv_handle, mv);
 	prog.Uniform(mvp_handle, mvp);
 }

@@ -35,6 +35,9 @@ public:
 	void Show(creature::Creature &);
 	void Hide() noexcept;
 
+	bool Shown() const noexcept { return c; }
+	const creature::Creature &GetCreature() const noexcept { return *c; }
+
 	void Draw(app::Assets &, graphics::Viewport &) noexcept;
 
 private:

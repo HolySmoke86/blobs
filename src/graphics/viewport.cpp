@@ -1,8 +1,10 @@
 #include "Camera.hpp"
 #include "Viewport.hpp"
 
+#include "../creature/Creature.hpp"
 #include "../math/const.hpp"
 #include "../world/Body.hpp"
+#include "../world/Planet.hpp"
 
 #include <cmath>
 #include <GL/glew.h>
@@ -84,22 +86,32 @@ Camera &Camera::MapView(int srf, const glm::vec3 &pos, float roll) noexcept {
 
 	float dir = srf < 3 ? 1.0f : -1.0f;
 
-	glm::vec3 position;
-	position[(srf + 0) % 3] = pos.x;
-	position[(srf + 1) % 3] = pos.y;
-	position[(srf + 2) % 3] = dir * (pos.z + Reference().Radius());
-
 	glm::vec3 up(0.0f);
-	up[(srf + 0) % 3] = std::cos(roll);
-	up[(srf + 1) % 3] = std::sin(roll);
+	up[(srf + 0) % 3] = std::sin(roll);
+	up[(srf + 1) % 3] = std::cos(roll);
 	up[(srf + 2) % 3] = 0.0f;
 
-	glm::vec3 target = position;
+	glm::vec3 target = pos;
 	target[(srf + 2) % 3] -= dir;
 
-	view = glm::lookAt(position, target, up);
+	view = glm::lookAt(pos, target, up);
 
 	return *this;
+}
+
+Camera &Camera::TopDown(const creature::Creature &c, float distance, float roll) {
+	const creature::Situation &s = c.GetSituation();
+	if (s.OnPlanet()) {
+		int srf = s.Surface();
+		glm::vec3 pos(s.Position());
+		pos[(srf + 2) % 3] += srf < 3 ? distance : -distance;
+		Reference(s.GetPlanet());
+		return MapView(srf, pos, roll);
+	} else {
+		glm::vec3 pos(s.Position());
+		pos += glm::normalize(pos) * distance;
+		return Orbital(pos);
+	}
 }
 
 Camera &Camera::Orbital(const glm::vec3 &pos) noexcept {
