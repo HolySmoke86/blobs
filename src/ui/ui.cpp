@@ -43,7 +43,7 @@ CreaturePanel::CreaturePanel(const app::Assets &assets)
 		->Spacing(10.0f)
 		->Direction(Panel::HORIZONTAL);
 
-	age->Text("0000s");
+	age->Text("0000s (Newborn)");
 	Label *age_label = new Label(assets.fonts.medium);
 	age_label->Text("Age");
 	Panel *age_panel = new Panel;
@@ -152,7 +152,7 @@ void CreaturePanel::Hide() noexcept {
 void CreaturePanel::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
 	if (!c) return;
 
-	age->Text(std::to_string(int(c->Age())) + "s");
+	age->Text(std::to_string(int(c->Age())) + "s (" + c->AgeName() + ")");
 	{
 		std::stringstream ss;
 		ss << std::fixed << std::setprecision(3) << c->Mass() << "kg";

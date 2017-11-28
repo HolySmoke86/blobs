@@ -57,9 +57,20 @@ glm::dvec4 Creature::HighlightColor() const noexcept {
 	return glm::dvec4(highlight_color, AgeLerp(CurProps().highlight, NextProps().highlight));
 }
 
-void Creature::Grow(double amount) noexcept {
-	const double max_mass = AgeLerp(CurProps().mass, NextProps().mass);
-	Mass(std::min(max_mass, mass + amount));
+void Creature::Ingest(int res, double amount) noexcept {
+	const Genome::Composition *cmp = nullptr;
+	for (const auto &c : genome.composition) {
+		if (c.resource == res) {
+			cmp = &c;
+			break;
+		}
+	}
+	if (cmp) {
+		const double max_mass = AgeLerp(CurProps().mass, NextProps().mass);
+		Mass(std::min(max_mass, mass + amount));
+	} else {
+		// foreign material. poisonous?
+	}
 }
 
 void Creature::Hurt(double dt) noexcept {
@@ -89,6 +100,25 @@ double Creature::Age() const noexcept {
 	return sim.Time() - birth;
 }
 
+std::string Creature::AgeName() const {
+	switch (cur_prop) {
+		case 0:
+			return "Newborn";
+		case 1:
+			return "Child";
+		case 2:
+			return "Youth";
+		case 3:
+			return "Adult";
+		case 4:
+			return "Elder";
+		case 5:
+			return "Dead";
+		default:
+			return "Unknown";
+	}
+}
+
 double Creature::AgeLerp(double from, double to) const noexcept {
 	return glm::mix(from, to, glm::smoothstep(CurProps().age, NextProps().age, Age()));
 }
@@ -112,13 +142,12 @@ bool GoalCompare(const std::unique_ptr<Goal> &a, const std::unique_ptr<Goal> &b)
 }
 
 void Creature::Tick(double dt) {
-	if (cur_prop < 5 && Age() > properties.props[cur_prop + 1].age) {
-		if (cur_prop == 4) {
+	if (cur_prop < 5 && Age() > NextProps().age) {
+		++cur_prop;
+		if (cur_prop == 5) {
 			std::cout << "[" << int(sim.Time()) << "s] "
 				<< name << " died of old age" << std::endl;
 			Die();
-		} else {
-			++cur_prop;
 		}
 	}
 
@@ -339,6 +368,12 @@ void Spawn(Creature &c, world::Planet &p) {
 	genome.properties.Death().fertility = { 0.0, 0.0 };
 	genome.properties.Death().highlight = { 0.5, 0.1 };
 
+	genome.properties.strength = { 1.0, 0.1 };
+	genome.properties.stamina = { 1.0, 0.1 };
+	genome.properties.dexerty = { 1.0, 0.1 };
+	genome.properties.intelligence = { 1.0, 0.1 };
+	genome.properties.mutability = { 1.0, 0.1 };
+
 	glm::dvec3 color_avg(0.0);
 	double color_divisor = 0.0;
 
@@ -397,6 +432,7 @@ void Genome::Configure(Creature &c) const {
 	double mass = 0.0;
 	double volume = 0.0;
 	for (const auto &comp : composition) {
+		const world::Resource &resource = c.GetSimulation().Resources()[comp.resource];
 		double comp_mass = comp.mass.FakeNormal(random.SNorm());
 		double intake = comp.intake.FakeNormal(random.SNorm());
 		double penalty = comp.penalty.FakeNormal(random.SNorm());
@@ -405,10 +441,12 @@ void Genome::Configure(Creature &c) const {
 		volume += comp_mass / c.GetSimulation().Resources()[comp.resource].density;
 
 		std::unique_ptr<Need> need;
-		if (c.GetSimulation().Resources()[comp.resource].state == world::Resource::SOLID) {
+		if (resource.state == world::Resource::SOLID) {
+			intake *= std::atan(c.GetProperties().strength);
 			need.reset(new IngestNeed(comp.resource, intake, penalty));
 			need->gain = intake * 0.05;
-		} else if (c.GetSimulation().Resources()[comp.resource].state == world::Resource::LIQUID) {
+		} else if (resource.state == world::Resource::LIQUID) {
+			intake *= std::atan(c.GetProperties().stamina);
 			need.reset(new IngestNeed(comp.resource, intake, penalty));
 			need->gain = intake * 0.1;
 		} else {
@@ -416,7 +454,6 @@ void Genome::Configure(Creature &c) const {
 			need->gain = intake * 0.5;
 		}
 		need->name = c.GetSimulation().Resources()[comp.resource].label;
-		need->growth = comp.growth.FakeNormal(random.SNorm());
 		need->inconvenient = 0.5;
 		need->critical = 0.95;
 		c.AddNeed(std::move(need));
@@ -437,8 +474,8 @@ void Genome::Configure(Creature &c) const {
 
 	c.Mass(c.GetProperties().props[0].mass);
 	c.Density(mass / volume);
-	c.GetSteering().MaxAcceleration(1.4);
-	c.GetSteering().MaxSpeed(4.4);
+	c.GetSteering().MaxAcceleration(1.4 * std::atan(c.GetProperties().strength));
+	c.GetSteering().MaxSpeed(4.4 * std::atan(c.GetProperties().dexerty));
 	c.AddGoal(std::unique_ptr<Goal>(new IdleGoal(c)));
 }
 
@@ -576,11 +613,12 @@ void Situation::SetPlanetSurface(world::Planet &p, int srf, const glm::dvec3 &po
 
 
 Steering::Steering()
-: seek_target(0.0)
+: target(0.0)
 , max_accel(1.0)
 , max_speed(1.0)
 , halting(false)
-, seeking(false) {
+, seeking(false)
+, arriving(false) {
 }
 
 Steering::~Steering() {
@@ -589,12 +627,21 @@ Steering::~Steering() {
 void Steering::Halt() noexcept {
 	halting = true;
 	seeking = false;
+	arriving = false;
+}
+
+void Steering::Pass(const glm::dvec3 &t) noexcept {
+	target = t;
+	halting = false;
+	seeking = true;
+	arriving = false;
 }
 
 void Steering::GoTo(const glm::dvec3 &t) noexcept {
-	seek_target = t;
+	target = t;
 	halting = false;
-	seeking = true;
+	seeking = false;
+	arriving = true;
 }
 
 glm::dvec3 Steering::Acceleration(const Situation::State &s) const noexcept {
@@ -603,9 +650,16 @@ glm::dvec3 Steering::Acceleration(const Situation::State &s) const noexcept {
 		SumForce(acc, s.vel * -max_accel);
 	}
 	if (seeking) {
-		glm::dvec3 diff = seek_target - s.pos;
+		glm::dvec3 diff = target - s.pos;
 		if (!allzero(diff)) {
-			SumForce(acc, ((normalize(diff) * max_speed) - s.vel) * max_accel);
+			SumForce(acc, TargetVelocity(s, (normalize(diff) * max_speed)));
+		}
+	}
+	if (arriving) {
+		glm::dvec3 diff = target - s.pos;
+		double dist = length(diff);
+		if (!allzero(diff) && dist > std::numeric_limits<double>::epsilon()) {
+			SumForce(acc, TargetVelocity(s, diff * std::min(dist * max_accel, max_speed) / dist));
 		}
 	}
 	return acc;
@@ -630,6 +684,10 @@ bool Steering::SumForce(glm::dvec3 &out, const glm::dvec3 &in) const noexcept {
 		out += in;
 		return false;
 	}
+}
+
+glm::dvec3 Steering::TargetVelocity(const Situation::State &s, const glm::dvec3 &vel) const noexcept {
+	return (vel - s.vel) * max_accel;
 }
 
 }

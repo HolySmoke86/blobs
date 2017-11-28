@@ -51,7 +51,7 @@ void IngestNeed::ApplyEffect(Creature &c, double dt) {
 					found = true;
 					// TODO: check if not busy with something else
 					double amount = std::min(yield.ubiquity, speed) * dt;
-					c.Grow(amount * growth * dt);
+					c.Ingest(resource, amount * growth * dt);
 					Decrease(amount);
 					if (value == 0.0) {
 						ingesting = false;

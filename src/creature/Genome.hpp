@@ -20,9 +20,13 @@ struct Genome {
 
 	template<class T>
 	struct PropertySet {
+		/// the age at which to transition to the next phase
 		T age;
+		/// maximum body mass
 		T mass;
+		/// fertility factor
 		T fertility;
+		/// skin highlight pronounciation
 		T highlight;
 	};
 	template<class T>
@@ -40,6 +44,20 @@ struct Genome {
 		const PropertySet<T> &Elder() const noexcept { return props[4]; }
 		PropertySet<T> &Death() noexcept { return props[5]; }
 		const PropertySet<T> &Death() const noexcept { return props[5]; }
+
+		/// "typical" properties
+		/// every one of these should have at least one
+		/// negative impact to prevent super-beings evolving
+		/// power at the cost of higher solid intake
+		T strength;
+		/// more endurance at the cost of higher liquid intake
+		T stamina;
+		/// more speed at the cost of higher fatigue
+		T dexerty;
+		/// higher mental capacity at the cost of boredom
+		T intelligence;
+		/// how likely to mutate
+		T mutability;
 	};
 	Properties<math::Distribution> properties;
 
@@ -87,7 +105,12 @@ struct Genome {
 			Instantiate(p.props[2], rand),
 			Instantiate(p.props[3], rand),
 			Instantiate(p.props[4], rand),
-			Instantiate(p.props[5], rand)
+			Instantiate(p.props[5], rand),
+			p.strength.FakeNormal(rand.SNorm()),
+			p.stamina.FakeNormal(rand.SNorm()),
+			p.dexerty.FakeNormal(rand.SNorm()),
+			p.intelligence.FakeNormal(rand.SNorm()),
+			p.mutability.FakeNormal(rand.SNorm())
 		};
 	}
 

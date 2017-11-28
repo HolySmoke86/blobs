@@ -23,21 +23,24 @@ public:
 
 public:
 	void Halt() noexcept;
+	void Pass(const glm::dvec3 &) noexcept;
 	void GoTo(const glm::dvec3 &) noexcept;
 
 	glm::dvec3 Acceleration(const Situation::State &) const noexcept;
 
 private:
 	bool SumForce(glm::dvec3 &out, const glm::dvec3 &in) const noexcept;
+	glm::dvec3 TargetVelocity(const Situation::State &, const glm::dvec3 &) const noexcept;
 
 private:
-	glm::dvec3 seek_target;
+	glm::dvec3 target;
 
 	double max_accel = 1.0;
 	double max_speed = 1.0;
 
 	bool halting;
 	bool seeking;
+	bool arriving;
 
 };
 

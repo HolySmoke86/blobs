@@ -130,8 +130,7 @@ void LocateResourceGoal::Action() {
 		} else {
 			double dist = glm::length2(GetSituation().Position() - target_pos);
 			if (dist < 0.0001) {
-				GetSteering().Halt();
-				searching = false;
+				LocateResource();
 			} else {
 				GetSteering().GoTo(target_pos);
 			}
@@ -212,6 +211,8 @@ void LocateResourceGoal::SearchVicinity() {
 		target_pos = GetSituation().Position();
 		target_pos[(srf + 0) % 3] += Assets().random.SNorm();
 		target_pos[(srf + 1) % 3] += Assets().random.SNorm();
+		// bias towards current direction
+		target_pos += glm::normalize(GetSituation().Velocity()) * 0.5;
 		GetSteering().GoTo(target_pos);
 	}
 }

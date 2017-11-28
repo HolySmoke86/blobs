@@ -56,6 +56,7 @@ public:
 	void SetState(const State &s) noexcept { state = s; }
 	const State &GetState() const noexcept { return state; }
 
+	const glm::dvec3 &Velocity() const noexcept { return state.vel; }
 	bool Moving() const noexcept { return glm::length2(state.vel) < 0.00000001; }
 	void Move(const glm::dvec3 &dp) noexcept;
 	void SetPlanetSurface(world::Planet &, int srf, const glm::dvec3 &pos) noexcept;
