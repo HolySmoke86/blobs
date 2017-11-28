@@ -57,6 +57,10 @@ struct Genome {
 	};
 	std::vector<Composition> composition;
 
+	math::Distribution base_hue;
+	math::Distribution base_saturation;
+	math::Distribution base_lightness;
+
 	void Configure(Creature &) const;
 
 	static PropertySet<double> Instantiate(

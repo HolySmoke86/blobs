@@ -322,6 +322,9 @@ void Spawn(Creature &c, world::Planet &p) {
 	genome.properties.Death().mass = { 0.9, 0.05 };
 	genome.properties.Death().fertility = { 0.0, 0.0 };
 
+	glm::dvec3 color_avg(0.0);
+	double color_divisor = 0.0;
+
 	if (p.HasAtmosphere()) {
 		genome.composition.push_back({
 			p.Atmosphere(),    // resource
@@ -330,6 +333,8 @@ void Spawn(Creature &c, world::Planet &p) {
 			{ 0.1,  0.0005 },  // penalty
 			{ 0.0,  0.0 },     // growth
 		});
+		color_avg += c.GetSimulation().Resources()[p.Atmosphere()].base_color;
+		color_divisor += 0.1;
 	}
 	if (liquid > -1) {
 		genome.composition.push_back({
@@ -339,17 +344,28 @@ void Spawn(Creature &c, world::Planet &p) {
 			{ 0.01, 0.002 }, // penalty
 			{ 0.1, 0.0 },   // growth
 		});
+		color_avg += c.GetSimulation().Resources()[liquid].base_color;
+		color_divisor += 0.5;
 	}
 	if (solid > -1) {
 		genome.composition.push_back({
 			solid,             // resource
 			{ 0.4,   0.01 },   // mass
-			//{ 0.1,   0.001 },  // intake
 			{ 0.4,   0.001 },  // intake
 			{ 0.001, 0.0001 }, // penalty
 			{ 10.0,  0.002 },   // growth
 		});
+		color_avg += c.GetSimulation().Resources()[solid].base_color;
+		color_divisor += 1.0;
 	}
+
+	if (color_divisor > 0.001) {
+		color_avg /= color_divisor;
+	}
+	glm::dvec3 hsl = rgb2hsl(color_avg);
+	genome.base_hue = { hsl.x, 0.01 };
+	genome.base_saturation = { hsl.y, 0.01 };
+	genome.base_lightness = { hsl.z, 0.01 };
 
 	genome.Configure(c);
 }
