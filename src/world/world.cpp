@@ -138,11 +138,15 @@ glm::dmat4 Body::FromUniverse() const noexcept {
 	return m;
 }
 
+namespace {
+std::vector<creature::Creature *> ccache;
+}
+
 void Body::Tick(double dt) {
 	rotation += dt * AngularMomentum() / Inertia();
 	Cache();
-	for (creature::Creature *c : Creatures()) {
-		// TODO: this is self modifying, fix it fix it fix it
+	ccache = Creatures();
+	for (creature::Creature *c : ccache) {
 		c->Tick(dt);
 	}
 	for (auto c = Creatures().begin(); c != Creatures().end();) {
