@@ -267,6 +267,8 @@ void Assets::ReadResources(io::TokenStreamReader &in) {
 				} else {
 					throw std::runtime_error("unknown resource state '" + name + "'");
 				}
+			} else if (name == "base_color") {
+				in.ReadVec(data.resources[id].base_color);
 			} else {
 				throw std::runtime_error("unknown resource property '" + name + "'");
 			}

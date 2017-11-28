@@ -1,6 +1,8 @@
 #ifndef BLOBS_WORLD_RESOURCE_HPP_
 #define BLOBS_WORLD_RESOURCE_HPP_
 
+#include "../math/glm.hpp"
+
 #include <string>
 
 
@@ -9,8 +11,8 @@ namespace world {
 
 struct Resource {
 
-	std::string name;
-	std::string label;
+	std::string name = "";
+	std::string label = "";
 
 	double density = 1.0;
 
@@ -25,6 +27,8 @@ struct Resource {
 	// the resource's natural state
 	// TODO: something about temperature and pressure and stuff
 	int state = SOLID;
+
+	glm::dvec3 base_color = glm::dvec3(1.0);
 
 };
 
