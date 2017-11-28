@@ -546,6 +546,8 @@ CreatureSkin::CreatureSkin()
 		"in vec3 frag_tex_uv;\n"
 		"in vec3 normal;\n"
 
+		"uniform vec3 base_color;\n"
+		"uniform vec4 highlight_color;\n"
 		"uniform sampler2DArray tex_sampler;\n"
 		"uniform int num_lights;\n"
 		"uniform LightSource light[8];\n"
@@ -553,14 +555,15 @@ CreatureSkin::CreatureSkin()
 		"out vec3 color;\n"
 
 		"void main() {\n"
-			"vec3 tex_color = texture(tex_sampler, frag_tex_uv).rgb;\n"
-			"vec3 total_light = tex_color * vec3(0.1, 0.1, 0.1);\n"
+			"vec4 tex_color = texture(tex_sampler, frag_tex_uv);\n"
+			"vec3 mat_color = mix(base_color, highlight_color.rgb, tex_color.r * tex_color.a * highlight_color.a);\n"
+			"vec3 total_light = mat_color * vec3(0.1, 0.1, 0.1);\n"
 			"for (int i = 0; i < num_lights; ++i) {\n"
 				"vec3 to_light = light[i].position - vtx_viewspace;\n"
 				"float distance = length(to_light) + length(vtx_viewspace);\n"
 				"vec3 light_dir = normalize(to_light);\n"
 				"float attenuation = light[i].strength / (distance * distance);\n"
-				"vec3 diffuse = attenuation * max(0.0, dot(normal, light_dir)) * light[i].color * tex_color;\n"
+				"vec3 diffuse = attenuation * max(0.0, dot(normal, light_dir)) * light[i].color * mat_color;\n"
 				"vec3 view_dir = vec3(0.0, 0.0, 1.0);\n"
 				"vec3 specular = vec3(0.0, 0.0, 0.0);\n"
 				"if (dot(normal, light_dir) >= 0.0) {\n"
@@ -579,6 +582,8 @@ CreatureSkin::CreatureSkin()
 	m_handle = prog.UniformLocation("M");
 	mv_handle = prog.UniformLocation("MV");
 	mvp_handle = prog.UniformLocation("MVP");
+	base_color_handle = prog.UniformLocation("base_color");
+	highlight_color_handle = prog.UniformLocation("highlight_color");
 	sampler_handle = prog.UniformLocation("tex_sampler");
 	num_lights_handle = prog.UniformLocation("num_lights");
 	for (int i = 0; i < MAX_LIGHTS; ++i) {
@@ -634,6 +639,14 @@ void CreatureSkin::SetMVP(const glm::mat4 &mm, const glm::mat4 &vv, const glm::m
 	prog.Uniform(m_handle, m);
 	prog.Uniform(mv_handle, mv);
 	prog.Uniform(mvp_handle, mvp);
+}
+
+void CreatureSkin::SetBaseColor(const glm::vec3 &c) noexcept {
+	prog.Uniform(base_color_handle, c);
+}
+
+void CreatureSkin::SetHighlightColor(const glm::vec4 &c) noexcept {
+	prog.Uniform(highlight_color_handle, c);
 }
 
 void CreatureSkin::SetTexture(ArrayTexture &tex) noexcept {

@@ -33,6 +33,8 @@ Creature::Creature(world::Simulation &sim)
 , genome()
 , properties()
 , cur_prop(0)
+, base_color(1.0)
+, highlight_color(0.0)
 , mass(1.0)
 , density(1.0)
 , size(1.0)
@@ -51,8 +53,13 @@ Creature::Creature(world::Simulation &sim)
 Creature::~Creature() {
 }
 
+glm::dvec4 Creature::HighlightColor() const noexcept {
+	return glm::dvec4(highlight_color, AgeLerp(CurProps().highlight, NextProps().highlight));
+}
+
 void Creature::Grow(double amount) noexcept {
-	Mass(std::min(properties.props[cur_prop].mass, mass + amount));
+	const double max_mass = AgeLerp(CurProps().mass, NextProps().mass);
+	Mass(std::min(max_mass, mass + amount));
 }
 
 void Creature::Hurt(double dt) noexcept {
@@ -82,9 +89,12 @@ double Creature::Age() const noexcept {
 	return sim.Time() - birth;
 }
 
+double Creature::AgeLerp(double from, double to) const noexcept {
+	return glm::mix(from, to, glm::smoothstep(CurProps().age, NextProps().age, Age()));
+}
+
 double Creature::Fertility() const noexcept {
-	// TODO: lerp based on age?
-	return properties.props[cur_prop].fertility / 3600.0;
+	return AgeLerp(CurProps().fertility, NextProps().fertility) / 3600.0;
 }
 
 void Creature::AddGoal(std::unique_ptr<Goal> &&g) {
@@ -103,11 +113,12 @@ bool GoalCompare(const std::unique_ptr<Goal> &a, const std::unique_ptr<Goal> &b)
 
 void Creature::Tick(double dt) {
 	if (cur_prop < 5 && Age() > properties.props[cur_prop + 1].age) {
-		++cur_prop;
-		if (cur_prop == 5) {
+		if (cur_prop == 4) {
 			std::cout << "[" << int(sim.Time()) << "s] "
 				<< name << " died of old age" << std::endl;
 			Die();
+		} else {
+			++cur_prop;
 		}
 	}
 
@@ -301,26 +312,32 @@ void Spawn(Creature &c, world::Planet &p) {
 	genome.properties.Birth().age = { 0.0, 0.0 };
 	genome.properties.Birth().mass = { 0.5, 0.05 };
 	genome.properties.Birth().fertility = { 0.0, 0.0 };
+	genome.properties.Birth().highlight = { 0.0, 0.0 };
 
 	genome.properties.Child().age = { 30.0, 1.0 };
 	genome.properties.Child().mass = { 0.7, 0.05 };
 	genome.properties.Child().fertility = { 0.0, 0.0 };
+	genome.properties.Child().highlight = { 0.2, 0.05 };
 
 	genome.properties.Youth().age = { 60.0, 5.0 };
 	genome.properties.Youth().mass = { 0.9, 0.1 };
 	genome.properties.Youth().fertility = { 0.5, 0.03 };
+	genome.properties.Youth().highlight = { 0.9, 0.1 };
 
 	genome.properties.Adult().age = { 120.0, 10.0 };
 	genome.properties.Adult().mass = { 1.2, 0.1 };
 	genome.properties.Adult().fertility = { 0.4, 0.01 };
+	genome.properties.Adult().highlight = { 0.7, 0.1 };
 
 	genome.properties.Elder().age = { 360.0, 30.0 };
 	genome.properties.Elder().mass = { 1.0, 0.05 };
 	genome.properties.Elder().fertility = { 0.1, 0.01 };
+	genome.properties.Elder().highlight = { 0.6, 0.1 };
 
 	genome.properties.Death().age = { 480.0, 60.0 };
 	genome.properties.Death().mass = { 0.9, 0.05 };
 	genome.properties.Death().fertility = { 0.0, 0.0 };
+	genome.properties.Death().highlight = { 0.5, 0.1 };
 
 	glm::dvec3 color_avg(0.0);
 	double color_divisor = 0.0;
@@ -333,7 +350,7 @@ void Spawn(Creature &c, world::Planet &p) {
 			{ 0.1,  0.0005 },  // penalty
 			{ 0.0,  0.0 },     // growth
 		});
-		color_avg += c.GetSimulation().Resources()[p.Atmosphere()].base_color;
+		color_avg += c.GetSimulation().Resources()[p.Atmosphere()].base_color * 0.1;
 		color_divisor += 0.1;
 	}
 	if (liquid > -1) {
@@ -344,7 +361,7 @@ void Spawn(Creature &c, world::Planet &p) {
 			{ 0.01, 0.002 }, // penalty
 			{ 0.1, 0.0 },   // growth
 		});
-		color_avg += c.GetSimulation().Resources()[liquid].base_color;
+		color_avg += c.GetSimulation().Resources()[liquid].base_color * 0.5;
 		color_divisor += 0.5;
 	}
 	if (solid > -1) {
@@ -405,6 +422,19 @@ void Genome::Configure(Creature &c) const {
 		c.AddNeed(std::move(need));
 	}
 
+	glm::dvec3 base_color(
+		std::fmod(base_hue.FakeNormal(random.SNorm()) + 1.0, 1.0),
+		glm::clamp(base_saturation.FakeNormal(random.SNorm()), 0.0, 1.0),
+		glm::clamp(base_lightness.FakeNormal(random.SNorm()), 0.0, 1.0)
+	);
+	glm::dvec3 highlight_color(
+		std::fmod(base_color.x + 0.5, 1.0),
+		1.0 - base_color.y,
+		1.0 - base_color.z
+	);
+	c.BaseColor(hsl2rgb(base_color));
+	c.HighlightColor(hsl2rgb(highlight_color));
+
 	c.Mass(c.GetProperties().props[0].mass);
 	c.Density(mass / volume);
 	c.GetSteering().MaxAcceleration(1.4);
@@ -416,7 +446,6 @@ void Genome::Configure(Creature &c) const {
 void Split(Creature &c) {
 	Creature *a = new Creature(c.GetSimulation());
 	const Situation &s = c.GetSituation();
-	// TODO: generate names
 	a->Name(c.GetSimulation().Assets().name.Sequential());
 	// TODO: mutate
 	c.GetGenome().Configure(*a);

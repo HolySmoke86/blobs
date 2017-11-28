@@ -3,6 +3,7 @@
 
 #include "../math/Distribution.hpp"
 #include "../math/GaloisLFSR.hpp"
+#include "../math/glm.hpp"
 
 #include <vector>
 
@@ -22,6 +23,7 @@ struct Genome {
 		T age;
 		T mass;
 		T fertility;
+		T highlight;
 	};
 	template<class T>
 	struct Properties {
@@ -70,7 +72,8 @@ struct Genome {
 		return {
 			p.age.FakeNormal(rand.SNorm()),
 			p.mass.FakeNormal(rand.SNorm()),
-			p.fertility.FakeNormal(rand.SNorm())
+			p.fertility.FakeNormal(rand.SNorm()),
+			glm::clamp(p.highlight.FakeNormal(rand.SNorm()), 0.0, 1.0)
 		};
 	}
 

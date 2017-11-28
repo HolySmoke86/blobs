@@ -57,6 +57,15 @@ public:
 	Genome::Properties<double> &GetProperties() noexcept { return properties; }
 	const Genome::Properties<double> &GetProperties() const noexcept { return properties; }
 
+	const Genome::PropertySet<double> &CurProps() const noexcept { return properties.props[cur_prop]; }
+	const Genome::PropertySet<double> &NextProps() const noexcept { return properties.props[cur_prop + 1]; }
+
+	void BaseColor(const glm::dvec3 &c) noexcept { base_color = c; }
+	const glm::dvec3 &BaseColor() const noexcept { return base_color; }
+
+	void HighlightColor(const glm::dvec3 &c) noexcept { highlight_color = c; }
+	glm::dvec4 HighlightColor() const noexcept;
+
 	void Mass(double m) noexcept { mass = m; size = std::cbrt(mass / density); }
 	double Mass() const noexcept { return mass; }
 	void Grow(double amount) noexcept;
@@ -66,6 +75,7 @@ public:
 
 	double Size() const noexcept;
 	double Age() const noexcept;
+	double AgeLerp(double from, double to) const noexcept;
 	// change of giving birth per tick
 	double Fertility() const noexcept;
 
@@ -109,6 +119,9 @@ private:
 	Genome genome;
 	Genome::Properties<double> properties;
 	int cur_prop;
+
+	glm::dvec3 base_color;
+	glm::dvec3 highlight_color;
 
 	double mass;
 	double density;

@@ -55,8 +55,8 @@ template<class T>
 inline T hsl2rgb(const T &hsl) {
 	using Vec3 = glm::tvec3<typename T::value_type>;
 	using Vec4 = glm::tvec4<typename T::value_type>;
-	const Vec4 K(0.0, -1.0/3.0, 2.0/3.0, -1.0);
-	const Vec3 p(glm::abs(glm::fract(Vec3(hsl.h) + Vec3(K)) * 6.0 - Vec3(K.w)));
+	const Vec4 K(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+	const Vec3 p(glm::abs(glm::fract(Vec3(hsl.x) + Vec3(K)) * 6.0 - Vec3(K.w)));
 	T rgb = hsl.z * glm::mix(Vec3(K.x), glm::clamp(p - Vec3(K.x), 0.0, 1.0), hsl.y);
 	return rgb;
 }

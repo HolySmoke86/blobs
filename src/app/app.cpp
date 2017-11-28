@@ -216,15 +216,12 @@ Assets::Assets()
 
 	textures.skins.Bind();
 	textures.skins.Reserve(256, 256, 9, format);
-	LoadSkinTexture("1", textures.skins, 0);
-	LoadSkinTexture("2", textures.skins, 1);
-	LoadSkinTexture("3", textures.skins, 2);
-	LoadSkinTexture("4", textures.skins, 3);
-	LoadSkinTexture("5", textures.skins, 4);
-	LoadSkinTexture("6", textures.skins, 5);
-	LoadSkinTexture("7", textures.skins, 6);
-	LoadSkinTexture("8", textures.skins, 7);
-	LoadSkinTexture("9", textures.skins, 8);
+	LoadSkinTexture("plain", textures.skins, 0);
+	LoadSkinTexture("stripes", textures.skins, 1);
+	LoadSkinTexture("dots", textures.skins, 2);
+	LoadSkinTexture("lines", textures.skins, 3);
+	LoadSkinTexture("spots", textures.skins, 4);
+	LoadSkinTexture("circles", textures.skins, 5);
 	textures.skins.FilterTrilinear();
 }
 
