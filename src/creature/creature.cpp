@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <sstream>
 #include <glm/gtx/transform.hpp>
+#include <glm/gtx/vector_angle.hpp>
 
 #include <iostream>
 #include <glm/gtx/io.hpp>
@@ -159,10 +160,13 @@ void Creature::Tick(double dt) {
 		Situation::Derivative d(Step(c, dt));
 		Situation::Derivative f(
 			(1.0 / 6.0) * (a.vel + 2.0 * (b.vel + c.vel) + d.vel),
-			(1.0 / 6.0) * (a.acc + 2.0 * (b.acc + c.acc) + d.acc)
+			(1.0 / 6.0) * (a.acc + 2.0 * (b.acc + c.acc) + d.acc),
+			(1.0 / 6.0) * (a.turn + 2.0 * (b.turn + c.turn) + d.turn)
 		);
 		state.pos += f.vel * dt;
 		state.vel += f.acc * dt;
+		constexpr double turn_speed = 10.0;
+		state.dir = glm::normalize(state.dir + f.turn * turn_speed * dt);
 		situation.SetState(state);
 	}
 
@@ -182,20 +186,11 @@ void Creature::Tick(double dt) {
 	}
 	// if active goal can be interrupted, check priorities
 	if (goals.size() > 1 && goals[0]->Interruptible()) {
-		Goal *old_top = &*goals[0];
 		std::sort(goals.begin(), goals.end(), GoalCompare);
-		Goal *new_top = &*goals[0];
-		if (new_top != old_top) {
-			std::cout << "[" << int(sim.Time()) << "s] " << name
-				<< " changing goal from " << old_top->Describe()
-				<< " to " << new_top->Describe() << std::endl;
-		}
 	}
 	goals[0]->Action();
 	for (auto goal = goals.begin(); goal != goals.end();) {
 		if ((*goal)->Complete()) {
-			std::cout << "[" << int(sim.Time()) << "s] " << name
-				<< " complete goal: " << (*goal)->Describe() << std::endl;
 			goals.erase(goal);
 		} else {
 			++goal;
@@ -207,7 +202,12 @@ Situation::Derivative Creature::Step(const Situation::Derivative &ds, double dt)
 	Situation::State s = situation.GetState();
 	s.pos += ds.vel * dt;
 	s.vel += ds.acc * dt;
-	return { s.vel, steering.Acceleration(s) };
+	s.dir = normalize(s.dir + ds.turn * dt);
+	return {
+		s.vel,
+		steering.Acceleration(s),
+		allzero(s.vel) ? glm::dvec3(0.0) : normalize(s.vel) - s.dir
+	};
 }
 
 glm::dmat4 Creature::LocalTransform() noexcept {
@@ -215,6 +215,8 @@ glm::dmat4 Creature::LocalTransform() noexcept {
 	const double half_size = size * 0.5;
 	const glm::dvec3 &pos = situation.Position();
 	return glm::translate(glm::dvec3(pos.x, pos.y, pos.z + half_size))
+		* glm::dmat4(world::Planet::SurfaceOrientation(situation.Surface()))
+		* glm::rotate(glm::orientedAngle(glm::dvec3(0.0, 0.0, -1.0), situation.Heading(), glm::dvec3(0.0, 1.0, 0.0)), glm::dvec3(0.0, 1.0, 0.0))
 		* glm::scale(glm::dvec3(half_size, half_size, half_size));
 }
 

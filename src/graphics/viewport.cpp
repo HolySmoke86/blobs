@@ -132,11 +132,11 @@ Camera &Camera::Radial(const creature::Creature &c, double distance, const glm::
 		up = world::Planet::SurfaceNormal(srf);
 		dir =
 			world::Planet::SurfaceOrientation(srf)
-			* glm::dmat3(glm::eulerAngleYX(angle.y, -angle.x))
+			* glm::dmat3(glm::eulerAngleYX(-angle.y, -angle.x))
 			* dir;
 	} else {
 		up.y = 1.0;
-		dir = glm::dmat3(glm::eulerAngleYX(angle.y, -angle.x)) * dir;
+		dir = glm::dmat3(glm::eulerAngleYX(-angle.y, -angle.x)) * dir;
 	}
 	pos += up * (c.Size() * 0.5);
 	up = glm::rotate(up, angle.z, glm::normalize(-dir));

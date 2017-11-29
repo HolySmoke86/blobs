@@ -36,6 +36,17 @@ inline bool anynan(const T &v) noexcept {
 	return glm::any(glm::isnan(v));
 }
 
+template<class Vec>
+inline Vec limit(const Vec &v, typename Vec::value_type max) noexcept {
+	typename Vec::value_type len2 = glm::length2(v);
+	typename Vec::value_type max2 = max * max;
+	if (len2 > max2) {
+		return glm::normalize(v) * max;
+	} else {
+		return v;
+	}
+}
+
 template<class T>
 inline T rgb2hsl(const T &rgb) {
 	using Vec4 = glm::tvec4<typename T::value_type>;

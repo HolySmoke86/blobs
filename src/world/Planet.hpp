@@ -83,7 +83,7 @@ public:
 	static glm::dmat3 SurfaceOrientation(int srf) noexcept {
 		glm::dmat3 mat(0.0);
 		mat[(srf + 0) % 3][0] = 1.0;
-		mat[(srf + 2) % 3][1] = srf < 3 ? 1.0 : -1.0;
+		mat[(srf + 2) % 3][1] = srf < 3 ? -1.0 : 1.0;
 		mat[(srf + 1) % 3][2] = srf < 3 ? 1.0 : -1.0;
 		return mat;
 	}
