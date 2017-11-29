@@ -39,6 +39,10 @@ private:
 	void OnResize(int w, int h) override;
 
 	void OnKeyDown(const SDL_KeyboardEvent &) override;
+	void OnMouseDown(const SDL_MouseButtonEvent &) override;
+	void OnMouseUp(const SDL_MouseButtonEvent &) override;
+	void OnMouseMotion(const SDL_MouseMotionEvent &) override;
+	void OnMouseWheel(const SDL_MouseWheelEvent &) override;
 
 	void OnUpdate(int dt) override;
 	void OnRender(graphics::Viewport &) override;
@@ -51,6 +55,11 @@ private:
 	world::Simulation &sim;
 
 	graphics::Camera cam;
+	double cam_dist;
+	double cam_tgt_dist;
+	glm::dvec3 cam_orient;
+	bool cam_dragging;
+
 	ui::CreaturePanel cp;
 
 	int remain;

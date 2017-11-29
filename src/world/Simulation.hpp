@@ -29,7 +29,7 @@ public:
 	Simulation &operator =(Simulation &&) = delete;
 
 public:
-	void Tick();
+	void Tick(double dt);
 
 	void AddBody(Body &);
 	void AddPlanet(Planet &);

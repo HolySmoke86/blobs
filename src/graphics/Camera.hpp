@@ -42,7 +42,9 @@ public:
 	/// look at center, position relative to orbital reference plane for children
 	Camera &Orbital(const glm::vec3 &pos) noexcept;
 	/// look at creature from above
-	Camera &TopDown(const creature::Creature &, float distance, float roll = 0.0f);
+	Camera &TopDown(const creature::Creature &, double distance, double roll = 0.0f);
+	/// look at creature from the side, angle in euler (ZXY in surface reference plane)
+	Camera &Radial(const creature::Creature &, double distance, const glm::dvec3 &angle);
 
 	const glm::mat4 &Projection() const noexcept { return projection; }
 	const glm::mat4 &View() const noexcept { return view; }

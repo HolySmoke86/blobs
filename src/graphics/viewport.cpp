@@ -8,6 +8,8 @@
 
 #include <cmath>
 #include <GL/glew.h>
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/transform.hpp>
 
 
@@ -68,8 +70,7 @@ Camera &Camera::FirstPerson(int srf, const glm::vec3 &pos, const glm::vec3 &at) 
 	position[(srf + 1) % 3] = pos.y;
 	position[(srf + 2) % 3] = dir * (pos.z + Reference().Radius());
 
-	glm::vec3 up(0.0f);
-	up[(srf + 2) % 3] = dir;
+	glm::vec3 up(world::Planet::SurfaceNormal(srf));
 
 	glm::vec3 target;
 	target[(srf + 0) % 3] = at.x;
@@ -99,24 +100,47 @@ Camera &Camera::MapView(int srf, const glm::vec3 &pos, float roll) noexcept {
 	return *this;
 }
 
-Camera &Camera::TopDown(const creature::Creature &c, float distance, float roll) {
+Camera &Camera::Orbital(const glm::vec3 &pos) noexcept {
+	track_orient = false;
+	view = glm::lookAt(pos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+	return *this;
+}
+
+Camera &Camera::TopDown(const creature::Creature &c, double distance, double roll) {
 	const creature::Situation &s = c.GetSituation();
-	if (s.OnPlanet()) {
+	if (s.OnSurface()) {
 		int srf = s.Surface();
-		glm::vec3 pos(s.Position());
-		pos[(srf + 2) % 3] += srf < 3 ? distance : -distance;
+		glm::vec3 pos(s.Position() + (world::Planet::SurfaceNormal(srf) * distance));
 		Reference(s.GetPlanet());
 		return MapView(srf, pos, roll);
 	} else {
 		glm::vec3 pos(s.Position());
-		pos += glm::normalize(pos) * distance;
+		pos += glm::normalize(pos) * float(distance);
 		return Orbital(pos);
 	}
 }
 
-Camera &Camera::Orbital(const glm::vec3 &pos) noexcept {
-	track_orient = false;
-	view = glm::lookAt(pos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+Camera &Camera::Radial(const creature::Creature &c, double distance, const glm::dvec3 &angle) {
+	const creature::Situation &s = c.GetSituation();
+	glm::dvec3 pos(s.Position());
+	glm::dvec3 up(0.0);
+	glm::dvec3 dir(0.0, 0.0, -distance);
+	if (s.OnSurface()) {
+		Reference(s.GetPlanet());
+		track_orient = true;
+		int srf = s.Surface();
+		up = world::Planet::SurfaceNormal(srf);
+		dir =
+			world::Planet::SurfaceOrientation(srf)
+			* glm::dmat3(glm::eulerAngleYX(angle.y, -angle.x))
+			* dir;
+	} else {
+		up.y = 1.0;
+		dir = glm::dmat3(glm::eulerAngleYX(angle.y, -angle.x)) * dir;
+	}
+	pos += up * (c.Size() * 0.5);
+	up = glm::rotate(up, angle.z, glm::normalize(-dir));
+	view = glm::lookAt(pos - dir, pos, up);
 	return *this;
 }
 

@@ -37,8 +37,7 @@ void Simulation::AddSun(Sun &s) {
 	suns.insert(&s);
 }
 
-void Simulation::Tick() {
-	constexpr double dt = 0.01666666666666666666666666666666;
+void Simulation::Tick(double dt) {
 	time += dt;
 	for (auto body : bodies) {
 		body->Tick(dt);

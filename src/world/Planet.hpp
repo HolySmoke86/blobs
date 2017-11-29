@@ -75,6 +75,19 @@ public:
 	// center point of tile on surface at elevation
 	glm::dvec3 TileCenter(int surface, int x, int y, double elevation = 0.0) const noexcept;
 
+	static glm::dvec3 SurfaceNormal(int srf) noexcept {
+		glm::dvec3 nrm(0.0);
+		nrm[(srf + 2) % 3] = srf < 3 ? 1.0 : -1.0;
+		return nrm;
+	}
+	static glm::dmat3 SurfaceOrientation(int srf) noexcept {
+		glm::dmat3 mat(0.0);
+		mat[(srf + 0) % 3][0] = 1.0;
+		mat[(srf + 2) % 3][1] = srf < 3 ? 1.0 : -1.0;
+		mat[(srf + 1) % 3][2] = srf < 3 ? 1.0 : -1.0;
+		return mat;
+	}
+
 	void BuildVAO(const Set<TileType> &);
 	void Draw(app::Assets &, graphics::Viewport &) override;
 
