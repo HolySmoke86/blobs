@@ -21,7 +21,7 @@ MasterState::MasterState(Assets &assets, world::Simulation &sim) noexcept
 , cam(sim.Root())
 , cam_dist(5.0)
 , cam_tgt_dist(5.0)
-, cam_orient(PI * 0.125, 0.0, 0.0)
+, cam_orient(PI * 0.375, PI * 0.25, 0.0)
 , cam_dragging(false)
 , cp(assets)
 , remain(0)

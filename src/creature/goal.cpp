@@ -92,8 +92,7 @@ void IdleGoal::Action() {
 	double rand = Assets().random.UNorm();
 	if (fert > rand) {
 		std::cout << "[" << int(GetCreature().GetSimulation().Time())
-			<< "s] splitting " << GetCreature().Name()
-			<< " because " << fert << " > " << rand << std::endl;
+			<< "s] " << GetCreature().Name() << " split" << std::endl;
 		Split(GetCreature());
 	}
 }

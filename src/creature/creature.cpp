@@ -47,8 +47,10 @@ Creature::Creature(world::Simulation &sim)
 , needs()
 , goals()
 , situation()
-, steering()
+, steering(*this)
 , vao() {
+	// all creatures avoid each other for now
+	steering.Separate(0.1, 1.5);
 }
 
 Creature::~Creature() {
@@ -78,7 +80,7 @@ void Creature::Hurt(double dt) noexcept {
 	health = std::max(0.0, health - dt);
 	if (health == 0.0) {
 		std::cout << "[" << int(sim.Time()) << "s] "
-		<< name << " died" << std::endl;
+			<< name << " died" << std::endl;
 		Die();
 	}
 }
@@ -129,7 +131,6 @@ double Creature::Fertility() const noexcept {
 }
 
 void Creature::AddGoal(std::unique_ptr<Goal> &&g) {
-	std::cout << "[" << int(sim.Time()) << "s] " << name << " new goal: " << g->Describe() << std::endl;
 	g->Enable();
 	goals.emplace_back(std::move(g));
 }
@@ -149,6 +150,9 @@ void Creature::Tick(double dt) {
 			std::cout << "[" << int(sim.Time()) << "s] "
 				<< name << " died of old age" << std::endl;
 			Die();
+		} else {
+			std::cout << "[" << int(sim.Time()) << "s] "
+				<< name << " grew up to " << AgeName() << std::endl;
 		}
 	}
 
@@ -166,6 +170,7 @@ void Creature::Tick(double dt) {
 		state.pos += f.vel * dt;
 		state.vel += f.acc * dt;
 		constexpr double turn_speed = 10.0;
+		// TODO: this is crap
 		state.dir = glm::normalize(state.dir + f.turn * turn_speed * dt);
 		situation.SetState(state);
 	}
@@ -494,6 +499,8 @@ void Split(Creature &c) {
 		s.GetPlanet(), s.Surface(),
 		s.Position() + glm::dvec3(0.0, a->Size() * 0.51, 0.0));
 	a->BuildVAO();
+	std::cout << "[" << int(c.GetSimulation().Time()) << "s] "
+		<< a->Name() << " was born" << std::endl;
 
 	Creature *b = new Creature(c.GetSimulation());
 	b->Name(c.GetSimulation().Assets().name.Sequential());
@@ -503,6 +510,8 @@ void Split(Creature &c) {
 		s.GetPlanet(), s.Surface(),
 		s.Position() + glm::dvec3(0.0, b->Size() * -0.51, 0.0));
 	b->BuildVAO();
+	std::cout << "[" << int(c.GetSimulation().Time()) << "s] "
+		<< b->Name() << " was born" << std::endl;
 
 	c.Die();
 }
@@ -614,16 +623,30 @@ void Situation::SetPlanetSurface(world::Planet &p, int srf, const glm::dvec3 &po
 }
 
 
-Steering::Steering()
-: target(0.0)
+Steering::Steering(const Creature &c)
+: c(c)
+, target(0.0)
 , max_accel(1.0)
 , max_speed(1.0)
-, halting(false)
+, min_dist(0.0)
+, max_look(0.0)
+, separating(false)
+, halting(true)
 , seeking(false)
 , arriving(false) {
 }
 
 Steering::~Steering() {
+}
+
+void Steering::Separate(double min_distance, double max_lookaround) noexcept {
+	separating = true;
+	min_dist = min_distance;
+	max_look = max_lookaround;
+}
+
+void Steering::DontSeparate() noexcept {
+	separating = false;
 }
 
 void Steering::Halt() noexcept {
@@ -648,6 +671,21 @@ void Steering::GoTo(const glm::dvec3 &t) noexcept {
 
 glm::dvec3 Steering::Acceleration(const Situation::State &s) const noexcept {
 	glm::dvec3 acc(0.0);
+	if (separating) {
+		// TODO: off surface situation
+		glm::dvec3 repulse(0.0);
+		const Situation &s = c.GetSituation();
+		for (auto &other : s.GetPlanet().Creatures()) {
+			if (&*other == &c) continue;
+			glm::dvec3 diff = s.Position() - other->GetSituation().Position();
+			if (length2(diff) > max_look * max_look) continue;
+			double sep = length(diff) - other->Size() * 0.707 - c.Size() * 0.707;
+			if (sep < min_dist) {
+				repulse += normalize(diff) * (1.0 - sep / min_dist);
+			}
+		}
+		SumForce(acc, repulse);
+	}
 	if (halting) {
 		SumForce(acc, s.vel * -max_accel);
 	}

@@ -8,10 +8,12 @@
 namespace blobs {
 namespace creature {
 
+class Creature;
+
 class Steering {
 
 public:
-	Steering();
+	explicit Steering(const Creature &);
 	~Steering();
 
 public:
@@ -22,6 +24,8 @@ public:
 	double MaxSpeed() const noexcept { return max_speed; }
 
 public:
+	void Separate(double min_distance, double max_lookaround) noexcept;
+	void DontSeparate() noexcept;
 	void Halt() noexcept;
 	void Pass(const glm::dvec3 &) noexcept;
 	void GoTo(const glm::dvec3 &) noexcept;
@@ -33,11 +37,15 @@ private:
 	glm::dvec3 TargetVelocity(const Situation::State &, const glm::dvec3 &) const noexcept;
 
 private:
+	const Creature &c;
 	glm::dvec3 target;
 
-	double max_accel = 1.0;
-	double max_speed = 1.0;
+	double max_accel;
+	double max_speed;
+	double min_dist;
+	double max_look;
 
+	bool separating;
 	bool halting;
 	bool seeking;
 	bool arriving;
