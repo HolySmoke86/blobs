@@ -461,6 +461,7 @@ void Genome::Configure(Creature &c) const {
 			need->gain = intake * 0.5;
 		}
 		need->name = c.GetSimulation().Resources()[comp.resource].label;
+		need->value = 0.4;
 		need->inconvenient = 0.5;
 		need->critical = 0.95;
 		c.AddNeed(std::move(need));

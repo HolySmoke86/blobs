@@ -173,31 +173,47 @@ void LocateResourceGoal::SearchVicinity() {
 	glm::ivec2 loc = planet.SurfacePosition(srf, pos);
 	glm::ivec2 seek_radius(2);
 	glm::ivec2 begin(glm::max(glm::ivec2(0), loc - seek_radius));
-	glm::ivec2 end(glm::min(glm::ivec2(planet.SideLength() - 1), loc + seek_radius));
+	glm::ivec2 end(glm::min(glm::ivec2(planet.SideLength()), loc + seek_radius + glm::ivec2(1)));
 
-	const world::TileType::Yield *best = nullptr;
-	glm::ivec2 best_pos;
-	double best_distance;
+	double rating[end.y - begin.y][end.x - begin.x] { 0.0 };
 
-	for (int y = begin.y; y <= end.y; ++y) {
-		for (int x = begin.x; x <= end.x; ++x) {
+	// find close and rich field
+	for (int y = begin.y; y < end.y; ++y) {
+		for (int x = begin.x; x < end.x; ++x) {
 			const world::TileType &type = planet.TypeAt(srf, x, y);
 			auto yield = type.FindResource(res);
 			if (yield != type.resources.cend()) {
-				double dist = glm::length2(planet.TileCenter(srf, x, y) - pos);
-				if (!best) {
-					best = &*yield;
-					best_pos = glm::ivec2(x, y);
-					best_distance = dist;
-				} else if (yield->ubiquity - (dist * 0.125) > best->ubiquity - (best_distance * 0.125)) {
-					best = &*yield;
-					best_pos = glm::ivec2(x, y);
-					best_distance = dist;
-				}
+				// TODO: subtract minimum yield
+				rating[y - begin.y][x - begin.x] = yield->ubiquity;
+				double dist = 1.0 - 0.25 * glm::length2(planet.TileCenter(srf, x, y) - pos);
+				rating[y - begin.y][x - begin.x] /= dist;
 			}
 		}
 	}
-	if (best) {
+
+	// demote crowded tiles
+	for (auto &c : planet.Creatures()) {
+		if (&*c == &GetCreature()) continue;
+		if (c->GetSituation().Surface() != srf) continue;
+		glm::ivec2 coords(c->GetSituation().SurfacePosition());
+		if (coords.x < begin.x || coords.x >= end.x) continue;
+		if (coords.y < begin.y || coords.y >= end.y) continue;
+		rating[coords.y - begin.y][coords.x - begin.x] *= 0.9;
+	}
+
+	glm::ivec2 best_pos(0);
+	double best_rating = -1.0;
+
+	for (int y = begin.y; y < end.y; ++y) {
+		for (int x = begin.x; x < end.x; ++x) {
+			if (rating[y - begin.y][x - begin.x] > best_rating) {
+				best_pos = glm::ivec2(x, y);
+				best_rating = rating[y - begin.y][x - begin.x];
+			}
+		}
+	}
+
+	if (best_rating) {
 		found = true;
 		searching = false;
 		target_pos = planet.TileCenter(srf, best_pos.x, best_pos.y);
