@@ -33,13 +33,10 @@ public:
 		glm::dvec3 vel;
 		// acceleration
 		glm::dvec3 acc;
-		// orientation adjust
-		glm::dvec3 turn;
 		Derivative(
 			const glm::dvec3 &vel = glm::dvec3(0.0),
-			const glm::dvec3 &acc = glm::dvec3(0.0),
-			const glm::dvec3 &turn = glm::dvec3(0.0))
-		: vel(vel), acc(acc), turn(turn) { }
+			const glm::dvec3 &acc = glm::dvec3(0.0))
+		: vel(vel), acc(acc) { }
 	};
 
 public:
@@ -70,6 +67,7 @@ public:
 	bool Moving() const noexcept { return glm::length2(state.vel) < 0.00000001; }
 	void Move(const glm::dvec3 &dp) noexcept;
 
+	void Heading(const glm::dvec3 &h) noexcept { state.dir = h; }
 	const glm::dvec3 &Heading() const noexcept { return state.dir; }
 
 	void SetPlanetSurface(world::Planet &, int srf, const glm::dvec3 &pos) noexcept;

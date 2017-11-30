@@ -12,6 +12,7 @@
 #include "IngestNeed.hpp"
 #include "Need.hpp"
 #include "../app/Assets.hpp"
+#include "../math/const.hpp"
 #include "../world/Body.hpp"
 #include "../world/Planet.hpp"
 #include "../world/Simulation.hpp"
@@ -170,14 +171,23 @@ void Creature::Tick(double dt) {
 		Situation::Derivative d(Step(c, dt));
 		Situation::Derivative f(
 			(1.0 / 6.0) * (a.vel + 2.0 * (b.vel + c.vel) + d.vel),
-			(1.0 / 6.0) * (a.acc + 2.0 * (b.acc + c.acc) + d.acc),
-			(1.0 / 6.0) * (a.turn + 2.0 * (b.turn + c.turn) + d.turn)
+			(1.0 / 6.0) * (a.acc + 2.0 * (b.acc + c.acc) + d.acc)
 		);
 		state.pos += f.vel * dt;
 		state.vel += f.acc * dt;
-		constexpr double turn_speed = 10.0;
-		// TODO: this is crap
-		state.dir = glm::normalize(state.dir + f.turn * turn_speed * dt);
+		if (length2(state.vel) > 0.000001) {
+			glm::dvec3 nvel(normalize(state.vel));
+			double ang = angle(nvel, state.dir);
+			double turn_rate = PI * dt;
+			if (ang < turn_rate) {
+				state.dir = normalize(state.vel);
+			} else if (std::abs(ang - PI) < 0.001) {
+				state.dir = rotate(state.dir, turn_rate, world::Planet::SurfaceNormal(situation.Surface()));
+			} else {
+				state.dir = rotate(state.dir, turn_rate, normalize(cross(state.dir, nvel)));
+			}
+		}
+
 		situation.SetState(state);
 	}
 
@@ -215,11 +225,9 @@ Situation::Derivative Creature::Step(const Situation::Derivative &ds, double dt)
 	Situation::State s = situation.GetState();
 	s.pos += ds.vel * dt;
 	s.vel += ds.acc * dt;
-	s.dir = normalize(s.dir + ds.turn * dt);
 	return {
 		s.vel,
-		steering.Acceleration(s),
-		allzero(s.vel) ? glm::dvec3(0.0) : normalize(s.vel) - s.dir
+		steering.Acceleration(s)
 	};
 }
 
@@ -227,9 +235,10 @@ glm::dmat4 Creature::LocalTransform() noexcept {
 	// TODO: surface transform
 	const double half_size = size * 0.5;
 	const glm::dvec3 &pos = situation.Position();
+	const glm::dmat3 srf(world::Planet::SurfaceOrientation(situation.Surface()));
 	return glm::translate(glm::dvec3(pos.x, pos.y, pos.z + half_size))
-		* glm::dmat4(world::Planet::SurfaceOrientation(situation.Surface()))
-		* glm::rotate(glm::orientedAngle(glm::dvec3(0.0, 0.0, -1.0), situation.Heading(), glm::dvec3(0.0, 1.0, 0.0)), glm::dvec3(0.0, 1.0, 0.0))
+		* glm::rotate(glm::orientedAngle(-srf[2], situation.Heading(), srf[1]), srf[1])
+		* glm::dmat4(srf)
 		* glm::scale(glm::dvec3(half_size, half_size, half_size));
 }
 
@@ -324,6 +333,7 @@ void Creature::Draw(graphics::Viewport &viewport) {
 void Spawn(Creature &c, world::Planet &p) {
 	p.AddCreature(&c);
 	c.GetSituation().SetPlanetSurface(p, 0, p.TileCenter(0, p.SideLength() / 2, p.SideLength() / 2));
+	c.GetSituation().Heading(-world::Planet::SurfaceOrientation(0)[2]);
 
 	// probe surrounding area for common resources
 	int start = p.SideLength() / 2 - 2;
