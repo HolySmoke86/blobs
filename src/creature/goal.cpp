@@ -10,6 +10,7 @@
 #include "../world/Simulation.hpp"
 #include "../world/TileType.hpp"
 
+#include <cstring>
 #include <iostream>
 #include <glm/gtx/io.hpp>
 
@@ -241,7 +242,7 @@ void LocateResourceGoal::SearchVicinity() {
 	glm::ivec2 end(glm::min(glm::ivec2(planet.SideLength()), loc + seek_radius + glm::ivec2(1)));
 
 	double rating[end.y - begin.y][end.x - begin.x];
-	std::memset(rating, 0, sizeof(double) * (end.y - begin.y) * (end.x - begin.x))
+	std::memset(rating, 0, sizeof(double) * (end.y - begin.y) * (end.x - begin.x));
 
 	// find close and rich field
 	for (int y = begin.y; y < end.y; ++y) {
