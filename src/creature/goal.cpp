@@ -88,12 +88,15 @@ void IdleGoal::Tick(double dt) {
 }
 
 void IdleGoal::Action() {
-	double fert = GetCreature().Fertility();
-	double rand = Assets().random.UNorm();
-	if (fert > rand) {
-		std::cout << "[" << int(GetCreature().GetSimulation().Time())
-			<< "s] " << GetCreature().Name() << " split" << std::endl;
-		Split(GetCreature());
+	// check if eligible to split
+	if (GetCreature().Mass() > GetCreature().GetProperties().Birth().mass * 1.8) {
+		double fert = GetCreature().Fertility();
+		double rand = Assets().random.UNorm();
+		if (fert > rand) {
+			std::cout << "[" << int(GetCreature().GetSimulation().Time())
+				<< "s] " << GetCreature().Name() << " split" << std::endl;
+			Split(GetCreature());
+		}
 	}
 }
 
@@ -147,6 +150,7 @@ void LocateResourceGoal::Action() {
 	} else {
 		GetSteering().GoTo(target_pos);
 	}
+	GetSteering().Haste(Urgency());
 }
 
 void LocateResourceGoal::LocateResource() {
@@ -190,7 +194,7 @@ void LocateResourceGoal::SearchVicinity() {
 			if (yield != type.resources.cend()) {
 				// TODO: subtract minimum yield
 				rating[y - begin.y][x - begin.x] = yield->ubiquity;
-				double dist = 1.0 - 0.25 * glm::length2(planet.TileCenter(srf, x, y) - pos);
+				double dist = std::max(0.125, 0.25 * glm::length(planet.TileCenter(srf, x, y) - pos));
 				rating[y - begin.y][x - begin.x] /= dist;
 			}
 		}
@@ -233,6 +237,7 @@ void LocateResourceGoal::SearchVicinity() {
 		target_pos[(srf + 1) % 3] += Assets().random.SNorm();
 		// bias towards current direction
 		target_pos += glm::normalize(GetSituation().Velocity()) * 0.5;
+		target_pos = clamp(target_pos, -planet.Radius(), planet.Radius());
 		GetSteering().GoTo(target_pos);
 	}
 }

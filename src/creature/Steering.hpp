@@ -17,6 +17,10 @@ public:
 	~Steering();
 
 public:
+	/// factor in [0,1] of how fast you need to get there
+	void Haste(double h) noexcept { haste = h; }
+	double Haste() const noexcept { return haste; }
+
 	void MaxAcceleration(double a) noexcept { max_accel = a; }
 	double MaxAcceleration() const noexcept { return max_accel; }
 
@@ -33,13 +37,14 @@ public:
 	glm::dvec3 Acceleration(const Situation::State &) const noexcept;
 
 private:
-	bool SumForce(glm::dvec3 &out, const glm::dvec3 &in) const noexcept;
-	glm::dvec3 TargetVelocity(const Situation::State &, const glm::dvec3 &) const noexcept;
+	bool SumForce(glm::dvec3 &out, const glm::dvec3 &in, double max) const noexcept;
+	glm::dvec3 TargetVelocity(const Situation::State &, const glm::dvec3 &, double acc) const noexcept;
 
 private:
 	const Creature &c;
 	glm::dvec3 target;
 
+	double haste;
 	double max_accel;
 	double max_speed;
 	double min_dist;

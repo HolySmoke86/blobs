@@ -361,7 +361,7 @@ void Spawn(Creature &c, world::Planet &p) {
 	genome.properties.Youth().highlight = { 0.9, 0.1 };
 
 	genome.properties.Adult().age = { 120.0, 10.0 };
-	genome.properties.Adult().mass = { 1.2, 0.1 };
+	genome.properties.Adult().mass = { 1.3, 0.1 };
 	genome.properties.Adult().fertility = { 0.4, 0.01 };
 	genome.properties.Adult().highlight = { 0.7, 0.1 };
 
@@ -461,6 +461,7 @@ void Genome::Configure(Creature &c) const {
 			need->gain = intake * 0.5;
 		}
 		need->name = c.GetSimulation().Resources()[comp.resource].label;
+		need->growth = comp.growth.FakeNormal(random.SNorm());
 		need->value = 0.4;
 		need->inconvenient = 0.5;
 		need->critical = 0.95;
@@ -627,6 +628,7 @@ void Situation::SetPlanetSurface(world::Planet &p, int srf, const glm::dvec3 &po
 Steering::Steering(const Creature &c)
 : c(c)
 , target(0.0)
+, haste(0.0)
 , max_accel(1.0)
 , max_speed(1.0)
 , min_dist(0.0)
@@ -671,7 +673,9 @@ void Steering::GoTo(const glm::dvec3 &t) noexcept {
 }
 
 glm::dvec3 Steering::Acceleration(const Situation::State &s) const noexcept {
-	glm::dvec3 acc(0.0);
+	double speed = max_speed * glm::clamp(max_speed * haste * haste, 0.25, 1.0);
+	double accel = max_speed * glm::clamp(max_accel * haste * haste, 0.5, 1.0);
+	glm::dvec3 result(0.0);
 	if (separating) {
 		// TODO: off surface situation
 		glm::dvec3 repulse(0.0);
@@ -685,33 +689,33 @@ glm::dvec3 Steering::Acceleration(const Situation::State &s) const noexcept {
 				repulse += normalize(diff) * (1.0 - sep / min_dist);
 			}
 		}
-		SumForce(acc, repulse);
+		SumForce(result, repulse, accel);
 	}
 	if (halting) {
-		SumForce(acc, s.vel * -max_accel);
+		SumForce(result, s.vel * -accel, accel);
 	}
 	if (seeking) {
 		glm::dvec3 diff = target - s.pos;
 		if (!allzero(diff)) {
-			SumForce(acc, TargetVelocity(s, (normalize(diff) * max_speed)));
+			SumForce(result, TargetVelocity(s, (normalize(diff) * speed), accel), accel);
 		}
 	}
 	if (arriving) {
 		glm::dvec3 diff = target - s.pos;
 		double dist = length(diff);
 		if (!allzero(diff) && dist > std::numeric_limits<double>::epsilon()) {
-			SumForce(acc, TargetVelocity(s, diff * std::min(dist * max_accel, max_speed) / dist));
+			SumForce(result, TargetVelocity(s, diff * std::min(dist * accel, speed) / dist, accel), accel);
 		}
 	}
-	return acc;
+	return result;
 }
 
-bool Steering::SumForce(glm::dvec3 &out, const glm::dvec3 &in) const noexcept {
+bool Steering::SumForce(glm::dvec3 &out, const glm::dvec3 &in, double max) const noexcept {
 	if (allzero(in) || anynan(in)) {
 		return false;
 	}
 	double cur = allzero(out) ? 0.0 : length(out);
-	double rem = max_accel - cur;
+	double rem = max - cur;
 	if (rem < 0.0) {
 		return true;
 	}
@@ -727,8 +731,8 @@ bool Steering::SumForce(glm::dvec3 &out, const glm::dvec3 &in) const noexcept {
 	}
 }
 
-glm::dvec3 Steering::TargetVelocity(const Situation::State &s, const glm::dvec3 &vel) const noexcept {
-	return (vel - s.vel) * max_accel;
+glm::dvec3 Steering::TargetVelocity(const Situation::State &s, const glm::dvec3 &vel, double acc) const noexcept {
+	return (vel - s.vel) * acc;
 }
 
 }
