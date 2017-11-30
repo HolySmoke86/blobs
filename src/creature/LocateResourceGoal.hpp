@@ -32,6 +32,7 @@ private:
 	int target_srf;
 	glm::ivec2 target_tile;
 	bool searching;
+	double reevaluate;
 
 };
 

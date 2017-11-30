@@ -105,7 +105,8 @@ LocateResourceGoal::LocateResourceGoal(Creature &c, int res)
 , target_pos(0.0)
 , target_srf(0)
 , target_tile(0)
-, searching(false) {
+, searching(false)
+, reevaluate(0.0) {
 }
 
 LocateResourceGoal::~LocateResourceGoal() noexcept {
@@ -116,14 +117,18 @@ std::string LocateResourceGoal::Describe() const {
 }
 
 void LocateResourceGoal::Enable() {
-	LocateResource();
+
 }
 
 void LocateResourceGoal::Tick(double dt) {
+	reevaluate -= dt;
 }
 
 void LocateResourceGoal::Action() {
-	if (!found) {
+	if (reevaluate < 0.0) {
+		LocateResource();
+		reevaluate = 3.0;
+	} else if (!found) {
 		if (!searching) {
 			LocateResource();
 		} else {
