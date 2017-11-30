@@ -60,7 +60,7 @@ public:
 	}
 
 	double UNorm() noexcept {
-		return double(Next<std::uint64_t>()) / double(std::numeric_limits<std::uint64_t>::max());
+		return double(Next<std::uint64_t>()) * (1.0 / double(std::numeric_limits<std::uint64_t>::max()));
 	}
 
 	template<class Container>

@@ -16,7 +16,9 @@ public:
 	{ }
 
 public:
+	void Mean(double m) noexcept { mean = m; }
 	double Mean() const noexcept { return mean; }
+	void StandardDeviation(double d) noexcept { stddev = d; }
 	double StandardDeviation() const noexcept { return stddev; }
 	double Variance() const noexcept { return stddev * stddev; }
 

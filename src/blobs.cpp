@@ -99,6 +99,9 @@ int main(int argc, char *argv[]) {
 	auto blob = new creature::Creature(sim);
 	blob->Name(assets.name.Sequential());
 	Spawn(*blob, planet);
+	// decrease chances of ur-blob dying without splitting
+	blob->GetProperties().Youth().fertility = 1.0;
+	blob->GetProperties().Adult().fertility = 1.0;
 	blob->BuildVAO();
 
 	app::MasterState state(assets, sim);

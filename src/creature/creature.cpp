@@ -5,6 +5,7 @@
 #include "Situation.hpp"
 #include "Steering.hpp"
 
+#include "BlobBackgroundTask.hpp"
 #include "Goal.hpp"
 #include "IdleGoal.hpp"
 #include "InhaleNeed.hpp"
@@ -44,6 +45,7 @@ Creature::Creature(world::Simulation &sim)
 , on_death()
 , removable(false)
 , memory(*this)
+, bg_task()
 , needs()
 , goals()
 , situation()
@@ -127,7 +129,11 @@ double Creature::AgeLerp(double from, double to) const noexcept {
 }
 
 double Creature::Fertility() const noexcept {
-	return AgeLerp(CurProps().fertility, NextProps().fertility) / 3600.0;
+	return AgeLerp(CurProps().fertility, NextProps().fertility) * (1.0 / 3600.0);
+}
+
+double Creature::Mutability() const noexcept {
+	return GetProperties().mutability * (1.0 / 3600.0);
 }
 
 void Creature::AddGoal(std::unique_ptr<Goal> &&g) {
@@ -175,6 +181,8 @@ void Creature::Tick(double dt) {
 		situation.SetState(state);
 	}
 
+	bg_task->Tick(dt);
+	bg_task->Action();
 	memory.Tick(dt);
 	for (auto &need : needs) {
 		need->Tick(dt);
@@ -485,6 +493,7 @@ void Genome::Configure(Creature &c) const {
 	c.Density(mass / volume);
 	c.GetSteering().MaxAcceleration(1.4 * std::atan(c.GetProperties().strength));
 	c.GetSteering().MaxSpeed(4.4 * std::atan(c.GetProperties().dexerty));
+	c.SetBackgroundTask(std::unique_ptr<Goal>(new BlobBackgroundTask(c)));
 	c.AddGoal(std::unique_ptr<Goal>(new IdleGoal(c)));
 }
 

@@ -77,8 +77,10 @@ public:
 	double Age() const noexcept;
 	std::string AgeName() const;
 	double AgeLerp(double from, double to) const noexcept;
-	// change of giving birth per tick
+	// chance of giving birth per tick
 	double Fertility() const noexcept;
+	// chance of random genetic mutation per tick
+	double Mutability() const noexcept;
 
 	void Health(double h) noexcept { health = h; }
 	double Health() const noexcept { return health; }
@@ -90,6 +92,10 @@ public:
 
 	Memory &GetMemory() noexcept { return memory; }
 	const Memory &GetMemory() const noexcept { return memory; }
+
+	/// constantly active goal. every creature in the simulation is required to have one
+	void SetBackgroundTask(std::unique_ptr<Goal> &&g) { bg_task = std::move(g); }
+	Goal &BackgroundTask() { return *bg_task; }
 
 	void AddNeed(std::unique_ptr<Need> &&n) { needs.emplace_back(std::move(n)); }
 	const std::vector<std::unique_ptr<Need>> &Needs() const noexcept { return needs; }
@@ -135,6 +141,7 @@ private:
 
 	Memory memory;
 
+	std::unique_ptr<Goal> bg_task;
 	std::vector<std::unique_ptr<Need>> needs;
 	std::vector<std::unique_ptr<Goal>> goals;
 

@@ -1,3 +1,4 @@
+#include "BlobBackgroundTask.hpp"
 #include "Goal.hpp"
 #include "IdleGoal.hpp"
 #include "LocateResourceGoal.hpp"
@@ -15,6 +16,71 @@
 
 namespace blobs {
 namespace creature {
+
+BlobBackgroundTask::BlobBackgroundTask(Creature &c)
+: Goal(c) {
+}
+
+BlobBackgroundTask::~BlobBackgroundTask() {
+}
+
+std::string BlobBackgroundTask::Describe() const {
+	return "being a blob";
+}
+
+void BlobBackgroundTask::Tick(double dt) {
+}
+
+void BlobBackgroundTask::Action() {
+	// check if eligible to split
+	if (GetCreature().Mass() > GetCreature().GetProperties().Birth().mass * 1.8) {
+		double fert = GetCreature().Fertility();
+		double rand = Assets().random.UNorm();
+		if (fert > rand) {
+			std::cout << "[" << int(GetCreature().GetSimulation().Time())
+				<< "s] " << GetCreature().Name() << " split" << std::endl;
+			Split(GetCreature());
+			return;
+		}
+	}
+	// check for random property mutation
+	if (GetCreature().Mutability() > Assets().random.UNorm()) {
+		double amount = 1.0 + (Assets().random.SNorm() * 0.05);
+		auto &props = GetCreature().GetGenome().properties;
+		double r = Assets().random.UNorm();
+		math::Distribution *d = nullptr;
+		if (Assets().random.UNorm() < 0.5) {
+			auto &set = props.props[(int(Assets().random.UNorm() * 4.0) % 4) + 1];
+			if (r < 0.25) {
+				d = &set.age;
+			} else if (r < 0.5) {
+				d = &set.mass;
+			} else if (r < 0.75) {
+				d = &set.fertility;
+			} else {
+				d = &set.highlight;
+			}
+		} else {
+			if (r < 0.2) {
+				d = &props.strength;
+			} else if (r < 0.4) {
+				d = &props.stamina;
+			} else if (r < 0.6) {
+				d = &props.dexerty;
+			} else if (r < 0.8) {
+				d = &props.intelligence;
+			} else {
+				d = &props.mutability;
+			}
+		}
+		if (Assets().random.UNorm() < 0.5) {
+			d->Mean(d->Mean() * amount);
+		} else {
+			d->StandardDeviation(d->StandardDeviation() * amount);
+		}
+	}
+}
+
 
 Goal::Goal(Creature &c)
 : c(c)
@@ -88,16 +154,6 @@ void IdleGoal::Tick(double dt) {
 }
 
 void IdleGoal::Action() {
-	// check if eligible to split
-	if (GetCreature().Mass() > GetCreature().GetProperties().Birth().mass * 1.8) {
-		double fert = GetCreature().Fertility();
-		double rand = Assets().random.UNorm();
-		if (fert > rand) {
-			std::cout << "[" << int(GetCreature().GetSimulation().Time())
-				<< "s] " << GetCreature().Name() << " split" << std::endl;
-			Split(GetCreature());
-		}
-	}
 }
 
 
