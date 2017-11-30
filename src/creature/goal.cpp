@@ -240,7 +240,8 @@ void LocateResourceGoal::SearchVicinity() {
 	glm::ivec2 begin(glm::max(glm::ivec2(0), loc - seek_radius));
 	glm::ivec2 end(glm::min(glm::ivec2(planet.SideLength()), loc + seek_radius + glm::ivec2(1)));
 
-	double rating[end.y - begin.y][end.x - begin.x] { 0.0 };
+	double rating[end.y - begin.y][end.x - begin.x];
+	std::memset(rating, 0, sizeof(double) * (end.y - begin.y) * (end.x - begin.x))
 
 	// find close and rich field
 	for (int y = begin.y; y < end.y; ++y) {
