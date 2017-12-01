@@ -110,7 +110,7 @@ void MasterState::OnMouseWheel(const SDL_MouseWheelEvent &e) {
 	constexpr double zoom_scale = -1.0;
 	constexpr double zoom_base = 1.125;
 	cam_orient.z = glm::clamp(cam_orient.z + double(e.x) * roll_scale, PI * -0.5, PI * 0.5);
-	cam_tgt_dist = std::max(1.0, cam_tgt_dist * std::pow(zoom_base, double(e.y) * zoom_scale));
+	cam_tgt_dist = std::max(cp.GetCreature().Size() * 2.0, cam_tgt_dist * std::pow(zoom_base, double(e.y) * zoom_scale));
 }
 
 void MasterState::OnRender(graphics::Viewport &viewport) {

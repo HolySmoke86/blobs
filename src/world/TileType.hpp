@@ -6,6 +6,9 @@
 
 
 namespace blobs {
+namespace creature {
+	class Composition;
+}
 namespace world {
 
 struct TileType {
@@ -23,6 +26,7 @@ struct TileType {
 	std::vector<Yield> resources;
 
 	std::vector<Yield>::const_iterator FindResource(int) const;
+	std::vector<Yield>::const_iterator FindBestResource(const creature::Composition &) const;
 
 };
 

@@ -7,6 +7,8 @@
 #include "../graphics/Font.hpp"
 #include "../graphics/Viewport.hpp"
 
+#include <iomanip>
+#include <sstream>
 #include <glm/gtx/transform.hpp>
 
 
@@ -31,6 +33,61 @@ Label *Label::Text(const std::string &t) {
 	}
 	text = t;
 	return this;
+}
+
+Label *Label::Decimal(double n, int prec) {
+	std::stringstream s;
+	s << std::fixed << std::setprecision(prec) << n;
+	return Text(s.str());
+}
+
+Label *Label::Length(double m) {
+	std::stringstream s;
+	s << std::fixed << std::setprecision(3);
+	if (m > 1500.0) {
+		s << (m * 0.001) << "km";
+	} else if (m < 0.1) {
+		s << (m * 1000.0) << "mm";
+	} else {
+		s << m << "m";
+	}
+	return Text(s.str());
+}
+
+Label *Label::Mass(double kg) {
+	std::stringstream s;
+	s << std::fixed << std::setprecision(3);
+	if (kg > 1500.0) {
+		s << (kg * 0.001) << "t";
+	} else if (kg < 0.1) {
+		s << (kg * 1000.0) << "g";
+	} else if (kg < 0.0001) {
+		s << (kg * 1.0e6) << "mg";
+	} else {
+		s << kg << "kg";
+	}
+	return Text(s.str());
+}
+
+Label *Label::Percentage(double n) {
+	std::stringstream s;
+	s << std::fixed << std::setprecision(1) << (n * 100.0) << '%';
+	return Text(s.str());
+}
+
+Label *Label::Time(double s) {
+	int is = int(s);
+	std::stringstream ss;
+	if (is >= 3600) {
+		ss << (is / 3600) << "h ";
+		is %= 3600;
+	}
+	if (is >= 60) {
+		ss << (is / 60) << "m ";
+		is %= 60;
+	}
+	ss << is << 's';
+	return Text(ss.str());
 }
 
 Label *Label::Font(const graphics::Font &f) {
@@ -60,6 +117,7 @@ glm::vec2 Label::Size() {
 }
 
 void Label::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
+	if (text.empty()) return;
 	Update();
 	glm::vec2 size = Size();
 
@@ -73,7 +131,7 @@ void Label::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
 }
 
 void Label::Update() {
-	if (!dirty) return;
+	if (!dirty || text.empty()) return;
 	font->Render(text, tex);
 	dirty = false;
 }
@@ -170,7 +228,7 @@ Panel *Panel::Spacing(float s) {
 
 Panel *Panel::Direction(Dir d) {
 	dir = d;
-	Relayout();
+	Layout();
 	return this;
 }
 
@@ -180,7 +238,7 @@ glm::vec2 Panel::Size() {
 	return (2.0f * padding) + space + size;
 }
 
-void Panel::Relayout() {
+void Panel::Layout() {
 	size = glm::vec2(0.0f);
 	if (dir == HORIZONTAL) {
 		for (auto &w : widgets) {
@@ -198,6 +256,8 @@ void Panel::Relayout() {
 }
 
 void Panel::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
+	// TODO: separate draw and layout, it's inefficient and the wrong tree order anyway
+	Layout();
 	if (bg_color.a > 0.0f) {
 		assets.shaders.canvas.Activate();
 		assets.shaders.canvas.ZIndex(ZIndex());
@@ -205,9 +265,7 @@ void Panel::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
 		assets.shaders.canvas.FillRect(Position(), Position() + Size());
 	}
 
-	glm::vec2 cursor = Position();
-	cursor.x += padding.x;
-	cursor.y += padding.y;
+	glm::vec2 cursor = Position() + padding;
 	for (auto &w : widgets) {
 		w->Position(cursor)->ZIndex(ZIndex() + 1.0f);
 		w->Draw(assets, viewport);

@@ -1,6 +1,7 @@
 #include "BlobBackgroundTask.hpp"
 #include "Goal.hpp"
 #include "IdleGoal.hpp"
+#include "IngestGoal.hpp"
 #include "LocateResourceGoal.hpp"
 
 #include "Creature.hpp"
@@ -12,6 +13,7 @@
 
 #include <cstring>
 #include <iostream>
+#include <sstream>
 #include <glm/gtx/io.hpp>
 
 
@@ -19,7 +21,10 @@ namespace blobs {
 namespace creature {
 
 BlobBackgroundTask::BlobBackgroundTask(Creature &c)
-: Goal(c) {
+: Goal(c)
+, breathing(false)
+, drink_subtask(nullptr)
+, eat_subtask(nullptr) {
 }
 
 BlobBackgroundTask::~BlobBackgroundTask() {
@@ -30,55 +35,187 @@ std::string BlobBackgroundTask::Describe() const {
 }
 
 void BlobBackgroundTask::Tick(double dt) {
+	if (breathing) {
+		// TODO: derive breathing ability
+		double amount = GetCreature().GetStats().Breath().gain * -(1.0 + GetCreature().ExhaustionFactor());
+		GetCreature().GetStats().Breath().Add(amount * dt);
+		if (GetCreature().GetStats().Breath().Empty()) {
+			breathing = false;
+		}
+	}
 }
 
 void BlobBackgroundTask::Action() {
-	// check if eligible to split
-	if (GetCreature().Mass() > GetCreature().GetProperties().Birth().mass * 1.8) {
-		double fert = GetCreature().Fertility();
-		double rand = Assets().random.UNorm();
-		if (fert > rand) {
-			std::cout << "[" << int(GetCreature().GetSimulation().Time())
-				<< "s] " << GetCreature().Name() << " split" << std::endl;
-			Split(GetCreature());
-			return;
+	CheckStats();
+	CheckSplit();
+	CheckMutate();
+}
+
+void BlobBackgroundTask::CheckStats() {
+	Creature::Stats &stats = GetCreature().GetStats();
+
+	if (!breathing && stats.Breath().Bad()) {
+		breathing = true;
+	}
+
+	if (!drink_subtask && stats.Thirst().Bad()) {
+		drink_subtask = new IngestGoal(GetCreature(), stats.Thirst());
+		for (const auto &cmp : GetCreature().GetComposition()) {
+			if (Assets().data.resources[cmp.resource].state == world::Resource::LIQUID) {
+				drink_subtask->Accept(cmp.resource, 1.0);
+			}
+		}
+		drink_subtask->OnComplete([&](Goal &) { drink_subtask = nullptr; });
+		GetCreature().AddGoal(std::unique_ptr<Goal>(drink_subtask));
+	}
+
+	if (!eat_subtask && stats.Hunger().Bad()) {
+		eat_subtask = new IngestGoal(GetCreature(), stats.Hunger());
+		for (const auto &cmp : GetCreature().GetComposition()) {
+			if (Assets().data.resources[cmp.resource].state == world::Resource::SOLID) {
+				eat_subtask->Accept(cmp.resource, 1.0);
+			}
+		}
+		eat_subtask->OnComplete([&](Goal &) { eat_subtask = nullptr; });
+		GetCreature().AddGoal(std::unique_ptr<Goal>(eat_subtask));
+	}
+}
+
+void BlobBackgroundTask::CheckSplit() {
+	if (GetCreature().Mass() > GetCreature().OffspringMass() * 2.0
+		&& GetCreature().OffspringChance() > Assets().random.UNorm()) {
+		std::cout << "[" << int(GetCreature().GetSimulation().Time())
+			<< "s] " << GetCreature().Name() << " split" << std::endl;
+		Split(GetCreature());
+		return;
+	}
+}
+
+void BlobBackgroundTask::CheckMutate() {
+	// check for random property mutation
+	if (GetCreature().MutateChance() > Assets().random.UNorm()) {
+		double amount = 1.0 + (Assets().random.SNorm() * 0.05);
+		math::Distribution &d = GetCreature().GetGenome().properties.props[(int(Assets().random.UNorm() * 8.0) % 8)];
+		if (Assets().random.UNorm() < 0.5) {
+			d.Mean(d.Mean() * amount);
+		} else {
+			d.StandardDeviation(d.StandardDeviation() * amount);
 		}
 	}
-	// check for random property mutation
-	if (GetCreature().Mutability() > Assets().random.UNorm()) {
-		double amount = 1.0 + (Assets().random.SNorm() * 0.05);
-		auto &props = GetCreature().GetGenome().properties;
-		double r = Assets().random.UNorm();
-		math::Distribution *d = nullptr;
-		if (Assets().random.UNorm() < 0.5) {
-			auto &set = props.props[(int(Assets().random.UNorm() * 4.0) % 4) + 1];
-			if (r < 0.25) {
-				d = &set.age;
-			} else if (r < 0.5) {
-				d = &set.mass;
-			} else if (r < 0.75) {
-				d = &set.fertility;
-			} else {
-				d = &set.highlight;
+}
+
+namespace {
+
+std::string summarize(const Composition &comp, const app::Assets &assets) {
+	std::stringstream s;
+	bool first = true;
+	for (const auto &c : comp) {
+		if (first) {
+			first = false;
+		} else {
+			s << " or ";
+		}
+		s << assets.data.resources[c.resource].label;
+	}
+	return s.str();
+}
+
+}
+
+IngestGoal::IngestGoal(Creature &c, Creature::Stat &stat)
+: Goal(c)
+, stat(stat)
+, accept()
+, locate_subtask(nullptr)
+, ingesting(false)
+, resource(-1)
+, yield(0.0) {
+	Urgency(stat.value);
+}
+
+IngestGoal::~IngestGoal() {
+}
+
+void IngestGoal::Accept(int resource, double value) {
+	accept.Add(resource, value);
+}
+
+std::string IngestGoal::Describe() const {
+	if (resource == -1) {
+		return "ingest " + summarize(accept, Assets());
+	} else {
+		const world::Resource &r = Assets().data.resources[resource];
+		if (r.state == world::Resource::SOLID) {
+			return "eat " + r.label;
+		} else {
+			return "drink " + r.label;
+		}
+	}
+}
+
+void IngestGoal::Enable() {
+}
+
+void IngestGoal::Tick(double dt) {
+	Urgency(stat.value);
+	if (locate_subtask) {
+		locate_subtask->Urgency(Urgency() + 0.1);
+	}
+	if (ingesting) {
+		if (OnSuitableTile() && !GetSituation().Moving()) {
+			// TODO: determine satisfaction factor
+			GetCreature().Ingest(resource, yield * dt);
+			stat.Add(-1.0 * yield * dt);
+			if (stat.Empty()) {
+				SetComplete();
 			}
 		} else {
-			if (r < 0.2) {
-				d = &props.strength;
-			} else if (r < 0.4) {
-				d = &props.stamina;
-			} else if (r < 0.6) {
-				d = &props.dexerty;
-			} else if (r < 0.8) {
-				d = &props.intelligence;
-			} else {
-				d = &props.mutability;
-			}
+			// left tile somehow, some idiot probably pushed us off
+			ingesting = false;
+			Interruptible(true);
 		}
-		if (Assets().random.UNorm() < 0.5) {
-			d->Mean(d->Mean() * amount);
+	}
+}
+
+void IngestGoal::Action() {
+	if (ingesting) {
+		// all good
+		return;
+	}
+	if (OnSuitableTile()) {
+		if (GetSituation().Moving()) {
+			// break with maximum force
+			GetSteering().Haste(1.0);
+			GetSteering().Halt();
 		} else {
-			d->StandardDeviation(d->StandardDeviation() * amount);
+			// finally
+			Interruptible(false);
+			ingesting = true;
 		}
+	} else {
+		locate_subtask = new LocateResourceGoal(GetCreature());
+		for (const auto &c : accept) {
+			locate_subtask->Accept(c.resource, c.value);
+		}
+		locate_subtask->Urgency(Urgency() + 0.1);
+		locate_subtask->OnComplete([&](Goal &){ locate_subtask = nullptr; });
+		GetCreature().AddGoal(std::unique_ptr<Goal>(locate_subtask));
+	}
+}
+
+bool IngestGoal::OnSuitableTile() {
+	if (!GetSituation().OnSurface()) {
+		return false;
+	}
+	const world::TileType &t = GetSituation().GetTileType();
+	auto found = t.FindBestResource(accept);
+	if (found != t.resources.end()) {
+		resource = found->resource;
+		yield = found->ubiquity;
+		return true;
+	} else {
+		resource = -1;
+		return false;
 	}
 }
 
@@ -158,9 +295,9 @@ void IdleGoal::Action() {
 }
 
 
-LocateResourceGoal::LocateResourceGoal(Creature &c, int res)
+LocateResourceGoal::LocateResourceGoal(Creature &c)
 : Goal(c)
-, res(res)
+, accept()
 , found(false)
 , target_pos(0.0)
 , target_srf(0)
@@ -172,8 +309,12 @@ LocateResourceGoal::LocateResourceGoal(Creature &c, int res)
 LocateResourceGoal::~LocateResourceGoal() noexcept {
 }
 
+void LocateResourceGoal::Accept(int resource, double value) {
+	accept.Add(resource, value);
+}
+
 std::string LocateResourceGoal::Describe() const {
-	return "locate " + GetCreature().GetSimulation().Resources()[res].name;
+	return "locate " + summarize(accept, Assets());
 }
 
 void LocateResourceGoal::Enable() {
@@ -213,7 +354,7 @@ void LocateResourceGoal::Action() {
 void LocateResourceGoal::LocateResource() {
 	if (GetSituation().OnSurface()) {
 		const world::TileType &t = GetSituation().GetTileType();
-		auto yield = t.FindResource(res);
+		auto yield = t.FindBestResource(accept);
 		if (yield != t.resources.cend()) {
 			// hoooray
 			GetSteering().Halt();
@@ -241,6 +382,15 @@ void LocateResourceGoal::SearchVicinity() {
 	glm::ivec2 begin(glm::max(glm::ivec2(0), loc - seek_radius));
 	glm::ivec2 end(glm::min(glm::ivec2(planet.SideLength()), loc + seek_radius + glm::ivec2(1)));
 
+	// this happens when location is way off the planet
+	// that's a bug in Situation, actually, but I'm working aound that here
+	if (end.x <= begin.x) {
+		end.x = begin.x + 2;
+	}
+	if (end.y <= begin.y) {
+		end.y = begin.y + 2;
+	}
+
 	double rating[end.y - begin.y][end.x - begin.x];
 	std::memset(rating, 0, sizeof(double) * (end.y - begin.y) * (end.x - begin.x));
 
@@ -248,10 +398,10 @@ void LocateResourceGoal::SearchVicinity() {
 	for (int y = begin.y; y < end.y; ++y) {
 		for (int x = begin.x; x < end.x; ++x) {
 			const world::TileType &type = planet.TypeAt(srf, x, y);
-			auto yield = type.FindResource(res);
+			auto yield = type.FindBestResource(accept);
 			if (yield != type.resources.cend()) {
 				// TODO: subtract minimum yield
-				rating[y - begin.y][x - begin.x] = yield->ubiquity;
+				rating[y - begin.y][x - begin.x] = yield->ubiquity * accept.Get(yield->resource);
 				double dist = std::max(0.125, 0.25 * glm::length(planet.TileCenter(srf, x, y) - pos));
 				rating[y - begin.y][x - begin.x] /= dist;
 			}

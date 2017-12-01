@@ -21,8 +21,8 @@ public:
 	void Haste(double h) noexcept { haste = h; }
 	double Haste() const noexcept { return haste; }
 
-	void MaxAcceleration(double a) noexcept { max_accel = a; }
-	double MaxAcceleration() const noexcept { return max_accel; }
+	void MaxForce(double f) noexcept { max_force = f; }
+	double MaxForce() const noexcept { return max_force; }
 
 	void MaxSpeed(double s) noexcept { max_speed = s; }
 	double MaxSpeed() const noexcept { return max_speed; }
@@ -34,7 +34,7 @@ public:
 	void Pass(const glm::dvec3 &) noexcept;
 	void GoTo(const glm::dvec3 &) noexcept;
 
-	glm::dvec3 Acceleration(const Situation::State &) const noexcept;
+	glm::dvec3 Force(const Situation::State &) const noexcept;
 
 private:
 	bool SumForce(glm::dvec3 &out, const glm::dvec3 &in, double max) const noexcept;
@@ -45,7 +45,7 @@ private:
 	glm::dvec3 target;
 
 	double haste;
-	double max_accel;
+	double max_force;
 	double max_speed;
 	double min_dist;
 	double max_look;

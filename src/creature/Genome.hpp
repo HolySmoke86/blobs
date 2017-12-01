@@ -19,63 +19,36 @@ class Creature;
 struct Genome {
 
 	template<class T>
-	struct PropertySet {
-		/// the age at which to transition to the next phase
-		T age;
-		/// maximum body mass
-		T mass;
-		/// fertility factor
-		T fertility;
-		/// skin highlight pronounciation
-		T highlight;
-	};
-	template<class T>
 	struct Properties {
-		PropertySet<T> props[6];
-		PropertySet<T> &Birth() noexcept { return props[0]; }
-		const PropertySet<T> &Birth() const noexcept { return props[0]; }
-		PropertySet<T> &Child() noexcept { return props[1]; }
-		const PropertySet<T> &Child() const noexcept { return props[1]; }
-		PropertySet<T> &Youth() noexcept { return props[2]; }
-		const PropertySet<T> &Youth() const noexcept { return props[2]; }
-		PropertySet<T> &Adult() noexcept { return props[3]; }
-		const PropertySet<T> &Adult() const noexcept { return props[3]; }
-		PropertySet<T> &Elder() noexcept { return props[4]; }
-		const PropertySet<T> &Elder() const noexcept { return props[4]; }
-		PropertySet<T> &Death() noexcept { return props[5]; }
-		const PropertySet<T> &Death() const noexcept { return props[5]; }
-
-		/// "typical" properties
 		/// every one of these should have at least one
 		/// negative impact to prevent super-beings evolving
+		T props[8];
 		/// power at the cost of higher solid intake
-		T strength;
+		T &Strength() noexcept { return props[0]; }
+		const T &Strength() const noexcept { return props[0]; }
 		/// more endurance at the cost of higher liquid intake
-		T stamina;
+		T &Stamina() noexcept { return props[1]; }
+		const T &Stamina() const noexcept { return props[1]; }
 		/// more speed at the cost of higher fatigue
-		T dexerty;
+		T &Dexerty() noexcept { return props[2]; }
+		const T &Dexerty() const noexcept { return props[2]; }
 		/// higher mental capacity at the cost of boredom
-		T intelligence;
+		T &Intelligence() noexcept { return props[3]; }
+		const T &Intelligence() const noexcept { return props[3]; }
+		/// average lifetime in seconds
+		T &Lifetime() noexcept { return props[4]; }
+		const T &Lifetime() const noexcept { return props[4]; }
+		/// how likely to succeed in reproduction
+		T &Fertility() noexcept { return props[5]; }
+		const T &Fertility() const noexcept { return props[5]; }
 		/// how likely to mutate
-		T mutability;
+		T &Mutability() noexcept { return props[6]; }
+		const T &Mutability() const noexcept { return props[6]; }
+		/// mass of offspring
+		T &OffspringMass() noexcept { return props[7]; }
+		const T &OffspringMass() const noexcept { return props[7]; }
 	};
 	Properties<math::Distribution> properties;
-
-
-	struct Composition {
-		// which resource
-		int resource;
-		// how much contained in the body
-		// relative value to determine average density
-		math::Distribution mass;
-		// how much to circulate
-		math::Distribution intake;
-		// how important for alive-being
-		math::Distribution penalty;
-		// how much off the mass may stay in the body
-		math::Distribution growth;
-	};
-	std::vector<Composition> composition;
 
 	math::Distribution base_hue;
 	math::Distribution base_saturation;
@@ -83,34 +56,19 @@ struct Genome {
 
 	void Configure(Creature &) const;
 
-	static PropertySet<double> Instantiate(
-		const PropertySet<math::Distribution> &p,
-		math::GaloisLFSR &rand
-	) noexcept {
-		return {
-			p.age.FakeNormal(rand.SNorm()),
-			p.mass.FakeNormal(rand.SNorm()),
-			p.fertility.FakeNormal(rand.SNorm()),
-			glm::clamp(p.highlight.FakeNormal(rand.SNorm()), 0.0, 1.0)
-		};
-	}
-
 	static Properties<double> Instantiate(
 		const Properties<math::Distribution> &p,
 		math::GaloisLFSR &rand
 	) noexcept {
 		return {
-			Instantiate(p.props[0], rand),
-			Instantiate(p.props[1], rand),
-			Instantiate(p.props[2], rand),
-			Instantiate(p.props[3], rand),
-			Instantiate(p.props[4], rand),
-			Instantiate(p.props[5], rand),
-			p.strength.FakeNormal(rand.SNorm()),
-			p.stamina.FakeNormal(rand.SNorm()),
-			p.dexerty.FakeNormal(rand.SNorm()),
-			p.intelligence.FakeNormal(rand.SNorm()),
-			p.mutability.FakeNormal(rand.SNorm())
+			p.props[0].FakeNormal(rand.SNorm()),
+			p.props[1].FakeNormal(rand.SNorm()),
+			p.props[2].FakeNormal(rand.SNorm()),
+			p.props[3].FakeNormal(rand.SNorm()),
+			p.props[4].FakeNormal(rand.SNorm()),
+			p.props[5].FakeNormal(rand.SNorm()),
+			p.props[6].FakeNormal(rand.SNorm()),
+			p.props[7].FakeNormal(rand.SNorm())
 		};
 	}
 

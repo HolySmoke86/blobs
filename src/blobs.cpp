@@ -89,19 +89,11 @@ int main(int argc, char *argv[]) {
 	world::GenerateTest(assets.data.tile_types, moon);
 	world::GenerateTest(assets.data.tile_types, second_planet);
 
-	std::cout << "length of year: " << planet.OrbitalPeriod() << "s" << std::endl;
-	std::cout << "length of moon cycle: " << moon.OrbitalPeriod() << "s" << std::endl;
-	std::cout << "length of day: " << planet.RotationalPeriod() << "s" << std::endl;
-	std::cout << "days per year: " << (planet.OrbitalPeriod() / planet.RotationalPeriod()) << std::endl;
-	std::cout << "moon cycle in days: " << (moon.OrbitalPeriod() / planet.RotationalPeriod()) << std::endl;
-	std::cout << "moon cycles per year: " << (planet.OrbitalPeriod() / moon.OrbitalPeriod()) << std::endl;
-
 	auto blob = new creature::Creature(sim);
 	blob->Name(assets.name.Sequential());
 	Spawn(*blob, planet);
 	// decrease chances of ur-blob dying without splitting
-	blob->GetProperties().Youth().fertility = 1.0;
-	blob->GetProperties().Adult().fertility = 1.0;
+	blob->GetProperties().Fertility() = 1.0;
 	blob->BuildVAO();
 
 	app::MasterState state(assets, sim);

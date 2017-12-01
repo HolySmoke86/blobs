@@ -1,6 +1,7 @@
 #ifndef BLOBS_CREATURE_LOCATERESOURCEGOAL_HPP_
 #define BLOBS_CREATURE_LOCATERESOURCEGOAL_HPP_
 
+#include "Composition.hpp"
 #include "../math/glm.hpp"
 
 
@@ -11,10 +12,12 @@ class LocateResourceGoal
 : public Goal {
 
 public:
-	LocateResourceGoal(Creature &, int resource);
+	LocateResourceGoal(Creature &);
 	~LocateResourceGoal() noexcept override;
 
 public:
+	void Accept(int resource, double attractiveness);
+
 	std::string Describe() const override;
 	void Enable() override;
 	void Tick(double dt) override;
@@ -26,7 +29,7 @@ private:
 	bool OnTargetTile() const noexcept;
 
 private:
-	int res;
+	Composition accept;
 	bool found;
 	glm::dvec3 target_pos;
 	int target_srf;

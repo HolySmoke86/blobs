@@ -48,16 +48,15 @@ private:
 	creature::Creature *c;
 
 	Label *name;
+	Label *born;
 	Label *age;
 	Label *mass;
 	Label *pos;
 	Label *tile;
 	Label *goal;
-	Panel *needs;
+	Meter *stats[7];
+	Label *props[8];
 	Panel panel;
-
-	Meter *health_meter;
-	std::vector<Meter *> need_meters;
 
 };
 

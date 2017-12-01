@@ -9,6 +9,7 @@
 #include "TileType.hpp"
 
 #include "../app/Assets.hpp"
+#include "../creature/Composition.hpp"
 #include "../creature/Creature.hpp"
 #include "../graphics/Viewport.hpp"
 #include "../math/const.hpp"
@@ -572,6 +573,19 @@ std::vector<TileType::Yield>::const_iterator TileType::FindResource(int r) const
 		}
 	}
 	return yield;
+}
+
+std::vector<TileType::Yield>::const_iterator TileType::FindBestResource(const creature::Composition &comp) const {
+	auto best = resources.cend();
+	double best_value = 0.0;
+	for (auto yield = resources.cbegin(); yield != resources.cend(); ++yield) {
+		double value = comp.Get(yield->resource);
+		if (value > best_value) {
+			best = yield;
+			best_value = value;
+		}
+	}
+	return best;
 }
 
 }

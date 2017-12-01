@@ -4,11 +4,12 @@
 #include "Meter.hpp"
 #include "../app/Assets.hpp"
 #include "../creature/Creature.hpp"
-#include "../creature/Need.hpp"
 #include "../graphics/Viewport.hpp"
 
 #include <iomanip>
+#include <iostream>
 #include <sstream>
+#include <glm/gtx/io.hpp>
 #include <glm/gtx/transform.hpp>
 
 
@@ -19,31 +20,26 @@ CreaturePanel::CreaturePanel(const app::Assets &assets)
 : assets(assets)
 , c(nullptr)
 , name(new Label(assets.fonts.large))
+, born(new Label(assets.fonts.medium))
 , age(new Label(assets.fonts.medium))
 , mass(new Label(assets.fonts.medium))
 , pos(new Label(assets.fonts.medium))
 , tile(new Label(assets.fonts.medium))
 , goal(new Label(assets.fonts.medium))
-, needs(new Panel)
-, panel()
-, health_meter(new Meter)
-, need_meters() {
-	Label *health_label = new Label(assets.fonts.medium);
-	health_label->Text("Health");
-	health_meter
-		->Size(glm::vec2(100.0f, assets.fonts.medium.Height() + assets.fonts.medium.Descent()))
-		->Padding(glm::vec2(1.0f))
-		->Border(1.0f)
-		->FillColor(glm::vec4(0.9f, 0.0f, 0.0f, 1.0f))
-		->BorderColor(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-	Panel *health_panel = new Panel;
-	health_panel
-		->Add(health_label)
-		->Add(health_meter)
+, stats{nullptr}
+, props{nullptr}
+, panel() {
+	born->Text("00h 00m 00s");
+	Label *born_label = new Label(assets.fonts.medium);
+	born_label->Text("Born");
+	Panel *born_panel = new Panel;
+	born_panel
+		->Add(born_label)
+		->Add(born)
 		->Spacing(10.0f)
 		->Direction(Panel::HORIZONTAL);
 
-	age->Text("0000s (Newborn)");
+	age->Text("00h 00m 00s");
 	Label *age_label = new Label(assets.fonts.medium);
 	age_label->Text("Age");
 	Panel *age_panel = new Panel;
@@ -93,15 +89,86 @@ CreaturePanel::CreaturePanel(const app::Assets &assets)
 		->Spacing(10.0f)
 		->Direction(Panel::HORIZONTAL);
 
+	Label *stat_label[7];
+	for (int i = 0; i < 7; ++i) {
+		stat_label[i] = new Label(assets.fonts.medium);
+		stats[i] = new Meter;
+		stats[i]
+			->Size(glm::vec2(100.0f, assets.fonts.medium.Height() + assets.fonts.medium.Descent()))
+			->Padding(glm::vec2(1.0f))
+			->Border(1.0f)
+			->BorderColor(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	}
+	stat_label[0]->Text("Damage");
+	stat_label[1]->Text("Breath");
+	stat_label[2]->Text("Thirst");
+	stat_label[3]->Text("Hunger");
+	stat_label[4]->Text("Exhaustion");
+	stat_label[5]->Text("Fatigue");
+	stat_label[6]->Text("Boredom");
+
+	Panel *stat_label_panel = new Panel;
+	stat_label_panel
+		->Spacing(2)
+		->Direction(Panel::VERTICAL);
+	Panel *stat_meter_panel = new Panel;
+	stat_meter_panel
+		->Spacing(stat_label[0]->Size().y - stats[0]->Size().y + 2)
+		->Direction(Panel::VERTICAL);
+	for (int i = 0; i < 7; ++i) {
+		stat_label_panel->Add(stat_label[i]);
+		stat_meter_panel->Add(stats[i]);
+	}
+	Panel *stat_panel = new Panel;
+	stat_panel
+		->Direction(Panel::HORIZONTAL)
+		->Spacing(10)
+		->Add(stat_label_panel)
+		->Add(stat_meter_panel);
+
+	Label *prop_label[8];
+	for (int i = 0; i < 8; ++i) {
+		prop_label[i] = new Label(assets.fonts.medium);
+		props[i] = new Label(assets.fonts.medium);
+	}
+	prop_label[0]->Text("Strength");
+	prop_label[1]->Text("Stamina");
+	prop_label[2]->Text("Dexerty");
+	prop_label[3]->Text("Intelligence");
+	prop_label[4]->Text("Lifetime");
+	prop_label[5]->Text("Fertility");
+	prop_label[6]->Text("Mutability");
+	prop_label[7]->Text("Offspring mass");
+
+	Panel *prop_label_panel = new Panel;
+	prop_label_panel
+		->Spacing(2)
+		->Direction(Panel::VERTICAL);
+	Panel *prop_meter_panel = new Panel;
+	prop_meter_panel
+		->Spacing(2)
+		->Direction(Panel::VERTICAL);
+	for (int i = 0; i < 8; ++i) {
+		prop_label_panel->Add(prop_label[i]);
+		prop_meter_panel->Add(props[i]);
+	}
+	Panel *prop_panel = new Panel;
+	prop_panel
+		->Direction(Panel::HORIZONTAL)
+		->Spacing(10)
+		->Add(prop_label_panel)
+		->Add(prop_meter_panel);
+
 	panel
 		.Add(name)
 		->Add(age_panel)
+		->Add(born_panel)
 		->Add(mass_panel)
 		->Add(pos_panel)
 		->Add(tile_panel)
 		->Add(goal_panel)
-		->Add(health_panel)
-		->Add(needs)
+		->Add(stat_panel)
+		->Add(prop_panel)
 		->Padding(glm::vec2(10.0f))
 		->Spacing(10.0f)
 		->Direction(Panel::VERTICAL)
@@ -115,34 +182,7 @@ CreaturePanel::~CreaturePanel() {
 void CreaturePanel::Show(creature::Creature &cr) {
 	c = &cr;
 	name->Text(c->Name());
-	CreateNeeds();
-}
-
-void CreaturePanel::CreateNeeds() {
-	needs->Clear()->Reserve(c->Needs().size());
-	need_meters.clear();
-	need_meters.reserve(c->Needs().size());
-	for (auto &need : c->Needs()) {
-		Label *label = new Label(assets.fonts.medium);
-		label->Text(need->name);
-		Meter *meter = new Meter;
-		meter
-			->Value(1.0f - need->value)
-			->Size(glm::vec2(100.0f, assets.fonts.medium.Height() + assets.fonts.medium.Descent()))
-			->Padding(glm::vec2(1.0f))
-			->Border(1.0f)
-			->FillColor(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f))
-			->BorderColor(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
-		Panel *need_panel = new Panel;
-		need_panel
-			->Direction(Panel::HORIZONTAL)
-			->Spacing(10.0f)
-			->Add(label)
-			->Add(meter);
-		needs->Add(need_panel);
-		need_meters.push_back(meter);
-	}
-	panel.Relayout();
+	born->Time(c->Born());
 }
 
 void CreaturePanel::Hide() noexcept {
@@ -152,12 +192,8 @@ void CreaturePanel::Hide() noexcept {
 void CreaturePanel::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
 	if (!c) return;
 
-	age->Text(std::to_string(int(c->Age())) + "s (" + c->AgeName() + ")");
-	{
-		std::stringstream ss;
-		ss << std::fixed << std::setprecision(3) << c->Mass() << "kg";
-		mass->Text(ss.str());
-	}
+	age->Time(c->Age());
+	mass->Mass(c->Mass());
 	{
 		const glm::dvec3 &p = c->GetSituation().Position();
 		std::stringstream ss;
@@ -178,25 +214,26 @@ void CreaturePanel::Draw(app::Assets &assets, graphics::Viewport &viewport) noex
 	} else {
 		goal->Text(c->Goals()[0]->Describe());
 	}
-	health_meter->Value(c->Health());
 
-	if (need_meters.size() != c->Needs().size()) {
-		CreateNeeds();
-	} else {
-		auto need = c->Needs().begin();
-		auto need_end = c->Needs().end();
-		auto meter = need_meters.begin();
-		for (; need != need_end; ++need, ++meter) {
-			(*meter)->Value(1.0f - (*need)->value);
-			if ((*need)->IsSatisfied()) {
-				(*meter)->FillColor(glm::vec4(0.0f, 0.7f, 0.0f, 1.0f));
-			} else if ((*need)->IsInconvenient()) {
-				(*meter)->FillColor(glm::vec4(0.7f, 0.5f, 0.0f, 1.0f));
-			} else {
-				(*meter)->FillColor(glm::vec4(0.9f, 0.0f, 0.0f, 1.0f));
-			}
+	for (int i = 0; i < 7; ++i) {
+		stats[i]->Value(c->GetStats().stat[i].value);
+		if (c->GetStats().stat[i].Okay()) {
+			stats[i]->FillColor(glm::vec4(0.0f, 0.7f, 0.0f, 1.0f));
+		} else if (c->GetStats().stat[i].Critical()) {
+			stats[i]->FillColor(glm::vec4(0.7f, 0.0f, 0.0f, 1.0f));
+		} else {
+			stats[i]->FillColor(glm::vec4(0.9f, 0.4f, 0.0f, 1.0f));
 		}
 	}
+
+	props[0]->Decimal(c->Strength());
+	props[1]->Decimal(c->Stamina());
+	props[2]->Decimal(c->Dexerty());
+	props[3]->Decimal(c->Intelligence());
+	props[4]->Time(c->Lifetime());
+	props[5]->Percentage(c->Fertility());
+	props[6]->Percentage(c->Mutability());
+	props[7]->Mass(c->OffspringMass());
 
 	const glm::vec2 margin(20.0f);
 
