@@ -232,7 +232,6 @@ Situation::Derivative Creature::Step(const Situation::Derivative &ds, double dt)
 }
 
 glm::dmat4 Creature::LocalTransform() noexcept {
-	// TODO: surface transform
 	const double half_size = size * 0.5;
 	const glm::dvec3 &pos = situation.Position();
 	const glm::dmat3 srf(world::Planet::SurfaceOrientation(situation.Surface()));
@@ -512,7 +511,6 @@ void Split(Creature &c) {
 	Creature *a = new Creature(c.GetSimulation());
 	const Situation &s = c.GetSituation();
 	a->Name(c.GetSimulation().Assets().name.Sequential());
-	// TODO: mutate
 	c.GetGenome().Configure(*a);
 	s.GetPlanet().AddCreature(a);
 	// TODO: duplicate situation somehow
