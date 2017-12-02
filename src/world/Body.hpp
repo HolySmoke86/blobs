@@ -86,6 +86,7 @@ public:
 
 	void Tick(double dt);
 	void Cache() noexcept;
+	void CheckCollision() noexcept;
 
 	// body takes over ownership of given pointer
 	void AddCreature(creature::Creature *);

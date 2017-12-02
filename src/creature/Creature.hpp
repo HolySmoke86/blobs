@@ -8,6 +8,7 @@
 #include "Situation.hpp"
 #include "Steering.hpp"
 #include "../graphics/SimpleVAO.hpp"
+#include "../math/geometry.hpp"
 #include "../math/glm.hpp"
 
 #include <memory>
@@ -156,6 +157,9 @@ public:
 
 	Steering &GetSteering() noexcept { return steering; }
 	const Steering &GetSteering() const noexcept { return steering; }
+
+	math::AABB CollisionBox() const noexcept;
+	glm::dmat4 CollisionTransform() const noexcept;
 
 	glm::dmat4 LocalTransform() noexcept;
 

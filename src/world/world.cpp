@@ -1,4 +1,5 @@
 #include "Body.hpp"
+#include "CreatureCreatureCollision.hpp"
 #include "Orbit.hpp"
 #include "Planet.hpp"
 #include "Resource.hpp"
@@ -13,6 +14,7 @@
 #include "../creature/Creature.hpp"
 #include "../graphics/Viewport.hpp"
 #include "../math/const.hpp"
+#include "../math/geometry.hpp"
 #include "../math/OctaveNoise.hpp"
 #include "../math/SimplexNoise.hpp"
 
@@ -141,6 +143,7 @@ glm::dmat4 Body::FromUniverse() const noexcept {
 
 namespace {
 std::vector<creature::Creature *> ccache;
+std::vector<CreatureCreatureCollision> collisions;
 }
 
 void Body::Tick(double dt) {
@@ -150,6 +153,7 @@ void Body::Tick(double dt) {
 	for (creature::Creature *c : ccache) {
 		c->Tick(dt);
 	}
+	// first remove creatures so they don't collide
 	for (auto c = Creatures().begin(); c != Creatures().end();) {
 		if ((*c)->Removable()) {
 			delete *c;
@@ -158,6 +162,7 @@ void Body::Tick(double dt) {
 			++c;
 		}
 	}
+	CheckCollision();
 }
 
 void Body::Cache() noexcept {
@@ -180,6 +185,34 @@ void Body::Cache() noexcept {
 		* glm::eulerAngleY(-rotation);
 }
 
+void Body::CheckCollision() noexcept {
+	if (Creatures().size() < 2) return;
+	collisions.clear();
+	auto end = Creatures().end();
+	for (auto i = Creatures().begin(); i != end; ++i) {
+		math::AABB i_box((*i)->CollisionBox());
+		glm::dmat4 i_mat((*i)->CollisionTransform());
+		for (auto j = (i + 1); j != end; ++j) {
+			glm::dvec3 diff((*i)->GetSituation().Position() - (*j)->GetSituation().Position());
+			double max_dist = ((*i)->Size() + (*j)->Size()) * 1.74;
+			if (length2(diff) > max_dist * max_dist) continue;
+			math::AABB j_box((*j)->CollisionBox());
+			glm::dmat4 j_mat((*j)->CollisionTransform());
+			glm::dvec3 normal;
+			double depth;
+			if (Intersect(i_box, i_mat, j_box, j_mat, normal, depth)) {
+				collisions.push_back({ **i, **j, normal, depth });
+			}
+		}
+	}
+	for (auto &c : collisions) {
+		c.A().GetSituation().Move(c.Normal() * (c.Depth() * -0.5));
+		c.B().GetSituation().Move(c.Normal() * (c.Depth() * 0.5));
+		// TODO: adjust velocities as well
+		// TODO: notify participants so they can be annoyed
+	}
+}
+
 void Body::AddCreature(creature::Creature *c) {
 	creatures.push_back(c);
 }
@@ -189,6 +222,18 @@ void Body::RemoveCreature(creature::Creature *c) {
 	if (entry != creatures.end()) {
 		creatures.erase(entry);
 	}
+}
+
+
+CreatureCreatureCollision::~CreatureCreatureCollision() {
+}
+
+const glm::dvec3 &CreatureCreatureCollision::APos() const noexcept {
+	return a->GetSituation().Position();
+}
+
+const glm::dvec3 &CreatureCreatureCollision::BPos() const noexcept {
+	return b->GetSituation().Position();
 }
 
 

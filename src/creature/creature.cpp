@@ -322,6 +322,10 @@ void Creature::TickStats(double dt) {
 		constexpr double dps = 1.0 / 128.0;
 		Hurt(dps * dt);
 	}
+	if (!situation.Moving()) {
+		// double exhaustion recovery when standing still
+		stats.Exhaustion().Add(stats.Exhaustion().gain * dt);
+	}
 }
 
 void Creature::TickBrain(double dt) {
@@ -349,13 +353,22 @@ void Creature::TickBrain(double dt) {
 	}
 }
 
-glm::dmat4 Creature::LocalTransform() noexcept {
+math::AABB Creature::CollisionBox() const noexcept {
+	return { glm::dvec3(size * -0.5), glm::dvec3(size * 0.5) };
+}
+
+glm::dmat4 Creature::CollisionTransform() const noexcept {
 	const double half_size = size * 0.5;
 	const glm::dvec3 &pos = situation.Position();
 	const glm::dmat3 srf(world::Planet::SurfaceOrientation(situation.Surface()));
 	return glm::translate(glm::dvec3(pos.x, pos.y, pos.z + half_size))
 		* glm::rotate(glm::orientedAngle(-srf[2], situation.Heading(), srf[1]), srf[1])
-		* glm::dmat4(srf)
+		* glm::dmat4(srf);
+}
+
+glm::dmat4 Creature::LocalTransform() noexcept {
+	const double half_size = size * 0.5;
+	return CollisionTransform()
 		* glm::scale(glm::dvec3(half_size, half_size, half_size));
 }
 
@@ -480,7 +493,7 @@ void Spawn(Creature &c, world::Planet &p) {
 
 	Genome genome;
 	genome.properties.Strength() = { 2.0, 0.1 };
-	genome.properties.Stamina() = { 4.0, 0.1 };
+	genome.properties.Stamina() = { 2.0, 0.1 };
 	genome.properties.Dexerty() = { 2.0, 0.1 };
 	genome.properties.Intelligence() = { 1.0, 0.1 };
 	genome.properties.Lifetime() = { 480.0, 60.0 };

@@ -50,8 +50,15 @@ void MasterState::OnResize(int w, int h) {
 
 void MasterState::OnUpdate(int dt) {
 	remain += dt;
-	while (remain >= FrameMS()) {
+#ifdef NDEBUG
+	int max_tick = 10;
+#else
+	// one tick per frame when debugging so pausing execution doesn't result in more ticks
+	int max_tick = 1;
+#endif
+	while (remain >= FrameMS() && max_tick > 0) {
 		Tick();
+		--max_tick;
 	}
 }
 

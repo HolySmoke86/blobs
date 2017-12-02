@@ -25,6 +25,7 @@ struct SwitchPanel {
 	void operator ()(creature::Creature &c) {
 		if (planet.Creatures().empty()) {
 			std::cout << "no more creatures, game over" << std::endl;
+			state.GetCreaturePanel().Hide();
 			while (app.HasState()) {
 				app.PopState();
 			}
