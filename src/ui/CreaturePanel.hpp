@@ -52,6 +52,8 @@ private:
 	Label *age;
 	Label *mass;
 	Label *pos;
+	Label *vel;
+	Label *dir;
 	Label *tile;
 	Label *goal;
 	Meter *stats[7];

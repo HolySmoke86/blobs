@@ -208,7 +208,8 @@ void Body::CheckCollision() noexcept {
 	for (auto &c : collisions) {
 		c.A().GetSituation().Move(c.Normal() * (c.Depth() * -0.5));
 		c.B().GetSituation().Move(c.Normal() * (c.Depth() * 0.5));
-		// TODO: adjust velocities as well
+		c.A().GetSituation().Accelerate(c.Normal() * -dot(c.Normal(), c.AVel()));
+		c.B().GetSituation().Accelerate(c.Normal() * -dot(c.Normal(), c.BVel()));
 		// TODO: notify participants so they can be annoyed
 	}
 }
@@ -232,8 +233,16 @@ const glm::dvec3 &CreatureCreatureCollision::APos() const noexcept {
 	return a->GetSituation().Position();
 }
 
+const glm::dvec3 &CreatureCreatureCollision::AVel() const noexcept {
+	return a->GetSituation().Velocity();
+}
+
 const glm::dvec3 &CreatureCreatureCollision::BPos() const noexcept {
 	return b->GetSituation().Position();
+}
+
+const glm::dvec3 &CreatureCreatureCollision::BVel() const noexcept {
+	return b->GetSituation().Velocity();
 }
 
 

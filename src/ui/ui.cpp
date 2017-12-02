@@ -24,6 +24,8 @@ CreaturePanel::CreaturePanel(const app::Assets &assets)
 , age(new Label(assets.fonts.medium))
 , mass(new Label(assets.fonts.medium))
 , pos(new Label(assets.fonts.medium))
+, vel(new Label(assets.fonts.medium))
+, dir(new Label(assets.fonts.medium))
 , tile(new Label(assets.fonts.medium))
 , goal(new Label(assets.fonts.medium))
 , stats{nullptr}
@@ -66,6 +68,26 @@ CreaturePanel::CreaturePanel(const app::Assets &assets)
 	pos_panel
 		->Add(pos_label)
 		->Add(pos)
+		->Spacing(10.0f)
+		->Direction(Panel::HORIZONTAL);
+
+	vel->Text("<00.0, 00.0, 00.0>");
+	Label *vel_label = new Label(assets.fonts.medium);
+	vel_label->Text("Vel");
+	Panel *vel_panel = new Panel;
+	vel_panel
+		->Add(vel_label)
+		->Add(vel)
+		->Spacing(10.0f)
+		->Direction(Panel::HORIZONTAL);
+
+	dir->Text("<0.00, 0.00, 0.00>");
+	Label *dir_label = new Label(assets.fonts.medium);
+	dir_label->Text("Dir");
+	Panel *dir_panel = new Panel;
+	dir_panel
+		->Add(dir_label)
+		->Add(dir)
 		->Spacing(10.0f)
 		->Direction(Panel::HORIZONTAL);
 
@@ -165,6 +187,8 @@ CreaturePanel::CreaturePanel(const app::Assets &assets)
 		->Add(born_panel)
 		->Add(mass_panel)
 		->Add(pos_panel)
+		->Add(vel_panel)
+		->Add(dir_panel)
 		->Add(tile_panel)
 		->Add(goal_panel)
 		->Add(stat_panel)
@@ -200,6 +224,20 @@ void CreaturePanel::Draw(app::Assets &assets, graphics::Viewport &viewport) noex
 		ss << std::fixed << std::setprecision(1)
 			<< "<" << p.x << ", " << p.y << ", " << p.z << ">";
 		pos->Text(ss.str());
+	}
+	{
+		const glm::dvec3 &v = c->GetSituation().Velocity();
+		std::stringstream ss;
+		ss << std::fixed << std::setprecision(1)
+			<< "<" << v.x << ", " << v.y << ", " << v.z << ">";
+		vel->Text(ss.str());
+	}
+	{
+		const glm::dvec3 &d = c->GetSituation().GetState().dir;
+		std::stringstream ss;
+		ss << std::fixed << std::setprecision(2)
+			<< "<" << d.x << ", " << d.y << ", " << d.z << ">";
+		dir->Text(ss.str());
 	}
 	{
 		glm::ivec2 t = c->GetSituation().SurfacePosition();

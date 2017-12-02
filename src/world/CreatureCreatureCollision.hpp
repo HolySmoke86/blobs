@@ -30,10 +30,12 @@ public:
 	creature::Creature &A() noexcept { return *a; }
 	const creature::Creature &A() const noexcept { return *a; }
 	const glm::dvec3 &APos() const noexcept;
+	const glm::dvec3 &AVel() const noexcept;
 
 	creature::Creature &B() noexcept { return *b; }
 	const creature::Creature &B() const noexcept { return *b; }
 	const glm::dvec3 &BPos() const noexcept;
+	const glm::dvec3 &BVel() const noexcept;
 
 	const glm::dvec3 &Normal() const noexcept { return normal; }
 	double Depth() const noexcept { return depth; }

@@ -278,10 +278,11 @@ void Creature::TickState(double dt) {
 	);
 	state.pos += f.vel * dt;
 	state.vel += f.acc * dt;
+	situation.EnforceConstraints(state);
 	if (length2(state.vel) > 0.000001) {
 		glm::dvec3 nvel(normalize(state.vel));
 		double ang = angle(nvel, state.dir);
-		double turn_rate = PI * 0.5 * dt;
+		double turn_rate = PI * 0.75 * dt;
 		if (ang < turn_rate) {
 			state.dir = normalize(state.vel);
 		} else if (std::abs(ang - PI) < 0.001) {
@@ -291,16 +292,33 @@ void Creature::TickState(double dt) {
 		}
 	}
 	situation.SetState(state);
-	stats.Exhaustion().Add(length(f.acc) * Mass() / Stamina() * dt);
+	stats.Exhaustion().Add(length(f.acc) * Mass() / Stamina() * 0.5 * dt);
 }
 
 Situation::Derivative Creature::Step(const Situation::Derivative &ds, double dt) const noexcept {
 	Situation::State s = situation.GetState();
 	s.pos += ds.vel * dt;
 	s.vel += ds.acc * dt;
+	glm::dvec3 force(steering.Force(s));
+	// gravity = antinormal * mass * Gm / r²
+	double elevation = s.pos[(situation.Surface() + 2) % 3];
+	glm::dvec3 normal(world::Planet::SurfaceNormal(situation.Surface()));
+	force += glm::dvec3(
+		-normal
+		* Mass() * situation.GetPlanet().GravitationalParameter()
+		/ (elevation * elevation));
+	// if net force is applied and in contact with surface
+	if (!allzero(force) && std::abs(std::abs(elevation) - situation.GetPlanet().Radius()) < 0.001) {
+		// apply friction = -|normal force| * tangential force * coefficient
+		glm::dvec3 fn(normal * dot(force, normal));
+		glm::dvec3 ft(force - fn);
+		double u = 0.4;
+		glm::dvec3 friction(-length(fn) * ft * u);
+		force += friction;
+	}
 	return {
 		s.vel,
-		steering.Force(s) / Mass()
+		force / Mass()
 	};
 }
 
@@ -576,7 +594,7 @@ void Split(Creature &c) {
 	// TODO: duplicate situation somehow
 	a->GetSituation().SetPlanetSurface(
 		s.GetPlanet(), s.Surface(),
-		s.Position() + glm::dvec3(0.0, a->Size() + 0.1, 0.0));
+		s.Position() + glm::dvec3(0.0, 0.55 * a->Size(), 0.0));
 	a->BuildVAO();
 	std::cout << "[" << int(c.GetSimulation().Time()) << "s] "
 		<< a->Name() << " was born" << std::endl;
@@ -590,7 +608,7 @@ void Split(Creature &c) {
 	s.GetPlanet().AddCreature(b);
 	b->GetSituation().SetPlanetSurface(
 		s.GetPlanet(), s.Surface(),
-		s.Position() + glm::dvec3(0.0, b->Size() - 0.1, 0.0));
+		s.Position() - glm::dvec3(0.0, 0.55 * b->Size(), 0.0));
 	b->BuildVAO();
 	std::cout << "[" << int(c.GetSimulation().Time()) << "s] "
 		<< b->Name() << " was born" << std::endl;
@@ -700,12 +718,26 @@ const world::TileType &Situation::GetTileType() const noexcept {
 
 void Situation::Move(const glm::dvec3 &dp) noexcept {
 	state.pos += dp;
+	EnforceConstraints(state);
+}
+
+void Situation::Accelerate(const glm::dvec3 &dv) noexcept {
+	state.vel += dv;
+	EnforceConstraints(state);
+}
+
+void Situation::EnforceConstraints(State &s) noexcept {
 	if (OnSurface()) {
-		// enforce ground constraint
 		if (Surface() < 3) {
-			state.pos[(Surface() + 2) % 3] = std::max(0.0, state.pos[(Surface() + 2) % 3]);
+			if (s.pos[(Surface() + 2) % 3] < GetPlanet().Radius()) {
+				s.pos[(Surface() + 2) % 3] = GetPlanet().Radius();
+				s.vel[(Surface() + 2) % 3] = std::max(0.0, s.vel[(Surface() + 2) % 3]);
+			}
 		} else {
-			state.pos[(Surface() + 2) % 3] = std::min(0.0, state.pos[(Surface() + 2) % 3]);
+			if (s.pos[(Surface() + 2) % 3] > -GetPlanet().Radius()) {
+				s.pos[(Surface() + 2) % 3] = -GetPlanet().Radius();
+				s.vel[(Surface() + 2) % 3] = std::min(0.0, s.vel[(Surface() + 2) % 3]);
+			}
 		}
 	}
 }
@@ -715,6 +747,7 @@ void Situation::SetPlanetSurface(world::Planet &p, int srf, const glm::dvec3 &po
 	planet = &p;
 	surface = srf;
 	state.pos = pos;
+	EnforceConstraints(state);
 }
 
 
@@ -746,7 +779,7 @@ void Steering::DontSeparate() noexcept {
 }
 
 void Steering::ResumeSeparate() noexcept {
-	separating = false;
+	separating = true;
 }
 
 void Steering::Halt() noexcept {
