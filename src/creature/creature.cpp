@@ -133,7 +133,9 @@ void Creature::Hurt(double amount) noexcept {
 	stats.Damage().Add(amount);
 	if (stats.Damage().Full()) {
 		std::cout << "[" << int(sim.Time()) << "s] " << name << " ";
-		if (stats.Breath().Full()) {
+		if (stats.Exhaustion().Full()) {
+			std::cout << "died of exhaustion";
+		} else if (stats.Breath().Full()) {
 			std::cout << "suffocated";
 		} else if (stats.Thirst().Full()) {
 			std::cout << "died of thirst";
@@ -142,7 +144,34 @@ void Creature::Hurt(double amount) noexcept {
 		} else {
 			std::cout << "succumed to wounds";
 		}
-		std::cout << std::endl;
+		std::cout << " at an age of ";
+		{
+			int age = int(Age());
+			if (age >= 3600) {
+				std::cout << (age / 3600) << "h ";
+				age %= 3600;
+			}
+			if (age >= 60) {
+				std::cout << (age / 60) << "m ";
+				age %= 60;
+			}
+			std::cout << age << 's';
+		}
+		std::cout << " (" << int(Age() / properties.Lifetime() * 100)
+			<< "% of life expectancy of ";
+		{
+			int lt = int(properties.Lifetime());
+			if (lt >= 3600) {
+				std::cout << (lt / 3600) << "h ";
+				lt %= 3600;
+			}
+			if (lt >= 60) {
+				std::cout << (lt / 60) << "m ";
+				lt %= 60;
+			}
+			std::cout << lt << 's';
+		}
+		std::cout << ")" << std::endl;
 		Die();
 	}
 }
@@ -566,7 +595,7 @@ Memory::~Memory() {
 
 void Memory::Tick(double dt) {
 	Situation &s = c.GetSituation();
-	if (s.OnSurface()) {
+	if (s.OnTile()) {
 		TrackStay({ &s.GetPlanet(), s.Surface(), s.SurfacePosition() }, dt);
 	}
 }
@@ -700,6 +729,10 @@ void Steering::Separate(double min_distance, double max_lookaround) noexcept {
 }
 
 void Steering::DontSeparate() noexcept {
+	separating = false;
+}
+
+void Steering::ResumeSeparate() noexcept {
 	separating = false;
 }
 

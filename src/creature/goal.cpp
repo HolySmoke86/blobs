@@ -37,7 +37,7 @@ std::string BlobBackgroundTask::Describe() const {
 void BlobBackgroundTask::Tick(double dt) {
 	if (breathing) {
 		// TODO: derive breathing ability
-		double amount = GetCreature().GetStats().Breath().gain * -(1.0 + GetCreature().ExhaustionFactor());
+		double amount = GetCreature().GetStats().Breath().gain * -(1.5 + 0.5 * GetCreature().ExhaustionFactor());
 		GetCreature().GetStats().Breath().Add(amount * dt);
 		if (GetCreature().GetStats().Breath().Empty()) {
 			breathing = false;
@@ -78,6 +78,13 @@ void BlobBackgroundTask::CheckStats() {
 		}
 		eat_subtask->OnComplete([&](Goal &) { eat_subtask = nullptr; });
 		GetCreature().AddGoal(std::unique_ptr<Goal>(eat_subtask));
+	}
+
+	// when in bad shape, don't make much effort
+	if (stats.Damage().Bad() || stats.Exhaustion().Bad() || stats.Fatigue().Critical()) {
+		GetCreature().GetSteering().DontSeparate();
+	} else {
+		GetCreature().GetSteering().ResumeSeparate();
 	}
 }
 
@@ -204,7 +211,7 @@ void IngestGoal::Action() {
 }
 
 bool IngestGoal::OnSuitableTile() {
-	if (!GetSituation().OnSurface()) {
+	if (!GetSituation().OnTile()) {
 		return false;
 	}
 	const world::TileType &t = GetSituation().GetTileType();
@@ -352,7 +359,7 @@ void LocateResourceGoal::Action() {
 }
 
 void LocateResourceGoal::LocateResource() {
-	if (GetSituation().OnSurface()) {
+	if (GetSituation().OnTile()) {
 		const world::TileType &t = GetSituation().GetTileType();
 		auto yield = t.FindBestResource(accept);
 		if (yield != t.resources.cend()) {
@@ -381,15 +388,6 @@ void LocateResourceGoal::SearchVicinity() {
 	glm::ivec2 seek_radius(2);
 	glm::ivec2 begin(glm::max(glm::ivec2(0), loc - seek_radius));
 	glm::ivec2 end(glm::min(glm::ivec2(planet.SideLength()), loc + seek_radius + glm::ivec2(1)));
-
-	// this happens when location is way off the planet
-	// that's a bug in Situation, actually, but I'm working aound that here
-	if (end.x <= begin.x) {
-		end.x = begin.x + 2;
-	}
-	if (end.y <= begin.y) {
-		end.y = begin.y + 2;
-	}
 
 	double rating[end.y - begin.y][end.x - begin.x];
 	std::memset(rating, 0, sizeof(double) * (end.y - begin.y) * (end.x - begin.x));

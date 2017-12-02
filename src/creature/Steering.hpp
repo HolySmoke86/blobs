@@ -30,6 +30,7 @@ public:
 public:
 	void Separate(double min_distance, double max_lookaround) noexcept;
 	void DontSeparate() noexcept;
+	void ResumeSeparate() noexcept;
 	void Halt() noexcept;
 	void Pass(const glm::dvec3 &) noexcept;
 	void GoTo(const glm::dvec3 &) noexcept;
