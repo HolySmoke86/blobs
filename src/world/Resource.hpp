@@ -15,6 +15,8 @@ struct Resource {
 	std::string label = "";
 
 	double density = 1.0;
+	double energy = 1.0;
+	double inverse_energy = 1.0;
 
 	int id = -1;
 

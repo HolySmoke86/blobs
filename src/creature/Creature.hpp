@@ -105,6 +105,8 @@ public:
 	double Mass() const noexcept { return mass; }
 	void Ingest(int res, double amount) noexcept;
 
+	void DoWork(double amount) noexcept;
+
 	void Size(double s) noexcept { size = s; }
 	double Size() const noexcept { return size; }
 
@@ -113,6 +115,7 @@ public:
 	/// age-depended multiplier, peak being the maximum in lifetime [0,1]
 	double AgeFactor(double peak) const noexcept;
 
+	double EnergyEfficiency() const noexcept;
 	double ExhaustionFactor() const noexcept;
 	double FatigueFactor() const noexcept;
 

@@ -45,14 +45,17 @@ bool CompositionCompare(const Composition::Component &a, const Composition::Comp
 
 void Composition::Add(int res, double amount) {
 	bool found = false;
-	for (auto &c : components) {
-		if (c.resource == res) {
-			c.value += amount;
+	for (auto c = components.begin(); c != components.end(); ++c) {
+		if (c->resource == res) {
+			c->value += amount;
+			if (c->value <= 0.0) {
+				components.erase(c);
+			}
 			found = true;
 			break;
 		}
 	}
-	if (!found) {
+	if (!found && amount > 0.0) {
 		components.emplace_back(res, amount);
 	}
 	std::sort(components.begin(), components.end(), CompositionCompare);
@@ -138,6 +141,20 @@ void Creature::Ingest(int res, double amount) noexcept {
 	}
 }
 
+void Creature::DoWork(double amount) noexcept {
+	stats.Exhaustion().Add(amount / Stamina());
+	// burn resources proportional to composition
+	// factor = 1/total * 1/efficiency * amount * -1
+	double factor = -amount / (composition.TotalMass() * EnergyEfficiency());
+	// make a copy to total remains constant and
+	// no entries disappear during iteration
+	Composition comp(composition);
+	for (auto &cmp : comp) {
+		double value = cmp.value * factor * sim.Resources()[cmp.resource].inverse_energy;
+		AddMass(cmp.resource, value);
+	}
+}
+
 void Creature::Hurt(double amount) noexcept {
 	stats.Damage().Add(amount);
 	if (stats.Damage().Full()) {
@@ -194,7 +211,12 @@ double Creature::AgeFactor(double peak) const noexcept {
 	// shifted inverse hermite, y = 1 - (3t² - 2t³) with t = normalized age - peak
 	// goes negative below -0.5 and starts to rise again above 1.0
 	double t = glm::clamp((Age() / properties.Lifetime()) - peak, -0.5, 1.0);
-	return 1.0 - (3.0 * t * t) + (2.0 * t * t * t);
+	// guarantee at least 1%
+	return std::max(0.01, 1.0 - (3.0 * t * t) + (2.0 * t * t * t));
+}
+
+double Creature::EnergyEfficiency() const noexcept {
+	return 0.25 * AgeFactor(0.05);
 }
 
 double Creature::ExhaustionFactor() const noexcept {
@@ -293,7 +315,8 @@ void Creature::TickState(double dt) {
 		}
 	}
 	situation.SetState(state);
-	stats.Exhaustion().Add(length(f.acc) * Mass() / Stamina() * 0.5 * dt);
+	// work is force times distance
+	DoWork(length(f.acc) * Mass() * length(f.vel) * dt);
 }
 
 Situation::Derivative Creature::Step(const Situation::Derivative &ds, double dt) const noexcept {
@@ -835,7 +858,8 @@ glm::dvec3 Steering::Force(const Situation::State &s) const noexcept {
 		SumForce(result, repulse, force);
 	}
 	if (halting) {
-		SumForce(result, s.vel * -force, force);
+		// break twice as hard
+		SumForce(result, s.vel * force * -2.0, force);
 	}
 	if (seeking) {
 		glm::dvec3 diff = target - s.pos;

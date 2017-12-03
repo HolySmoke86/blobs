@@ -251,6 +251,9 @@ void Assets::ReadResources(io::TokenStreamReader &in) {
 				in.ReadString(data.resources[id].label);
 			} else if (name == "density") {
 				data.resources[id].density = in.GetDouble();
+			} else if (name == "energy") {
+				data.resources[id].energy = in.GetDouble();
+				data.resources[id].inverse_energy = 1.0 / data.resources[id].energy;
 			} else if (name == "state") {
 				in.ReadIdentifier(name);
 				if (name == "solid") {

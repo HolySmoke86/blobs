@@ -6,6 +6,7 @@
 
 #include "Creature.hpp"
 #include "../app/Assets.hpp"
+#include "../ui/String.hpp"
 #include "../world/Planet.hpp"
 #include "../world/Resource.hpp"
 #include "../world/Simulation.hpp"
@@ -41,9 +42,9 @@ void BlobBackgroundTask::Tick(double dt) {
 		// TODO: check if in compatible atmosphere
 		double amount = GetCreature().GetStats().Breath().gain * -(1.5 + 0.5 * GetCreature().ExhaustionFactor());
 		GetCreature().GetStats().Breath().Add(amount * dt);
-		// maintain ~2.5% gas composition
+		// maintain ~1% gas composition
 		double gas_amount = GetCreature().GetComposition().Get(gas);
-		if (gas_amount < GetCreature().GetComposition().TotalMass() * 0.025) {
+		if (gas_amount < GetCreature().GetComposition().TotalMass() * 0.01) {
 			double add = std::min(GetCreature().GetComposition().TotalMass() * 0.025 - gas_amount, -amount * dt);
 			GetCreature().Ingest(gas, add);
 		}
@@ -99,8 +100,8 @@ void BlobBackgroundTask::CheckStats() {
 void BlobBackgroundTask::CheckSplit() {
 	if (GetCreature().Mass() > GetCreature().OffspringMass() * 2.0
 		&& GetCreature().OffspringChance() > Assets().random.UNorm()) {
-		std::cout << "[" << int(GetCreature().GetSimulation().Time())
-			<< "s] " << GetCreature().Name() << " split" << std::endl;
+		std::cout << "[" << ui::TimeString(GetCreature().GetSimulation().Time())
+			<< "] " << GetCreature().Name() << " split" << std::endl;
 		Split(GetCreature());
 		return;
 	}

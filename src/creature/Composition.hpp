@@ -21,11 +21,11 @@ public:
 	Composition();
 	~Composition();
 
-	Composition(const Composition &) = delete;
-	Composition &operator =(const Composition &) = delete;
+	Composition(const Composition &) = default;
+	Composition &operator =(const Composition &) = default;
 
-	Composition(Composition &&) = delete;
-	Composition &operator =(Composition &&) = delete;
+	Composition(Composition &&) = default;
+	Composition &operator =(Composition &&) = default;
 
 public:
 	void Add(int res, double amount);
