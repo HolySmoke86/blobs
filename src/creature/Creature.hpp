@@ -127,12 +127,15 @@ public:
 	double Lifetime() const noexcept;
 	double Fertility() const noexcept;
 	double Mutability() const noexcept;
+	double Adaptability() const noexcept;
 	double OffspringMass() const noexcept;
 
 	/// chance of giving birth per tick
 	double OffspringChance() const noexcept;
-	/// chance of random genetic mutation per tick
+	/// chance of arbitrary genetic mutation per tick
 	double MutateChance() const noexcept;
+	/// chance of environmental genetic mutation per tick
+	double AdaptChance() const noexcept;
 
 	void Hurt(double d) noexcept;
 	void Die() noexcept;

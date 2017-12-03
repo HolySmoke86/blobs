@@ -22,7 +22,7 @@ struct Genome {
 	struct Properties {
 		/// every one of these should have at least one
 		/// negative impact to prevent super-beings evolving
-		T props[8];
+		T props[9];
 		/// power at the cost of higher solid intake
 		T &Strength() noexcept { return props[0]; }
 		const T &Strength() const noexcept { return props[0]; }
@@ -44,15 +44,22 @@ struct Genome {
 		/// how likely to mutate
 		T &Mutability() noexcept { return props[6]; }
 		const T &Mutability() const noexcept { return props[6]; }
+		/// how likely to adapt to new environments
+		T &Adaptability() noexcept { return props[7]; }
+		const T &Adaptability() const noexcept { return props[7]; }
 		/// mass of offspring
-		T &OffspringMass() noexcept { return props[7]; }
-		const T &OffspringMass() const noexcept { return props[7]; }
+		T &OffspringMass() noexcept { return props[8]; }
+		const T &OffspringMass() const noexcept { return props[8]; }
 	};
 	Properties<math::Distribution> properties;
 
 	math::Distribution base_hue;
 	math::Distribution base_saturation;
 	math::Distribution base_lightness;
+
+	math::Distribution highlight_hue;
+	math::Distribution highlight_saturation;
+	math::Distribution highlight_lightness;
 
 	void Configure(Creature &) const;
 
@@ -66,9 +73,10 @@ struct Genome {
 			p.props[2].FakeNormal(rand.SNorm()),
 			p.props[3].FakeNormal(rand.SNorm()),
 			p.props[4].FakeNormal(rand.SNorm()),
-			p.props[5].FakeNormal(rand.SNorm()),
-			p.props[6].FakeNormal(rand.SNorm()),
-			p.props[7].FakeNormal(rand.SNorm())
+			glm::clamp(p.props[5].FakeNormal(rand.SNorm()), 0.0, 1.0),
+			glm::clamp(p.props[6].FakeNormal(rand.SNorm()), 0.0, 1.0),
+			glm::clamp(p.props[7].FakeNormal(rand.SNorm()), 0.0, 1.0),
+			p.props[8].FakeNormal(rand.SNorm())
 		};
 	}
 

@@ -63,6 +63,10 @@ public:
 		return double(Next<std::uint64_t>()) * (1.0 / double(std::numeric_limits<std::uint64_t>::max()));
 	}
 
+	unsigned int UInt(unsigned int below) noexcept {
+		return ((unsigned int)(UNorm() * double(below))) % below;
+	}
+
 	template<class Container>
 	typename Container::reference From(Container &c) {
 		assert(c.size() > 0);

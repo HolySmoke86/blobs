@@ -55,7 +55,7 @@ private:
 	Panel *composition;
 	std::vector<Label *> components;
 	Meter *stats[7];
-	Label *props[8];
+	Label *props[9];
 	Panel panel;
 
 };

@@ -111,7 +111,7 @@ void BlobBackgroundTask::CheckMutate() {
 	// check for random property mutation
 	if (GetCreature().MutateChance() > Assets().random.UNorm()) {
 		double amount = 1.0 + (Assets().random.SNorm() * 0.05);
-		math::Distribution &d = GetCreature().GetGenome().properties.props[(int(Assets().random.UNorm() * 8.0) % 8)];
+		math::Distribution &d = GetCreature().GetGenome().properties.props[Assets().random.UInt(9)];
 		if (Assets().random.UNorm() < 0.5) {
 			d.Mean(d.Mean() * amount);
 		} else {

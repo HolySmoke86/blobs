@@ -105,8 +105,8 @@ CreaturePanel::CreaturePanel(app::Assets &assets)
 		->Add(stat_label_panel)
 		->Add(stat_meter_panel);
 
-	Label *prop_label[8];
-	for (int i = 0; i < 8; ++i) {
+	Label *prop_label[9];
+	for (int i = 0; i < 9; ++i) {
 		prop_label[i] = new Label(assets.fonts.medium);
 		props[i] = new Label(assets.fonts.medium);
 	}
@@ -117,7 +117,8 @@ CreaturePanel::CreaturePanel(app::Assets &assets)
 	prop_label[4]->Text("Lifetime");
 	prop_label[5]->Text("Fertility");
 	prop_label[6]->Text("Mutability");
-	prop_label[7]->Text("Offspring mass");
+	prop_label[7]->Text("Adaptability");
+	prop_label[8]->Text("Offspring mass");
 
 	Panel *prop_label_panel = new Panel;
 	prop_label_panel
@@ -127,7 +128,7 @@ CreaturePanel::CreaturePanel(app::Assets &assets)
 	prop_meter_panel
 		->Spacing(2)
 		->Direction(Panel::VERTICAL);
-	for (int i = 0; i < 8; ++i) {
+	for (int i = 0; i < 9; ++i) {
 		prop_label_panel->Add(prop_label[i]);
 		prop_meter_panel->Add(props[i]);
 	}
@@ -235,7 +236,8 @@ void CreaturePanel::Draw(graphics::Viewport &viewport) noexcept {
 	props[4]->Text(TimeString(c->Lifetime()));
 	props[5]->Text(PercentageString(c->Fertility()));
 	props[6]->Text(PercentageString(c->Mutability()));
-	props[7]->Text(MassString(c->OffspringMass()));
+	props[7]->Text(PercentageString(c->Adaptability()));
+	props[8]->Text(MassString(c->OffspringMass()));
 
 	const glm::vec2 margin(20.0f);
 	panel.Position(glm::vec2(viewport.Width() - margin.x - panel.Size().x, margin.y));

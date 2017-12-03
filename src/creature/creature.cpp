@@ -139,6 +139,57 @@ void Creature::Ingest(int res, double amount) noexcept {
 		// 10% of fluids stays in body
 		AddMass(res, amount * 0.05);
 	}
+	math::GaloisLFSR &random = sim.Assets().random;
+	if (random.UNorm() < AdaptChance()) {
+		// change color to be slightly more like resource
+		glm::dvec3 color(rgb2hsl(sim.Resources()[res].base_color));
+		// solids affect base color, others highlight
+		double p = sim.Resources()[res].state == world::Resource::SOLID ? 0 : 1;
+		double q = random.UInt(3); // hue, sat, or val
+		double r = random.UInt(2); // mean or deviation
+		math::Distribution *d = nullptr;
+		double ref = 0.0;
+		if (p == 0) {
+			if (q == 0) {
+				d = &genome.base_hue;
+				ref = color.x;
+			} else if (q == 1) {
+				d = &genome.base_saturation;
+				ref = color.y;
+			} else {
+				d = &genome.base_lightness;
+				ref = color.z;
+			}
+		} else {
+			if (q == 0) {
+				d = &genome.highlight_hue;
+				ref = color.x;
+			} else if (q == 1) {
+				d = &genome.highlight_saturation;
+				ref = color.y;
+			} else {
+				d = &genome.highlight_lightness;
+				ref = color.z;
+			}
+		}
+		if (r == 0) {
+			double diff = ref - d->Mean();
+			if (q == 0) {
+				if (diff < -0.5) {
+					diff += 1.0;
+				} else if (diff > 0.5) {
+					diff -= 1.0;
+				}
+				// move ±15% of distance
+				d->Mean(std::fmod(d->Mean() + diff * random.SNorm() * 0.15, 1.0));
+			} else {
+				d->Mean(glm::clamp(d->Mean() + diff * random.SNorm() * 0.15, 0.0, 1.0));
+			}
+		} else {
+			// scale by ±15%, enforce bounds
+			d->StandardDeviation(glm::clamp(d->StandardDeviation() * (1.0 + random.SNorm() * 0.15), 0.0001, 0.5));
+		}
+	}
 }
 
 void Creature::DoWork(double amount) noexcept {
@@ -256,6 +307,10 @@ double Creature::Mutability() const noexcept {
 	return properties.Mutability();
 }
 
+double Creature::Adaptability() const noexcept {
+	return properties.Adaptability();
+}
+
 double Creature::OffspringMass() const noexcept {
 	return properties.OffspringMass();
 }
@@ -266,6 +321,10 @@ double Creature::OffspringChance() const noexcept {
 
 double Creature::MutateChance() const noexcept {
 	return GetProperties().Mutability() * (1.0 / 3600.0);
+}
+
+double Creature::AdaptChance() const noexcept {
+	return GetProperties().Adaptability() * (1.0 / 120.0);
 }
 
 void Creature::AddGoal(std::unique_ptr<Goal> &&g) {
@@ -546,7 +605,8 @@ void Spawn(Creature &c, world::Planet &p) {
 	genome.properties.Intelligence() = { 1.0, 0.1 };
 	genome.properties.Lifetime() = { 480.0, 60.0 };
 	genome.properties.Fertility() = { 0.5, 0.03 };
-	genome.properties.Mutability() = { 1.0, 0.1 };
+	genome.properties.Mutability() = { 0.9, 0.1 };
+	genome.properties.Adaptability() = { 0.9, 0.1 };
 	genome.properties.OffspringMass() = { 0.3, 0.02 };
 
 	glm::dvec3 color_avg(0.0);
@@ -575,6 +635,10 @@ void Spawn(Creature &c, world::Planet &p) {
 	genome.base_hue = { hsl.x, 0.01 };
 	genome.base_saturation = { hsl.y, 0.01 };
 	genome.base_lightness = { hsl.z, 0.01 };
+	// use opposite color as start highlight
+	genome.highlight_hue = { std::fmod(hsl.x + 0.5, 1.0), 0.01 };
+	genome.highlight_saturation = { 1.0 - hsl.y, 0.01 };
+	genome.highlight_lightness = { 1.0 - hsl.z, 0.01 };
 
 	genome.Configure(c);
 }
@@ -601,9 +665,9 @@ void Genome::Configure(Creature &c) const {
 		glm::clamp(base_lightness.FakeNormal(random.SNorm()), 0.0, 1.0)
 	);
 	glm::dvec3 highlight_color(
-		std::fmod(base_color.x + 0.5, 1.0),
-		1.0 - base_color.y,
-		1.0 - base_color.z
+		std::fmod(highlight_hue.FakeNormal(random.SNorm()) + 1.0, 1.0),
+		glm::clamp(highlight_saturation.FakeNormal(random.SNorm()), 0.0, 1.0),
+		glm::clamp(highlight_lightness.FakeNormal(random.SNorm()), 0.0, 1.0)
 	);
 	c.BaseColor(hsl2rgb(base_color));
 	c.HighlightColor(hsl2rgb(highlight_color));
@@ -732,9 +796,9 @@ bool Situation::OnSurface() const noexcept {
 }
 
 bool Situation::OnTile() const noexcept {
+	if (type != PLANET_SURFACE) return false;
 	glm::ivec2 t(planet->SurfacePosition(surface, state.pos));
-	return type == PLANET_SURFACE
-		&& t.x >= 0 && t.x < planet->SideLength()
+	return t.x >= 0 && t.x < planet->SideLength()
 		&& t.y >= 0 && t.y < planet->SideLength();
 }
 
