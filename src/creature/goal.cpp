@@ -6,7 +6,7 @@
 
 #include "Creature.hpp"
 #include "../app/Assets.hpp"
-#include "../ui/String.hpp"
+#include "../ui/string.hpp"
 #include "../world/Planet.hpp"
 #include "../world/Resource.hpp"
 #include "../world/Simulation.hpp"
