@@ -22,11 +22,6 @@ public:
 
 public:
 	Label *Text(const std::string &);
-	Label *Decimal(double n, int prec = 2);
-	Label *Length(double m);
-	Label *Mass(double kg);
-	Label *Percentage(double n);
-	Label *Time(double s);
 	Label *Font(const graphics::Font &);
 	Label *Foreground(const glm::vec4 &);
 	Label *Background(const glm::vec4 &);

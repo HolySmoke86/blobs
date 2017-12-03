@@ -11,6 +11,7 @@
 #include "IdleGoal.hpp"
 #include "../app/Assets.hpp"
 #include "../math/const.hpp"
+#include "../ui/string.hpp"
 #include "../world/Body.hpp"
 #include "../world/Planet.hpp"
 #include "../world/Simulation.hpp"
@@ -29,7 +30,8 @@ namespace blobs {
 namespace creature {
 
 Composition::Composition()
-: components() {
+: components()
+, total_mass(0.0) {
 }
 
 Composition::~Composition() {
@@ -54,6 +56,7 @@ void Composition::Add(int res, double amount) {
 		components.emplace_back(res, amount);
 	}
 	std::sort(components.begin(), components.end(), CompositionCompare);
+	total_mass += amount;
 }
 
 bool Composition::Has(int res) const noexcept {
@@ -86,8 +89,10 @@ Creature::Creature(world::Simulation &sim)
 , mass(1.0)
 , size(1.0)
 , birth(sim.Time())
+, death(0.0)
 , on_death()
 , removable(false)
+, parents()
 , stats()
 , memory(*this)
 , bg_task()
@@ -95,6 +100,7 @@ Creature::Creature(world::Simulation &sim)
 , situation()
 , steering(*this)
 , vao() {
+	sim.SetAlive(this);
 	// all creatures avoid each other for now
 	steering.Separate(0.1, 1.5);
 }
@@ -104,19 +110,17 @@ Creature::~Creature() {
 
 void Creature::AddMass(int res, double amount) {
 	composition.Add(res, amount);
-	double mass = 0.0;
 	double nonsolid = 0.0;
 	double volume = 0.0;
 	for (const auto &c : composition) {
-		mass += c.value;
 		volume += c.value / sim.Assets().data.resources[c.resource].density;
 		if (sim.Assets().data.resources[c.resource].state != world::Resource::SOLID) {
 			nonsolid += c.value;
 		}
 	}
-	Mass(mass);
+	Mass(composition.TotalMass());
 	Size(std::cbrt(volume));
-	highlight_color.a = nonsolid / mass;
+	highlight_color.a = nonsolid / composition.TotalMass();
 }
 
 void Creature::HighlightColor(const glm::dvec3 &c) noexcept {
@@ -125,14 +129,19 @@ void Creature::HighlightColor(const glm::dvec3 &c) noexcept {
 
 void Creature::Ingest(int res, double amount) noexcept {
 	// TODO: check foreign materials
-	// 10% stays in body
-	AddMass(res, amount * 0.1);
+	if (sim.Resources()[res].state == world::Resource::SOLID) {
+		// 15% of solids stays in body
+		AddMass(res, amount * 0.15);
+	} else {
+		// 10% of fluids stays in body
+		AddMass(res, amount * 0.05);
+	}
 }
 
 void Creature::Hurt(double amount) noexcept {
 	stats.Damage().Add(amount);
 	if (stats.Damage().Full()) {
-		std::cout << "[" << int(sim.Time()) << "s] " << name << " ";
+		std::cout << "[" << ui::TimeString(sim.Time()) << "] " << name << " ";
 		if (stats.Exhaustion().Full()) {
 			std::cout << "died of exhaustion";
 		} else if (stats.Breath().Full()) {
@@ -144,45 +153,37 @@ void Creature::Hurt(double amount) noexcept {
 		} else {
 			std::cout << "succumed to wounds";
 		}
-		std::cout << " at an age of ";
-		{
-			int age = int(Age());
-			if (age >= 3600) {
-				std::cout << (age / 3600) << "h ";
-				age %= 3600;
-			}
-			if (age >= 60) {
-				std::cout << (age / 60) << "m ";
-				age %= 60;
-			}
-			std::cout << age << 's';
-		}
-		std::cout << " (" << int(Age() / properties.Lifetime() * 100)
-			<< "% of life expectancy of ";
-		{
-			int lt = int(properties.Lifetime());
-			if (lt >= 3600) {
-				std::cout << (lt / 3600) << "h ";
-				lt %= 3600;
-			}
-			if (lt >= 60) {
-				std::cout << (lt / 60) << "m ";
-				lt %= 60;
-			}
-			std::cout << lt << 's';
-		}
-		std::cout << ")" << std::endl;
+		std::cout << " at an age of " << ui::TimeString(Age())
+			<< " (" << ui::PercentageString(Age() / properties.Lifetime())
+			<< "% of life expectancy of " << ui::TimeString(properties.Lifetime())
+			<< ")" << std::endl;
 		Die();
 	}
 }
 
 void Creature::Die() noexcept {
-	goals.clear();
+	sim.SetDead(this);
+	death = sim.Time();
 	steering.Halt();
 	if (on_death) {
 		on_death(*this);
 	}
 	Remove();
+}
+
+void Creature::Remove() noexcept {
+	removable = true;
+}
+
+void Creature::Removed() noexcept {
+	bg_task.reset();
+	goals.clear();
+	memory.Erase();
+	KillVAO();
+}
+
+void Creature::AddParent(Creature &p) {
+	parents.push_back(&p);
 }
 
 double Creature::Age() const noexcept {
@@ -391,17 +392,18 @@ glm::dmat4 Creature::LocalTransform() noexcept {
 }
 
 void Creature::BuildVAO() {
-	vao.Bind();
-	vao.BindAttributes();
-	vao.EnableAttribute(0);
-	vao.EnableAttribute(1);
-	vao.EnableAttribute(2);
-	vao.AttributePointer<glm::vec3>(0, false, offsetof(Attributes, position));
-	vao.AttributePointer<glm::vec3>(1, false, offsetof(Attributes, normal));
-	vao.AttributePointer<glm::vec3>(2, false, offsetof(Attributes, texture));
-	vao.ReserveAttributes(6 * 4, GL_STATIC_DRAW);
+	vao.reset(new graphics::SimpleVAO<Attributes, unsigned short>);
+	vao->Bind();
+	vao->BindAttributes();
+	vao->EnableAttribute(0);
+	vao->EnableAttribute(1);
+	vao->EnableAttribute(2);
+	vao->AttributePointer<glm::vec3>(0, false, offsetof(Attributes, position));
+	vao->AttributePointer<glm::vec3>(1, false, offsetof(Attributes, normal));
+	vao->AttributePointer<glm::vec3>(2, false, offsetof(Attributes, texture));
+	vao->ReserveAttributes(6 * 4, GL_STATIC_DRAW);
 	{
-		auto attrib = vao.MapAttributes(GL_WRITE_ONLY);
+		auto attrib = vao->MapAttributes(GL_WRITE_ONLY);
 		const float offset = 1.0f;
 		for (int surface = 0; surface < 6; ++surface) {
 			const float tex_u_begin = surface < 3 ? 1.0f : 0.0f;
@@ -448,10 +450,10 @@ void Creature::BuildVAO() {
 			attrib[4 * surface + 3].texture.z = surface;
 		}
 	}
-	vao.BindElements();
-	vao.ReserveElements(6 * 6, GL_STATIC_DRAW);
+	vao->BindElements();
+	vao->ReserveElements(6 * 6, GL_STATIC_DRAW);
 	{
-		auto element = vao.MapElements(GL_WRITE_ONLY);
+		auto element = vao->MapElements(GL_WRITE_ONLY);
 		for (int surface = 0; surface < 3; ++surface) {
 			element[6 * surface + 0] = 4 * surface + 0;
 			element[6 * surface + 1] = 4 * surface + 2;
@@ -469,12 +471,17 @@ void Creature::BuildVAO() {
 			element[6 * surface + 5] = 4 * surface + 3;
 		}
 	}
-	vao.Unbind();
+	vao->Unbind();
+}
+
+void Creature::KillVAO() {
+	vao.reset();
 }
 
 void Creature::Draw(graphics::Viewport &viewport) {
-	vao.Bind();
-	vao.DrawTriangles(6 * 6);
+	if (!vao) return;
+	vao->Bind();
+	vao->DrawTriangles(6 * 6);
 }
 
 
@@ -585,6 +592,7 @@ void Genome::Configure(Creature &c) const {
 void Split(Creature &c) {
 	Creature *a = new Creature(c.GetSimulation());
 	const Situation &s = c.GetSituation();
+	a->AddParent(c);
 	a->Name(c.GetSimulation().Assets().name.Sequential());
 	c.GetGenome().Configure(*a);
 	for (const auto &cmp : c.GetComposition()) {
@@ -596,10 +604,11 @@ void Split(Creature &c) {
 		s.GetPlanet(), s.Surface(),
 		s.Position() + glm::dvec3(0.0, 0.55 * a->Size(), 0.0));
 	a->BuildVAO();
-	std::cout << "[" << int(c.GetSimulation().Time()) << "s] "
+	std::cout << "[" << ui::TimeString(c.GetSimulation().Time()) << "] "
 		<< a->Name() << " was born" << std::endl;
 
 	Creature *b = new Creature(c.GetSimulation());
+	b->AddParent(c);
 	b->Name(c.GetSimulation().Assets().name.Sequential());
 	c.GetGenome().Configure(*b);
 	for (const auto &cmp : c.GetComposition()) {
@@ -610,7 +619,7 @@ void Split(Creature &c) {
 		s.GetPlanet(), s.Surface(),
 		s.Position() - glm::dvec3(0.0, 0.55 * b->Size(), 0.0));
 	b->BuildVAO();
-	std::cout << "[" << int(c.GetSimulation().Time()) << "s] "
+	std::cout << "[" << ui::TimeString(c.GetSimulation().Time()) << "] "
 		<< b->Name() << " was born" << std::endl;
 
 	c.Die();
@@ -622,6 +631,10 @@ Memory::Memory(Creature &c)
 }
 
 Memory::~Memory() {
+}
+
+void Memory::Erase() {
+	known_types.clear();
 }
 
 void Memory::Tick(double dt) {

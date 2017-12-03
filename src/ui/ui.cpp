@@ -1,10 +1,15 @@
 #include "CreaturePanel.hpp"
+#include "RecordsPanel.hpp"
+#include "string.hpp"
+#include "TimePanel.hpp"
 
 #include "Label.hpp"
 #include "Meter.hpp"
 #include "../app/Assets.hpp"
 #include "../creature/Creature.hpp"
 #include "../graphics/Viewport.hpp"
+#include "../world/Body.hpp"
+#include "../world/Simulation.hpp"
 
 #include <iomanip>
 #include <iostream>
@@ -16,100 +21,52 @@
 namespace blobs {
 namespace ui {
 
-CreaturePanel::CreaturePanel(const app::Assets &assets)
+CreaturePanel::CreaturePanel(app::Assets &assets)
 : assets(assets)
 , c(nullptr)
 , name(new Label(assets.fonts.large))
+, parents(new Label(assets.fonts.medium))
 , born(new Label(assets.fonts.medium))
 , age(new Label(assets.fonts.medium))
 , mass(new Label(assets.fonts.medium))
-, pos(new Label(assets.fonts.medium))
-, vel(new Label(assets.fonts.medium))
-, dir(new Label(assets.fonts.medium))
-, tile(new Label(assets.fonts.medium))
 , goal(new Label(assets.fonts.medium))
+, composition(new Panel)
 , stats{nullptr}
 , props{nullptr}
 , panel() {
-	born->Text("00h 00m 00s");
+	Label *parents_label = new Label(assets.fonts.medium);
+	parents_label->Text("Parents");
 	Label *born_label = new Label(assets.fonts.medium);
 	born_label->Text("Born");
-	Panel *born_panel = new Panel;
-	born_panel
-		->Add(born_label)
-		->Add(born)
-		->Spacing(10.0f)
-		->Direction(Panel::HORIZONTAL);
-
-	age->Text("00h 00m 00s");
 	Label *age_label = new Label(assets.fonts.medium);
 	age_label->Text("Age");
-	Panel *age_panel = new Panel;
-	age_panel
-		->Add(age_label)
-		->Add(age)
-		->Spacing(10.0f)
-		->Direction(Panel::HORIZONTAL);
-
-	mass->Text("00.000kg");
 	Label *mass_label = new Label(assets.fonts.medium);
 	mass_label->Text("Mass");
-	Panel *mass_panel = new Panel;
-	mass_panel
-		->Add(mass_label)
-		->Add(mass)
-		->Spacing(10.0f)
-		->Direction(Panel::HORIZONTAL);
-
-	pos->Text("<00.0, 00.0, 00.0>");
-	Label *pos_label = new Label(assets.fonts.medium);
-	pos_label->Text("Pos");
-	Panel *pos_panel = new Panel;
-	pos_panel
-		->Add(pos_label)
-		->Add(pos)
-		->Spacing(10.0f)
-		->Direction(Panel::HORIZONTAL);
-
-	vel->Text("<00.0, 00.0, 00.0>");
-	Label *vel_label = new Label(assets.fonts.medium);
-	vel_label->Text("Vel");
-	Panel *vel_panel = new Panel;
-	vel_panel
-		->Add(vel_label)
-		->Add(vel)
-		->Spacing(10.0f)
-		->Direction(Panel::HORIZONTAL);
-
-	dir->Text("<0.00, 0.00, 0.00>");
-	Label *dir_label = new Label(assets.fonts.medium);
-	dir_label->Text("Dir");
-	Panel *dir_panel = new Panel;
-	dir_panel
-		->Add(dir_label)
-		->Add(dir)
-		->Spacing(10.0f)
-		->Direction(Panel::HORIZONTAL);
-
-	tile->Text("<00, 00> (mountains)");
-	Label *tile_label = new Label(assets.fonts.medium);
-	tile_label->Text("Tile");
-	Panel *tile_panel = new Panel;
-	tile_panel
-		->Add(tile_label)
-		->Add(tile)
-		->Spacing(10.0f)
-		->Direction(Panel::HORIZONTAL);
-
-	goal->Text("long goal description");
 	Label *goal_label = new Label(assets.fonts.medium);
 	goal_label->Text("Goal");
-	Panel *goal_panel = new Panel;
-	goal_panel
-		->Add(goal_label)
-		->Add(goal)
+
+	Panel *info_label_panel = new Panel;
+	info_label_panel
+		->Direction(Panel::VERTICAL)
+		->Add(parents_label)
+		->Add(born_label)
+		->Add(age_label)
+		->Add(mass_label)
+		->Add(goal_label);
+	Panel *info_value_panel = new Panel;
+	info_value_panel
+		->Direction(Panel::VERTICAL)
+		->Add(parents)
+		->Add(born)
+		->Add(age)
+		->Add(mass)
+		->Add(goal);
+	Panel *info_panel = new Panel;
+	info_panel
+		->Direction(Panel::HORIZONTAL)
 		->Spacing(10.0f)
-		->Direction(Panel::HORIZONTAL);
+		->Add(info_label_panel)
+		->Add(info_value_panel);
 
 	Label *stat_label[7];
 	for (int i = 0; i < 7; ++i) {
@@ -183,14 +140,8 @@ CreaturePanel::CreaturePanel(const app::Assets &assets)
 
 	panel
 		.Add(name)
-		->Add(age_panel)
-		->Add(born_panel)
-		->Add(mass_panel)
-		->Add(pos_panel)
-		->Add(vel_panel)
-		->Add(dir_panel)
-		->Add(tile_panel)
-		->Add(goal_panel)
+		->Add(info_panel)
+		->Add(composition)
 		->Add(stat_panel)
 		->Add(prop_panel)
 		->Padding(glm::vec2(10.0f))
@@ -206,51 +157,64 @@ CreaturePanel::~CreaturePanel() {
 void CreaturePanel::Show(creature::Creature &cr) {
 	c = &cr;
 	name->Text(c->Name());
-	born->Time(c->Born());
+	born->Text(TimeString(c->Born()));
+
+	if (c->Parents().empty()) {
+		parents->Text("none");
+	} else {
+		std::string parent_string;
+		bool first = true;
+		for (auto p : c->Parents()) {
+			if (first) {
+				first = false;
+			} else {
+				parent_string += " and ";
+			}
+			parent_string += p->Name();
+		}
+		parents->Text(parent_string);
+	}
 }
 
 void CreaturePanel::Hide() noexcept {
 	c = nullptr;
 }
 
-void CreaturePanel::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
+void CreaturePanel::Draw(graphics::Viewport &viewport) noexcept {
 	if (!c) return;
 
-	age->Time(c->Age());
-	mass->Mass(c->Mass());
-	{
-		const glm::dvec3 &p = c->GetSituation().Position();
-		std::stringstream ss;
-		ss << std::fixed << std::setprecision(1)
-			<< "<" << p.x << ", " << p.y << ", " << p.z << ">";
-		pos->Text(ss.str());
-	}
-	{
-		const glm::dvec3 &v = c->GetSituation().Velocity();
-		std::stringstream ss;
-		ss << std::fixed << std::setprecision(1)
-			<< "<" << v.x << ", " << v.y << ", " << v.z << ">";
-		vel->Text(ss.str());
-	}
-	{
-		const glm::dvec3 &d = c->GetSituation().GetState().dir;
-		std::stringstream ss;
-		ss << std::fixed << std::setprecision(2)
-			<< "<" << d.x << ", " << d.y << ", " << d.z << ">";
-		dir->Text(ss.str());
-	}
-	{
-		glm::ivec2 t = c->GetSituation().SurfacePosition();
-		std::stringstream ss;
-		ss << std::fixed << std::setprecision(1)
-			<< "<" << t.x << ", " << t.y
-			<< "> (" << c->GetSituation().GetTileType().label << ")";
-		tile->Text(ss.str());
-	}
+	age->Text(TimeString(c->Age()));
+	mass->Text(MassString(c->Mass()));
 	if (c->Goals().empty()) {
 		goal->Text("none");
 	} else {
 		goal->Text(c->Goals()[0]->Describe());
+	}
+
+	const creature::Composition &comp = c->GetComposition();
+	if (comp.size() < components.size()) {
+		composition->Clear();
+		while (comp.size() < components.size()) {
+			delete components.back();
+			components.pop_back();
+		}
+		for (auto l : components) {
+			composition->Add(l);
+		}
+	} else {
+		while (comp.size() > components.size()) {
+			components.emplace_back(new Label(assets.fonts.medium));
+			composition->Add(components.back());
+		}
+	}
+	{
+		int i = 0;
+		for (auto &cmp : comp) {
+			components[i]->Text(
+				PercentageString(cmp.value / comp.TotalMass())
+				+ " " + assets.data.resources[cmp.resource].label);
+			++i;
+		}
 	}
 
 	for (int i = 0; i < 7; ++i) {
@@ -264,19 +228,238 @@ void CreaturePanel::Draw(app::Assets &assets, graphics::Viewport &viewport) noex
 		}
 	}
 
-	props[0]->Decimal(c->Strength());
-	props[1]->Decimal(c->Stamina());
-	props[2]->Decimal(c->Dexerty());
-	props[3]->Decimal(c->Intelligence());
-	props[4]->Time(c->Lifetime());
-	props[5]->Percentage(c->Fertility());
-	props[6]->Percentage(c->Mutability());
-	props[7]->Mass(c->OffspringMass());
+	props[0]->Text(DecimalString(c->Strength(), 2));
+	props[1]->Text(DecimalString(c->Stamina(), 2));
+	props[2]->Text(DecimalString(c->Dexerty(), 2));
+	props[3]->Text(DecimalString(c->Intelligence(), 2));
+	props[4]->Text(TimeString(c->Lifetime()));
+	props[5]->Text(PercentageString(c->Fertility()));
+	props[6]->Text(PercentageString(c->Mutability()));
+	props[7]->Text(MassString(c->OffspringMass()));
 
 	const glm::vec2 margin(20.0f);
-
 	panel.Position(glm::vec2(viewport.Width() - margin.x - panel.Size().x, margin.y));
 	panel.Draw(assets, viewport);
+}
+
+
+RecordsPanel::RecordsPanel(world::Simulation &sim)
+: sim(sim)
+, live(new Label(sim.Assets().fonts.medium))
+, records()
+, holders()
+, panel() {
+	Label *live_label = new Label(sim.Assets().fonts.medium);
+	live_label->Text("Creatures alive");
+
+	Panel *label_panel = new Panel;
+	label_panel
+		->Direction(Panel::VERTICAL)
+		->Add(live_label);
+
+	Panel *value_panel = new Panel;
+	value_panel
+		->Direction(Panel::VERTICAL)
+		->Add(live);
+
+	Label *holder_label = new Label(sim.Assets().fonts.medium);
+	holder_label->Text("Holder");
+	Panel *holder_panel = new Panel;
+	holder_panel
+		->Direction(Panel::VERTICAL)
+		->Add(holder_label);
+
+	records.reserve(sim.Records().size());
+	for (const auto &r : sim.Records()) {
+		Label *label = new Label(sim.Assets().fonts.medium);
+		label->Text(r.name + " record");
+		label_panel->Add(label);
+		Label *value = new Label(sim.Assets().fonts.medium);
+		value->Text("none");
+		value_panel->Add(value);
+		records.push_back(value);
+		Label *holder = new Label(sim.Assets().fonts.medium);
+		holder->Text("nobody");
+		holder_panel->Add(holder);
+		holders.push_back(holder);
+	}
+
+	panel
+		.Direction(Panel::HORIZONTAL)
+		->Padding(glm::vec2(10.0f))
+		->Spacing(10.0f)
+		->Background(glm::vec4(0.7f, 0.7f, 0.7f, 1.0f))
+		->Add(label_panel)
+		->Add(value_panel)
+		->Add(holder_panel);
+}
+
+RecordsPanel::~RecordsPanel() {
+}
+
+void RecordsPanel::Draw(graphics::Viewport &viewport) noexcept {
+	live->Text(NumberString(sim.LiveCreatures().size()));
+	int i = 0;
+	for (const auto &r : sim.Records()) {
+		if (!r) continue;
+		switch (r.type) {
+			default:
+			case world::Record::VALUE:
+				records[i]->Text(DecimalString(r.value, 2));
+				break;
+			case world::Record::LENGTH:
+				records[i]->Text(LengthString(r.value));
+				break;
+			case world::Record::MASS:
+				records[i]->Text(MassString(r.value));
+				break;
+			case world::Record::PERCENTAGE:
+				records[i]->Text(PercentageString(r.value));
+				break;
+			case world::Record::TIME:
+				records[i]->Text(TimeString(r.value));
+				break;
+		}
+		std::string str(r.holder->Name());
+		bool first = true;
+		for (auto p : r.holder->Parents()) {
+			if (first) {
+				first = false;
+				str += " of ";
+			} else {
+				str += " and ";
+			}
+			str += p->Name();
+		}
+		holders[i]->Text(str);
+		++i;
+	}
+
+	const glm::vec2 margin(20.0f);
+	panel.Position(glm::vec2(margin.x, margin.y));
+	panel.Draw(sim.Assets(), viewport);
+}
+
+
+TimePanel::TimePanel(world::Simulation &sim)
+: sim(sim)
+, body(nullptr)
+, time(new Label(sim.Assets().fonts.medium))
+, clock(new Label(sim.Assets().fonts.medium))
+, panel() {
+	Label *time_label = new Label(sim.Assets().fonts.medium);
+	time_label->Text("Time");
+	Label *clock_label = new Label(sim.Assets().fonts.medium);
+	clock_label->Text("Clock");
+
+	Panel *label_panel = new Panel;
+	label_panel
+		->Direction(Panel::VERTICAL)
+		->Add(time_label)
+		->Add(clock_label);
+
+	Panel *value_panel = new Panel;
+	value_panel
+		->Direction(Panel::VERTICAL)
+		->Add(time)
+		->Add(clock);
+
+	panel
+		.Direction(Panel::HORIZONTAL)
+		->Padding(glm::vec2(10.0f))
+		->Spacing(10.0f)
+		->Background(glm::vec4(0.7f, 0.7f, 0.7f, 1.0f))
+		->Add(label_panel)
+		->Add(value_panel);
+}
+
+TimePanel::~TimePanel() {
+}
+
+void TimePanel::Draw(graphics::Viewport &viewport) noexcept {
+	time->Text(TimeString(sim.Time()));
+	if (body) {
+		clock->Text(TimeString(std::fmod(sim.Time(), body->RotationalPeriod())));
+	} else {
+		clock->Text("no reference");
+	}
+
+	const glm::vec2 margin(20.0f);
+	panel.Position(glm::vec2(margin.x, viewport.Height() - margin.y - panel.Size().y));
+	panel.Draw(sim.Assets(), viewport);
+}
+
+
+std::string DecimalString(double n, int p) {
+	std::stringstream s;
+	s << std::fixed << std::setprecision(p) << n;
+	return s.str();
+}
+
+std::string LengthString(double m) {
+	std::stringstream s;
+	s << std::fixed << std::setprecision(3);
+	if (m > 1500.0) {
+		s << (m * 0.001) << "km";
+	} else if (m < 0.1) {
+		s << (m * 1000.0) << "mm";
+	} else {
+		s << m << "m";
+	}
+	return s.str();
+}
+
+std::string MassString(double kg) {
+	std::stringstream s;
+	s << std::fixed << std::setprecision(3);
+	if (kg > 1500.0) {
+		s << (kg * 0.001) << "t";
+	} else if (kg < 1.0) {
+		s << (kg * 1000.0) << "g";
+	} else if (kg < 0.001) {
+		s << (kg * 1.0e6) << "mg";
+	} else {
+		s << kg << "kg";
+	}
+	return s.str();
+}
+
+std::string NumberString(int n) {
+	return std::to_string(n);
+}
+
+std::string PercentageString(double n) {
+	std::stringstream s;
+	s << std::fixed << std::setprecision(1) << (n * 100.0) << '%';
+	return s.str();
+}
+
+std::string TimeString(double s) {
+	int is = int(s);
+	std::stringstream ss;
+	if (is >= 3600) {
+		ss << (is / 3600) << "h ";
+		is %= 3600;
+	}
+	if (is >= 60) {
+		ss << (is / 60) << "m ";
+		is %= 60;
+	}
+	ss << is << 's';
+	return ss.str();
+}
+
+std::string VectorString(const glm::dvec3 &v, int p) {
+	std::stringstream ss;
+	ss << std::fixed << std::setprecision(p)
+		<< "<" << v.x << ", " << v.y << ", " << v.z << ">";
+	return ss.str();
+}
+
+std::string VectorString(const glm::ivec2 &v) {
+	std::stringstream ss;
+	ss << "<" << v.x << ", " << v.y << ">";
+	return ss.str();
 }
 
 }

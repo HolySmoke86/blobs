@@ -31,8 +31,10 @@ public:
 	void Add(int res, double amount);
 	bool Has(int res) const noexcept;
 	double Get(int res) const noexcept;
+	double TotalMass() const noexcept { return total_mass; }
 
 public:
+	std::vector<Component>::size_type size() const noexcept { return components.size(); }
 	std::vector<Component>::iterator begin() noexcept { return components.begin(); }
 	std::vector<Component>::iterator end() noexcept { return components.end(); }
 	std::vector<Component>::const_iterator begin() const noexcept { return components.begin(); }
@@ -42,6 +44,7 @@ public:
 
 private:
 	std::vector<Component> components;
+	double total_mass;
 
 };
 

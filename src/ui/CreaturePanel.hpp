@@ -3,6 +3,8 @@
 
 #include "Panel.hpp"
 
+#include <vector>
+
 
 namespace blobs {
 namespace app {
@@ -22,7 +24,7 @@ class Meter;
 class CreaturePanel {
 
 public:
-	explicit CreaturePanel(const app::Assets &);
+	explicit CreaturePanel(app::Assets &);
 	~CreaturePanel();
 
 	CreaturePanel(const CreaturePanel &) = delete;
@@ -38,24 +40,20 @@ public:
 	bool Shown() const noexcept { return c; }
 	const creature::Creature &GetCreature() const noexcept { return *c; }
 
-	void Draw(app::Assets &, graphics::Viewport &) noexcept;
+	void Draw(graphics::Viewport &) noexcept;
 
 private:
-	void CreateNeeds();
-
-private:
-	const app::Assets &assets;
+	app::Assets &assets;
 	creature::Creature *c;
 
 	Label *name;
+	Label *parents;
 	Label *born;
 	Label *age;
 	Label *mass;
-	Label *pos;
-	Label *vel;
-	Label *dir;
-	Label *tile;
 	Label *goal;
+	Panel *composition;
+	std::vector<Label *> components;
 	Meter *stats[7];
 	Label *props[8];
 	Panel panel;

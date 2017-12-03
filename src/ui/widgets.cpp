@@ -35,61 +35,6 @@ Label *Label::Text(const std::string &t) {
 	return this;
 }
 
-Label *Label::Decimal(double n, int prec) {
-	std::stringstream s;
-	s << std::fixed << std::setprecision(prec) << n;
-	return Text(s.str());
-}
-
-Label *Label::Length(double m) {
-	std::stringstream s;
-	s << std::fixed << std::setprecision(3);
-	if (m > 1500.0) {
-		s << (m * 0.001) << "km";
-	} else if (m < 0.1) {
-		s << (m * 1000.0) << "mm";
-	} else {
-		s << m << "m";
-	}
-	return Text(s.str());
-}
-
-Label *Label::Mass(double kg) {
-	std::stringstream s;
-	s << std::fixed << std::setprecision(3);
-	if (kg > 1500.0) {
-		s << (kg * 0.001) << "t";
-	} else if (kg < 0.1) {
-		s << (kg * 1000.0) << "g";
-	} else if (kg < 0.0001) {
-		s << (kg * 1.0e6) << "mg";
-	} else {
-		s << kg << "kg";
-	}
-	return Text(s.str());
-}
-
-Label *Label::Percentage(double n) {
-	std::stringstream s;
-	s << std::fixed << std::setprecision(1) << (n * 100.0) << '%';
-	return Text(s.str());
-}
-
-Label *Label::Time(double s) {
-	int is = int(s);
-	std::stringstream ss;
-	if (is >= 3600) {
-		ss << (is / 3600) << "h ";
-		is %= 3600;
-	}
-	if (is >= 60) {
-		ss << (is / 60) << "m ";
-		is %= 60;
-	}
-	ss << is << 's';
-	return Text(ss.str());
-}
-
 Label *Label::Font(const graphics::Font &f) {
 	if (font != &f) {
 		dirty = true;

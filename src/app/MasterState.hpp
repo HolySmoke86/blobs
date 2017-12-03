@@ -6,6 +6,8 @@
 #include "Assets.hpp"
 #include "../graphics/Camera.hpp"
 #include "../ui/CreaturePanel.hpp"
+#include "../ui/RecordsPanel.hpp"
+#include "../ui/TimePanel.hpp"
 
 
 namespace blobs {
@@ -35,6 +37,12 @@ public:
 	ui::CreaturePanel &GetCreaturePanel() noexcept { return cp; }
 	const ui::CreaturePanel &GetCreaturePanel() const noexcept { return cp; }
 
+	ui::RecordsPanel &GetRecordsPanel() noexcept { return rp; }
+	const ui::RecordsPanel &GetRecordsPanel() const noexcept { return rp; }
+
+	ui::TimePanel &GetTimePanel() noexcept { return tp; }
+	const ui::TimePanel &GetTimePanel() const noexcept { return tp; }
+
 private:
 	void OnResize(int w, int h) override;
 
@@ -61,6 +69,8 @@ private:
 	bool cam_dragging;
 
 	ui::CreaturePanel cp;
+	ui::RecordsPanel rp;
+	ui::TimePanel tp;
 
 	int remain;
 	int thirds;

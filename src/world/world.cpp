@@ -58,9 +58,6 @@ Body::Body()
 }
 
 Body::~Body() {
-	for (creature::Creature *c : creatures) {
-		delete c;
-	}
 }
 
 void Body::SetSimulation(Simulation &s) noexcept {
@@ -156,7 +153,7 @@ void Body::Tick(double dt) {
 	// first remove creatures so they don't collide
 	for (auto c = Creatures().begin(); c != Creatures().end();) {
 		if ((*c)->Removable()) {
-			delete *c;
+			(*c)->Removed();
 			c = Creatures().erase(c);
 		} else {
 			++c;

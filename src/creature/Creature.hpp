@@ -134,8 +134,12 @@ public:
 	void Hurt(double d) noexcept;
 	void Die() noexcept;
 	void OnDeath(Callback cb) noexcept { on_death = cb; }
-	void Remove() noexcept { removable = true; }
+	void Remove() noexcept;
 	bool Removable() const noexcept { return removable; }
+	void Removed() noexcept;
+
+	void AddParent(Creature &);
+	const std::vector<Creature *> &Parents() const noexcept { return parents; }
 
 	Stats &GetStats() noexcept { return stats; }
 	const Stats &GetStats() const noexcept { return stats; }
@@ -164,6 +168,7 @@ public:
 	glm::dmat4 LocalTransform() noexcept;
 
 	void BuildVAO();
+	void KillVAO();
 	void Draw(graphics::Viewport &);
 
 private:
@@ -187,8 +192,11 @@ private:
 	double size;
 
 	double birth;
+	double death;
 	Callback on_death;
 	bool removable;
+
+	std::vector<Creature *> parents;
 
 	Stats stats;
 	Memory memory;
@@ -204,7 +212,7 @@ private:
 		glm::vec3 normal;
 		glm::vec3 texture;
 	};
-	graphics::SimpleVAO<Attributes, unsigned short> vao;
+	std::unique_ptr<graphics::SimpleVAO<Attributes, unsigned short>> vao;
 
 };
 

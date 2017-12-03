@@ -37,8 +37,16 @@ std::string BlobBackgroundTask::Describe() const {
 void BlobBackgroundTask::Tick(double dt) {
 	if (breathing) {
 		// TODO: derive breathing ability
+		int gas = Assets().data.resources["air"].id;
+		// TODO: check if in compatible atmosphere
 		double amount = GetCreature().GetStats().Breath().gain * -(1.5 + 0.5 * GetCreature().ExhaustionFactor());
 		GetCreature().GetStats().Breath().Add(amount * dt);
+		// maintain ~2.5% gas composition
+		double gas_amount = GetCreature().GetComposition().Get(gas);
+		if (gas_amount < GetCreature().GetComposition().TotalMass() * 0.025) {
+			double add = std::min(GetCreature().GetComposition().TotalMass() * 0.025 - gas_amount, -amount * dt);
+			GetCreature().Ingest(gas, add);
+		}
 		if (GetCreature().GetStats().Breath().Empty()) {
 			breathing = false;
 		}

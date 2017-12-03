@@ -30,6 +30,8 @@ public:
 public:
 	void Tick(double dt);
 
+	void Erase();
+
 private:
 	/// track time spent on a tile
 	void TrackStay(const Location &, double t);

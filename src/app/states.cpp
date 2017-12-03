@@ -24,6 +24,8 @@ MasterState::MasterState(Assets &assets, world::Simulation &sim) noexcept
 , cam_orient(PI * 0.375, PI * 0.25, 0.0)
 , cam_dragging(false)
 , cp(assets)
+, rp(sim)
+, tp(sim)
 , remain(0)
 , thirds(0)
 , paused(false) {
@@ -192,7 +194,9 @@ void MasterState::OnRender(graphics::Viewport &viewport) {
 	}
 
 	viewport.ClearDepth();
-	cp.Draw(assets, viewport);
+	cp.Draw(viewport);
+	rp.Draw(viewport);
+	tp.Draw(viewport);
 }
 
 }

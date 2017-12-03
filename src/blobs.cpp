@@ -115,6 +115,7 @@ int main(int argc, char *argv[]) {
 	//	.Orbital(glm::vec3(-500.0f, 500.0f, 500.0f))
 	//;
 	state.GetCreaturePanel().Show(*blob);
+	state.GetTimePanel().SetBody(planet);
 
 	app::Application app(init.window, init.viewport);
 	SwitchPanel swp(planet, app, state);
