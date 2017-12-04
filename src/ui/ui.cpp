@@ -307,24 +307,7 @@ void RecordsPanel::Draw(graphics::Viewport &viewport) noexcept {
 	int i = 0;
 	for (const auto &r : sim.Records()) {
 		if (!r) continue;
-		switch (r.type) {
-			default:
-			case world::Record::VALUE:
-				records[i]->Text(DecimalString(r.value, 2));
-				break;
-			case world::Record::LENGTH:
-				records[i]->Text(LengthString(r.value));
-				break;
-			case world::Record::MASS:
-				records[i]->Text(MassString(r.value));
-				break;
-			case world::Record::PERCENTAGE:
-				records[i]->Text(PercentageString(r.value));
-				break;
-			case world::Record::TIME:
-				records[i]->Text(TimeString(r.value));
-				break;
-		}
+		records[i]->Text(r.ValueString());
 		std::string str(r.holder->Name());
 		bool first = true;
 		for (auto p : r.holder->Parents()) {

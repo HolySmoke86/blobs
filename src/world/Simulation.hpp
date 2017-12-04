@@ -65,6 +65,7 @@ public:
 
 	const std::vector<Record> &Records() const noexcept { return records; }
 	void CheckRecords(creature::Creature &) noexcept;
+	void LogRecord(const Record &rold, const Record &rnew);
 
 	std::ostream &Log();
 

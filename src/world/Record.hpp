@@ -26,6 +26,8 @@ struct Record {
 
 	operator bool() const noexcept { return holder; }
 
+	std::string ValueString() const;
+
 };
 
 }

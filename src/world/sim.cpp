@@ -1,3 +1,4 @@
+#include "Record.hpp"
 #include "Simulation.hpp"
 
 #include "Body.hpp"
@@ -12,6 +13,22 @@
 
 namespace blobs {
 namespace world {
+
+std::string Record::ValueString() const {
+	switch (type) {
+		default:
+		case VALUE:
+			return ui::DecimalString(value, 2);
+		case LENGTH:
+			return ui::LengthString(value);
+		case MASS:
+			return ui::MassString(value);
+		case PERCENTAGE:
+			return ui::PercentageString(value);
+		case TIME:
+			return ui::TimeString(value);
+	}
+}
 
 Simulation::Simulation(Body &r, app::Assets &assets)
 : root(r)
@@ -85,61 +102,75 @@ void Simulation::SetDead(creature::Creature *c) {
 
 void Simulation::CheckRecords(creature::Creature &c) noexcept {
 	if (c.Age() > records[0].value) {
-		if (records[0].holder && records[0].holder != &c) {
-			Log() << "new age record by " << c.Name() << std::endl;
-		}
+		Record rold(records[0]);
 		records[0].value = c.Age();
 		records[0].time = Time();
 		records[0].holder = &c;
+		if (rold.holder && rold.holder != &c) {
+			LogRecord(rold, records[0]);
+		}
 	}
 	if (c.Mass() > records[1].value) {
-		if (records[1].holder && records[1].holder != &c) {
-			Log() << "new mass record by " << c.Name() << std::endl;
-		}
+		Record rold(records[1]);
 		records[1].value = c.Mass();
 		records[1].time = Time();
 		records[1].holder = &c;
+		if (rold.holder && rold.holder != &c) {
+			LogRecord(rold, records[1]);
+		}
 	}
 	if (c.Size() > records[2].value) {
-		if (records[2].holder && records[2].holder != &c) {
-			Log() << "new size record by " << c.Name() << std::endl;
-		}
+		Record rold(records[2]);
 		records[2].value = c.Size();
 		records[2].time = Time();
 		records[2].holder = &c;
+		if (rold.holder && rold.holder != &c) {
+			LogRecord(rold, records[2]);
+		}
 	}
 	if (c.Strength() > records[3].value) {
-		if (records[3].holder && records[3].holder != &c) {
-			Log() << "new strength record by " << c.Name() << std::endl;
-		}
+		Record rold(records[3]);
 		records[3].value = c.Strength();
 		records[3].time = Time();
 		records[3].holder = &c;
+		if (rold.holder && rold.holder != &c) {
+			LogRecord(rold, records[3]);
+		}
 	}
 	if (c.Stamina() > records[4].value) {
-		if (records[4].holder && records[4].holder != &c) {
-			Log() << "new stamina record by " << c.Name() << std::endl;
-		}
+		Record rold(records[4]);
 		records[4].value = c.Stamina();
 		records[4].time = Time();
 		records[4].holder = &c;
+		if (rold.holder && rold.holder != &c) {
+			LogRecord(rold, records[4]);
+		}
 	}
 	if (c.Dexerty() > records[5].value) {
-		if (records[5].holder && records[5].holder != &c) {
-			Log() << "new dexerty record by " << c.Name() << std::endl;
-		}
+		Record rold(records[5]);
 		records[5].value = c.Dexerty();
 		records[5].time = Time();
 		records[5].holder = &c;
+		if (rold.holder && rold.holder != &c) {
+			LogRecord(rold, records[5]);
+		}
 	}
 	if (c.Intelligence() > records[6].value) {
-		if (records[6].holder && records[6].holder != &c) {
-			Log() << "new intelligence record by " << c.Name() << std::endl;
-		}
+		Record rold(records[6]);
 		records[6].value = c.Intelligence();
 		records[6].time = Time();
 		records[6].holder = &c;
+		if (rold.holder && rold.holder != &c) {
+			LogRecord(rold, records[6]);
+		}
 	}
+}
+
+void Simulation::LogRecord(const Record &rold, const Record &rnew) {
+	Log() << "at age " << ui::TimeString(rnew.holder->Age()) << " "
+		<< rnew.holder->Name() << " broke the " << rnew.name << " record of "
+		<< rold.ValueString() << " by " << rold.holder->Name()
+		<< " (established " << ui::TimeString(rold.time) << ")" << std::endl;
 }
 
 std::ostream &Simulation::Log() {
