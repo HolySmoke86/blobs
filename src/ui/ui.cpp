@@ -91,6 +91,8 @@ CreaturePanel::CreaturePanel(app::Assets &assets)
 		->Spacing(2)
 		->Direction(Panel::VERTICAL);
 	Panel *stat_meter_panel = new Panel;
+	stat_label[0]->Layout();
+	stats[0]->Layout();
 	stat_meter_panel
 		->Spacing(stat_label[0]->Size().y - stats[0]->Size().y + 2)
 		->Direction(Panel::VERTICAL);
@@ -241,6 +243,7 @@ void CreaturePanel::Draw(graphics::Viewport &viewport) noexcept {
 
 	const glm::vec2 margin(20.0f);
 	panel.Position(glm::vec2(viewport.Width() - margin.x - panel.Size().x, margin.y));
+	panel.Layout();
 	panel.Draw(assets, viewport);
 }
 
@@ -339,6 +342,7 @@ void RecordsPanel::Draw(graphics::Viewport &viewport) noexcept {
 
 	const glm::vec2 margin(20.0f);
 	panel.Position(glm::vec2(margin.x, margin.y));
+	panel.Layout();
 	panel.Draw(sim.Assets(), viewport);
 }
 
@@ -388,6 +392,7 @@ void TimePanel::Draw(graphics::Viewport &viewport) noexcept {
 
 	const glm::vec2 margin(20.0f);
 	panel.Position(glm::vec2(margin.x, viewport.Height() - margin.y - panel.Size().y));
+	panel.Layout();
 	panel.Draw(sim.Assets(), viewport);
 }
 

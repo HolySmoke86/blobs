@@ -30,7 +30,7 @@ public:
 	void Draw(app::Assets &, graphics::Viewport &) noexcept override;
 
 private:
-	void Update();
+	void FixLayout() override;
 
 private:
 	const graphics::Font *font;
@@ -38,7 +38,6 @@ private:
 	graphics::Texture tex;
 	glm::vec4 fg_color;
 	glm::vec4 bg_color;
-	bool dirty;
 
 };
 

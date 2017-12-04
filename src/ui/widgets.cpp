@@ -20,8 +20,7 @@ Label::Label(const graphics::Font &f)
 , text()
 , tex()
 , fg_color(0.0f, 0.0f, 0.0f, 1.0f)
-, bg_color(0.0f, 0.0f, 0.0f, 0.0f)
-, dirty(true) {
+, bg_color(0.0f, 0.0f, 0.0f, 0.0f) {
 }
 
 Label::~Label() {
@@ -29,7 +28,7 @@ Label::~Label() {
 
 Label *Label::Text(const std::string &t) {
 	if (text != t) {
-		dirty = true;
+		BreakLayout();
 	}
 	text = t;
 	return this;
@@ -37,7 +36,7 @@ Label *Label::Text(const std::string &t) {
 
 Label *Label::Font(const graphics::Font &f) {
 	if (font != &f) {
-		dirty = true;
+		BreakLayout();
 	}
 	font = &f;
 	return this;
@@ -57,13 +56,11 @@ glm::vec2 Label::Size() {
 	if (text.empty()) {
 		return glm::vec2(0.0f);
 	}
-	Update();
 	return tex.Size();
 }
 
 void Label::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
 	if (text.empty()) return;
-	Update();
 	glm::vec2 size = Size();
 
 	assets.shaders.alpha_sprite.Activate();
@@ -75,10 +72,9 @@ void Label::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
 	assets.shaders.alpha_sprite.DrawRect();
 }
 
-void Label::Update() {
-	if (!dirty || text.empty()) return;
+void Label::FixLayout() {
+	if (text.empty()) return;
 	font->Render(text, tex);
-	dirty = false;
 }
 
 
@@ -137,22 +133,15 @@ Panel::~Panel() {
 }
 
 Panel *Panel::Add(Widget *w) {
-	std::unique_ptr<Widget> widget(w);
-	glm::vec2 wsize = widget->Size();
-	if (dir == HORIZONTAL) {
-		size.x += wsize.x;
-		size.y = std::max(size.y, wsize.y);
-	} else {
-		size.x = std::max(size.x, wsize.x);
-		size.y += wsize.y;
-	}
-	widgets.emplace_back(std::move(widget));
+	w->SetParent(*this);
+	widgets.emplace_back(std::unique_ptr<Widget>(w));
+	BreakLayout();
 	return this;
 }
 
 Panel *Panel::Clear() {
 	widgets.clear();
-	size = glm::vec2(0.0f);
+	BreakLayout();
 	return this;
 }
 
@@ -163,17 +152,19 @@ Panel *Panel::Background(const glm::vec4 &c) {
 
 Panel *Panel::Padding(const glm::vec2 &p) {
 	padding = p;
+	BreakParentLayout();
 	return this;
 }
 
 Panel *Panel::Spacing(float s) {
 	spacing = s;
+	BreakParentLayout();
 	return this;
 }
 
 Panel *Panel::Direction(Dir d) {
 	dir = d;
-	Layout();
+	BreakLayout();
 	return this;
 }
 
@@ -183,7 +174,10 @@ glm::vec2 Panel::Size() {
 	return (2.0f * padding) + space + size;
 }
 
-void Panel::Layout() {
+void Panel::FixLayout() {
+	for (auto &w : widgets) {
+		w->Layout();
+	}
 	size = glm::vec2(0.0f);
 	if (dir == HORIZONTAL) {
 		for (auto &w : widgets) {
@@ -201,8 +195,6 @@ void Panel::Layout() {
 }
 
 void Panel::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
-	// TODO: separate draw and layout, it's inefficient and the wrong tree order anyway
-	Layout();
 	if (bg_color.a > 0.0f) {
 		assets.shaders.canvas.Activate();
 		assets.shaders.canvas.ZIndex(ZIndex());
@@ -220,11 +212,36 @@ void Panel::Draw(app::Assets &assets, graphics::Viewport &viewport) noexcept {
 
 
 Widget::Widget()
-: pos(0.0f)
-, z_index(1.0f)  {
+: parent(nullptr)
+, pos(0.0f)
+, z_index(1.0f)
+, dirty_layout(false) {
 }
 
 Widget::~Widget() {
+}
+
+void Widget::SetParent(Widget &p) noexcept {
+	parent = &p;
+}
+
+void Widget::BreakLayout() noexcept {
+	if (dirty_layout) return;
+	dirty_layout = true;
+	BreakParentLayout();
+}
+
+void Widget::BreakParentLayout() noexcept {
+	if (HasParent()) {
+		GetParent().BreakLayout();
+	}
+}
+
+void Widget::Layout() {
+	if (dirty_layout) {
+		FixLayout();
+		dirty_layout = false;
+	}
 }
 
 }

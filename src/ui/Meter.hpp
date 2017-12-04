@@ -15,9 +15,9 @@ public:
 	~Meter() override;
 
 public:
-	Meter *Size(const glm::vec2 &s) noexcept { size = s; return this; }
-	Meter *Padding(const glm::vec2 &p) noexcept { padding = p; return this; }
-	Meter *Border(float b) noexcept { border = b; return this; }
+	Meter *Size(const glm::vec2 &s) noexcept { size = s; BreakParentLayout(); return this; }
+	Meter *Padding(const glm::vec2 &p) noexcept { padding = p; BreakParentLayout(); return this; }
+	Meter *Border(float b) noexcept { border = b; BreakParentLayout(); return this; }
 
 	Meter *FillColor(const glm::vec4 &c) noexcept { fill_color = c; return this; }
 	Meter *BorderColor(const glm::vec4 &c) noexcept { border_color = c; return this; }

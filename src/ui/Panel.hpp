@@ -37,7 +37,7 @@ public:
 	Panel *Direction(Dir);
 
 	glm::vec2 Size() override;
-	void Layout();
+	void FixLayout();
 	void Draw(app::Assets &, graphics::Viewport &) noexcept override;
 
 private:
