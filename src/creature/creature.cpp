@@ -92,7 +92,7 @@ Creature::Creature(world::Simulation &sim)
 , mass(1.0)
 , size(1.0)
 , birth(sim.Time())
-, death(0.0)
+, death(-1.0)
 , on_death()
 , removable(false)
 , parents()
@@ -230,6 +230,8 @@ void Creature::Hurt(double amount) noexcept {
 }
 
 void Creature::Die() noexcept {
+	if (Dead()) return;
+
 	sim.SetDead(this);
 	death = sim.Time();
 	steering.Halt();
@@ -237,6 +239,10 @@ void Creature::Die() noexcept {
 		on_death(*this);
 	}
 	Remove();
+}
+
+bool Creature::Dead() const noexcept {
+	return death > birth;
 }
 
 void Creature::Remove() noexcept {

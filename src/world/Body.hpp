@@ -88,7 +88,6 @@ public:
 	void Cache() noexcept;
 	void CheckCollision() noexcept;
 
-	// body takes over ownership of given pointer
 	void AddCreature(creature::Creature *);
 	void RemoveCreature(creature::Creature *);
 	std::vector<creature::Creature *> &Creatures() noexcept { return creatures; }
