@@ -209,21 +209,21 @@ void Creature::DoWork(double amount) noexcept {
 void Creature::Hurt(double amount) noexcept {
 	stats.Damage().Add(amount);
 	if (stats.Damage().Full()) {
-		std::cout << "[" << ui::TimeString(sim.Time()) << "] " << name << " ";
+		std::ostream &log = sim.Log() << name << " ";
 		if (stats.Exhaustion().Full()) {
-			std::cout << "died of exhaustion";
+			log << "died of exhaustion";
 		} else if (stats.Breath().Full()) {
-			std::cout << "suffocated";
+			log << "suffocated";
 		} else if (stats.Thirst().Full()) {
-			std::cout << "died of thirst";
+			log << "died of thirst";
 		} else if (stats.Hunger().Full()) {
-			std::cout << "starved to death";
+			log << "starved to death";
 		} else {
-			std::cout << "succumed to wounds";
+			log << "succumed to wounds";
 		}
-		std::cout << " at an age of " << ui::TimeString(Age())
+		log << " at an age of " << ui::TimeString(Age())
 			<< " (" << ui::PercentageString(Age() / properties.Lifetime())
-			<< "% of life expectancy of " << ui::TimeString(properties.Lifetime())
+			<< " of life expectancy of " << ui::TimeString(properties.Lifetime())
 			<< ")" << std::endl;
 		Die();
 	}
@@ -697,8 +697,7 @@ void Split(Creature &c) {
 		s.GetPlanet(), s.Surface(),
 		s.Position() + glm::dvec3(0.0, 0.55 * a->Size(), 0.0));
 	a->BuildVAO();
-	std::cout << "[" << ui::TimeString(c.GetSimulation().Time()) << "] "
-		<< a->Name() << " was born" << std::endl;
+	c.GetSimulation().Log() << a->Name() << " was born" << std::endl;
 
 	Creature *b = new Creature(c.GetSimulation());
 	b->AddParent(c);
@@ -712,8 +711,7 @@ void Split(Creature &c) {
 		s.GetPlanet(), s.Surface(),
 		s.Position() - glm::dvec3(0.0, 0.55 * b->Size(), 0.0));
 	b->BuildVAO();
-	std::cout << "[" << ui::TimeString(c.GetSimulation().Time()) << "] "
-		<< b->Name() << " was born" << std::endl;
+	c.GetSimulation().Log() << b->Name() << " was born" << std::endl;
 
 	c.Die();
 }

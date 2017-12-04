@@ -100,8 +100,7 @@ void BlobBackgroundTask::CheckStats() {
 void BlobBackgroundTask::CheckSplit() {
 	if (GetCreature().Mass() > GetCreature().OffspringMass() * 2.0
 		&& GetCreature().OffspringChance() > Assets().random.UNorm()) {
-		std::cout << "[" << ui::TimeString(GetCreature().GetSimulation().Time())
-			<< "] " << GetCreature().Name() << " split" << std::endl;
+		GetCreature().GetSimulation().Log() << GetCreature().Name() << " split" << std::endl;
 		Split(GetCreature());
 		return;
 	}

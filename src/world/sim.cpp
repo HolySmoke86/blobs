@@ -4,8 +4,10 @@
 #include "Planet.hpp"
 #include "Sun.hpp"
 #include "../creature/Creature.hpp"
+#include "../ui/string.hpp"
 
 #include <algorithm>
+#include <iostream>
 
 
 namespace blobs {
@@ -83,40 +85,65 @@ void Simulation::SetDead(creature::Creature *c) {
 
 void Simulation::CheckRecords(creature::Creature &c) noexcept {
 	if (c.Age() > records[0].value) {
+		if (records[0].holder && records[0].holder != &c) {
+			Log() << "new age record by " << c.Name() << std::endl;
+		}
 		records[0].value = c.Age();
 		records[0].time = Time();
 		records[0].holder = &c;
 	}
 	if (c.Mass() > records[1].value) {
+		if (records[1].holder && records[1].holder != &c) {
+			Log() << "new mass record by " << c.Name() << std::endl;
+		}
 		records[1].value = c.Mass();
 		records[1].time = Time();
 		records[1].holder = &c;
 	}
 	if (c.Size() > records[2].value) {
+		if (records[2].holder && records[2].holder != &c) {
+			Log() << "new size record by " << c.Name() << std::endl;
+		}
 		records[2].value = c.Size();
 		records[2].time = Time();
 		records[2].holder = &c;
 	}
 	if (c.Strength() > records[3].value) {
+		if (records[3].holder && records[3].holder != &c) {
+			Log() << "new strength record by " << c.Name() << std::endl;
+		}
 		records[3].value = c.Strength();
 		records[3].time = Time();
 		records[3].holder = &c;
 	}
 	if (c.Stamina() > records[4].value) {
+		if (records[4].holder && records[4].holder != &c) {
+			Log() << "new stamina record by " << c.Name() << std::endl;
+		}
 		records[4].value = c.Stamina();
 		records[4].time = Time();
 		records[4].holder = &c;
 	}
 	if (c.Dexerty() > records[5].value) {
+		if (records[5].holder && records[5].holder != &c) {
+			Log() << "new dexerty record by " << c.Name() << std::endl;
+		}
 		records[5].value = c.Dexerty();
 		records[5].time = Time();
 		records[5].holder = &c;
 	}
 	if (c.Intelligence() > records[6].value) {
+		if (records[6].holder && records[6].holder != &c) {
+			Log() << "new intelligence record by " << c.Name() << std::endl;
+		}
 		records[6].value = c.Intelligence();
 		records[6].time = Time();
 		records[6].holder = &c;
 	}
+}
+
+std::ostream &Simulation::Log() {
+	return std::cout << '[' << ui::TimeString(Time()) << "] ";
 }
 
 }

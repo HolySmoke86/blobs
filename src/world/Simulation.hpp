@@ -5,6 +5,7 @@
 #include "Set.hpp"
 #include "../app/Assets.hpp"
 
+#include <iosfwd>
 #include <set>
 #include <vector>
 
@@ -64,6 +65,8 @@ public:
 
 	const std::vector<Record> &Records() const noexcept { return records; }
 	void CheckRecords(creature::Creature &) noexcept;
+
+	std::ostream &Log();
 
 private:
 	Body &root;

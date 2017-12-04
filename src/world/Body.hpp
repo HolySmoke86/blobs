@@ -35,6 +35,7 @@ public:
 
 public:
 	bool HasSimulation() const noexcept { return sim; }
+	Simulation &GetSimulation() noexcept { return *sim; }
 	const Simulation &GetSimulation() const noexcept { return *sim; }
 	void SetSimulation(Simulation &) noexcept;
 
