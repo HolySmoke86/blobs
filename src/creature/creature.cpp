@@ -437,7 +437,6 @@ void Creature::TickStats(double dt) {
 	for (auto &s : stats.stat) {
 		s.Add(s.gain * dt);
 	}
-	stats.Breath().Add(stats.Breath().gain * stats.Exhaustion().value * dt);
 	// TODO: damage values depending on properties
 	if (stats.Breath().Full()) {
 		constexpr double dps = 1.0 / 4.0;
