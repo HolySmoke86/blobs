@@ -28,6 +28,7 @@ public:
 	double MaxSpeed() const noexcept { return max_speed; }
 
 public:
+	void Off() noexcept;
 	void Separate(double min_distance, double max_lookaround) noexcept;
 	void DontSeparate() noexcept;
 	void ResumeSeparate() noexcept;
@@ -38,7 +39,6 @@ public:
 	glm::dvec3 Force(const Situation::State &) const noexcept;
 
 private:
-	bool SumForce(glm::dvec3 &out, const glm::dvec3 &in, double max) const noexcept;
 	glm::dvec3 TargetVelocity(const Situation::State &, const glm::dvec3 &, double acc) const noexcept;
 
 private:

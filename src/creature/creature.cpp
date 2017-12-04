@@ -234,7 +234,7 @@ void Creature::Die() noexcept {
 
 	sim.SetDead(this);
 	death = sim.Time();
-	steering.Halt();
+	steering.Off();
 	if (on_death) {
 		on_death(*this);
 	}
@@ -874,6 +874,13 @@ Steering::Steering(const Creature &c)
 Steering::~Steering() {
 }
 
+void Steering::Off() noexcept {
+	separating = false;
+	halting = false;
+	seeking = false;
+	arriving = false;
+}
+
 void Steering::Separate(double min_distance, double max_lookaround) noexcept {
 	separating = true;
 	min_dist = min_distance;
@@ -925,47 +932,29 @@ glm::dvec3 Steering::Force(const Situation::State &s) const noexcept {
 				repulse += normalize(diff) * (1.0 - sep / min_dist);
 			}
 		}
-		SumForce(result, repulse, force);
+		result += repulse;
 	}
 	if (halting) {
 		// break twice as hard
-		SumForce(result, s.vel * force * -2.0, force);
+		result += -2.0 * s.vel * force;
 	}
 	if (seeking) {
 		glm::dvec3 diff = target - s.pos;
 		if (!allzero(diff)) {
-			SumForce(result, TargetVelocity(s, (normalize(diff) * speed), force), force);
+			result += TargetVelocity(s, (normalize(diff) * speed), force);
 		}
 	}
 	if (arriving) {
 		glm::dvec3 diff = target - s.pos;
 		double dist = length(diff);
 		if (!allzero(diff) && dist > std::numeric_limits<double>::epsilon()) {
-			SumForce(result, TargetVelocity(s, diff * std::min(dist * force, speed) / dist, force), force);
+			result += TargetVelocity(s, diff * std::min(dist * force, speed) / dist, force);
 		}
 	}
+	if (length2(result) > max_force * max_force) {
+		result = normalize(result) * max_force;
+	}
 	return result;
-}
-
-bool Steering::SumForce(glm::dvec3 &out, const glm::dvec3 &in, double max) const noexcept {
-	if (allzero(in) || anynan(in)) {
-		return false;
-	}
-	double cur = allzero(out) ? 0.0 : length(out);
-	double rem = max - cur;
-	if (rem < 0.0) {
-		return true;
-	}
-	double add = length(in);
-	if (add > rem) {
-		// this method is off if in and out are in different
-		// directions, but gives okayish results
-		out += in * (1.0 / add);
-		return true;
-	} else {
-		out += in;
-		return false;
-	}
 }
 
 glm::dvec3 Steering::TargetVelocity(const Situation::State &s, const glm::dvec3 &vel, double acc) const noexcept {
