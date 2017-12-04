@@ -209,28 +209,29 @@ void Creature::DoWork(double amount) noexcept {
 void Creature::Hurt(double amount) noexcept {
 	stats.Damage().Add(amount);
 	if (stats.Damage().Full()) {
-		std::ostream &log = sim.Log() << name << " ";
-		if (stats.Exhaustion().Full()) {
-			log << "died of exhaustion";
-		} else if (stats.Breath().Full()) {
-			log << "suffocated";
-		} else if (stats.Thirst().Full()) {
-			log << "died of thirst";
-		} else if (stats.Hunger().Full()) {
-			log << "starved to death";
-		} else {
-			log << "succumed to wounds";
-		}
-		log << " at an age of " << ui::TimeString(Age())
-			<< " (" << ui::PercentageString(Age() / properties.Lifetime())
-			<< " of life expectancy of " << ui::TimeString(properties.Lifetime())
-			<< ")" << std::endl;
 		Die();
 	}
 }
 
 void Creature::Die() noexcept {
 	if (Dead()) return;
+
+	std::ostream &log = sim.Log() << name << " ";
+	if (stats.Exhaustion().Full()) {
+		log << "died of exhaustion";
+	} else if (stats.Breath().Full()) {
+		log << "suffocated";
+	} else if (stats.Thirst().Full()) {
+		log << "died of thirst";
+	} else if (stats.Hunger().Full()) {
+		log << "starved to death";
+	} else {
+		log << "succumed to wounds";
+	}
+	log << " at an age of " << ui::TimeString(Age())
+		<< " (" << ui::PercentageString(Age() / properties.Lifetime())
+		<< " of life expectancy of " << ui::TimeString(properties.Lifetime())
+		<< ")" << std::endl;
 
 	sim.SetDead(this);
 	death = sim.Time();
