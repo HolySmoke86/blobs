@@ -384,6 +384,8 @@ void LocateResourceGoal::LocateResource() {
 		}
 	} else {
 		// well, what now?
+		found = false;
+		searching = false;
 	}
 }
 
@@ -451,8 +453,8 @@ void LocateResourceGoal::SearchVicinity() {
 		target_pos = GetSituation().Position();
 		target_pos[(srf + 0) % 3] += Assets().random.SNorm();
 		target_pos[(srf + 1) % 3] += Assets().random.SNorm();
-		// bias towards current direction
-		target_pos += glm::normalize(GetSituation().Velocity()) * 0.5;
+		// bias towards current heading
+		target_pos += GetSituation().Heading() * 0.5;
 		target_pos = clamp(target_pos, -planet.Radius(), planet.Radius());
 		GetSteering().GoTo(target_pos);
 	}

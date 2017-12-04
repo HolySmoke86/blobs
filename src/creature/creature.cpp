@@ -950,10 +950,8 @@ glm::dvec3 Steering::Force(const Situation::State &s) const noexcept {
 			glm::dvec3 diff = s.Position() - other->GetSituation().Position();
 			if (length2(diff) > max_look * max_look) continue;
 			if (!c.PerceptionTest(other->GetSituation().Position())) continue;
-			double sep = length(diff) - other->Size() * 0.707 - c.Size() * 0.707;
-			if (sep < min_dist) {
-				repulse += normalize(diff) * (1.0 - sep / min_dist);
-			}
+			double sep = glm::clamp(length(diff) - other->Size() * 0.707 - c.Size() * 0.707, 0.0, min_dist);
+			repulse += normalize(diff) * (1.0 - sep / min_dist) * force;
 		}
 		result += repulse;
 	}
