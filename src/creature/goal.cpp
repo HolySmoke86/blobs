@@ -406,9 +406,11 @@ void LocateResourceGoal::SearchVicinity() {
 			const world::TileType &type = planet.TypeAt(srf, x, y);
 			auto yield = type.FindBestResource(accept);
 			if (yield != type.resources.cend()) {
+				glm::dvec3 tc(planet.TileCenter(srf, x, y));
+				if (!GetCreature().PerceptionTest(tc)) continue;
 				// TODO: subtract minimum yield
 				rating[y - begin.y][x - begin.x] = yield->ubiquity * accept.Get(yield->resource);
-				double dist = std::max(0.125, 0.25 * glm::length(planet.TileCenter(srf, x, y) - pos));
+				double dist = std::max(0.125, 0.25 * glm::length(tc - pos));
 				rating[y - begin.y][x - begin.x] /= dist;
 			}
 		}
@@ -421,7 +423,7 @@ void LocateResourceGoal::SearchVicinity() {
 		glm::ivec2 coords(c->GetSituation().SurfacePosition());
 		if (coords.x < begin.x || coords.x >= end.x) continue;
 		if (coords.y < begin.y || coords.y >= end.y) continue;
-		rating[coords.y - begin.y][coords.x - begin.x] *= 0.9;
+		rating[coords.y - begin.y][coords.x - begin.x] *= 0.8;
 	}
 
 	glm::ivec2 best_pos(0);

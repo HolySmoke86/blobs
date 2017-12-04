@@ -130,6 +130,10 @@ public:
 	double Adaptability() const noexcept;
 	double OffspringMass() const noexcept;
 
+	double PerceptionRange() const noexcept;
+	double PerceptionOmniRange() const noexcept;
+	double PerceptionField() const noexcept;
+	bool PerceptionTest(const glm::dvec3 &) const noexcept;
 	/// chance of giving birth per tick
 	double OffspringChance() const noexcept;
 	/// chance of arbitrary genetic mutation per tick

@@ -321,6 +321,28 @@ double Creature::OffspringMass() const noexcept {
 	return properties.OffspringMass();
 }
 
+double Creature::PerceptionRange() const noexcept {
+	return 3.0 * (Dexerty() / (Dexerty() + 1)) + Size();
+}
+
+double Creature::PerceptionOmniRange() const noexcept {
+	return 0.5 * (Dexerty() / (Dexerty() + 1)) + Size();
+}
+
+double Creature::PerceptionField() const noexcept {
+	// this is the cosine of half the angle, so 1.0 is none, -1.0 is perfect
+	return 0.8 - (Dexerty() / (Dexerty() + 1));
+}
+
+bool Creature::PerceptionTest(const glm::dvec3 &p) const noexcept {
+	const glm::dvec3 diff(p - situation.Position());
+	double omni_range = PerceptionOmniRange();
+	if (length2(diff) < omni_range * omni_range) return true;
+	double range = PerceptionRange();
+	if (length2(diff) > range * range) return false;
+	return dot(normalize(diff), situation.Heading()) > PerceptionField();
+}
+
 double Creature::OffspringChance() const noexcept {
 	return AgeFactor(0.25) * properties.Fertility() * (1.0 / 3600.0);
 }
@@ -925,6 +947,7 @@ glm::dvec3 Steering::Force(const Situation::State &s) const noexcept {
 			if (&*other == &c) continue;
 			glm::dvec3 diff = s.Position() - other->GetSituation().Position();
 			if (length2(diff) > max_look * max_look) continue;
+			if (!c.PerceptionTest(other->GetSituation().Position())) continue;
 			double sep = length(diff) - other->Size() * 0.707 - c.Size() * 0.707;
 			if (sep < min_dist) {
 				repulse += normalize(diff) * (1.0 - sep / min_dist);
