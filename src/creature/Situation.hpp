@@ -61,7 +61,7 @@ public:
 	const State &GetState() const noexcept { return state; }
 
 	const glm::dvec3 &Velocity() const noexcept { return state.vel; }
-	bool Moving() const noexcept { return glm::length2(state.vel) > 0.000001; }
+	bool Moving() const noexcept { return glm::length2(state.vel) > 0.00001; }
 	void Move(const glm::dvec3 &dp) noexcept;
 	void Accelerate(const glm::dvec3 &dv) noexcept;
 	void EnforceConstraints(State &) noexcept;
