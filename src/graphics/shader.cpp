@@ -190,18 +190,21 @@ PlanetSurface::PlanetSurface()
 		"#version 330 core\n"
 
 		"layout(location = 0) in vec3 vtx_position;\n"
-		"layout(location = 1) in vec3 vtx_tex_uv;\n"
+		"layout(location = 1) in vec3 vtx_normal;\n"
+		"layout(location = 2) in vec3 vtx_tex_uv;\n"
 
 		"uniform mat4 M;\n"
 		"uniform mat4 MV;\n"
 		"uniform mat4 MVP;\n"
 
-		"out vec3 frag_tex_uv;\n"
 		"out vec3 vtx_viewspace;\n"
+		"out vec3 nrm_viewspace;\n"
+		"out vec3 frag_tex_uv;\n"
 
 		"void main() {\n"
-			"gl_Position = MVP * vec4(vtx_position, 1);\n"
-			"vtx_viewspace = (MV * vec4(vtx_position, 1)).xyz;\n"
+			"gl_Position = MVP * vec4(vtx_position, 1.0);\n"
+			"vtx_viewspace = (MV * vec4(vtx_position, 1.0)).xyz;\n"
+			"nrm_viewspace = (MV * vec4(vtx_position, 0.0)).xyz;\n"
 			"frag_tex_uv = vtx_tex_uv;\n"
 		"}\n"
 	);
@@ -216,16 +219,17 @@ PlanetSurface::PlanetSurface()
 		"};\n"
 
 		"in vec3 vtx_viewspace;\n"
+		"in vec3 nrm_viewspace;\n"
 		"in vec3 frag_tex_uv;\n"
 
 		"uniform sampler2DArray tex_sampler;\n"
-		"uniform vec3 normal;\n"
 		"uniform int num_lights;\n"
 		"uniform LightSource light[8];\n"
 
 		"out vec3 color;\n"
 
 		"void main() {\n"
+			"vec3 normal = normalize(nrm_viewspace);\n"
 			"vec3 tex_color = texture(tex_sampler, frag_tex_uv).rgb;\n"
 			"vec3 total_light = tex_color * vec3(0.1, 0.1, 0.1);\n"
 			"for (int i = 0; i < num_lights; ++i) {\n"
@@ -253,7 +257,6 @@ PlanetSurface::PlanetSurface()
 	mv_handle = prog.UniformLocation("MV");
 	mvp_handle = prog.UniformLocation("MVP");
 	sampler_handle = prog.UniformLocation("tex_sampler");
-	normal_handle = prog.UniformLocation("normal");
 	num_lights_handle = prog.UniformLocation("num_lights");
 	for (int i = 0; i < MAX_LIGHTS; ++i) {
 		light_handle[3 * i + 0]  = prog.UniformLocation("light[" + std::to_string(i) + "].position");
@@ -308,10 +311,6 @@ void PlanetSurface::SetMVP(const glm::mat4 &mm, const glm::mat4 &vv, const glm::
 	prog.Uniform(m_handle, m);
 	prog.Uniform(mv_handle, mv);
 	prog.Uniform(mvp_handle, mvp);
-}
-
-void PlanetSurface::SetNormal(const glm::vec3 &n) noexcept {
-	prog.Uniform(normal_handle, n);
 }
 
 void PlanetSurface::SetTexture(ArrayTexture &tex) noexcept {

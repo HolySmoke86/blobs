@@ -53,10 +53,7 @@ public:
 	bool OnPlanet() const noexcept;
 	world::Planet &GetPlanet() const noexcept { return *planet; }
 	bool OnSurface() const noexcept;
-	int Surface() const noexcept { return surface; }
 	const glm::dvec3 &Position() const noexcept { return state.pos; }
-	bool OnTile() const noexcept;
-	glm::ivec2 SurfacePosition() const noexcept;
 	world::Tile &GetTile() const noexcept;
 	const world::TileType &GetTileType() const noexcept;
 
@@ -72,12 +69,11 @@ public:
 	void Heading(const glm::dvec3 &h) noexcept { state.dir = h; }
 	const glm::dvec3 &Heading() const noexcept { return state.dir; }
 
-	void SetPlanetSurface(world::Planet &, int srf, const glm::dvec3 &pos) noexcept;
+	void SetPlanetSurface(world::Planet &, const glm::dvec3 &pos) noexcept;
 
 public:
 	world::Planet *planet;
 	State state;
-	int surface;
 	enum {
 		LOST,
 		PLANET_SURFACE,

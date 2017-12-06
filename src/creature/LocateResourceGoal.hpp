@@ -26,14 +26,12 @@ public:
 private:
 	void LocateResource();
 	void SearchVicinity();
-	bool OnTargetTile() const noexcept;
+	bool NearTarget() const noexcept;
 
 private:
 	Composition accept;
 	bool found;
 	glm::dvec3 target_pos;
-	int target_srf;
-	glm::ivec2 target_tile;
 	bool searching;
 	double reevaluate;
 

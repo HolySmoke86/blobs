@@ -176,7 +176,7 @@ Assets::Assets()
 , font_path(path + "fonts/")
 , skin_path(path + "skins/")
 , tile_path(path + "tiles/")
-, random(0x6283B64CEFE47925)
+, random(0x6283B64CEFE57925)
 , fonts{
 	graphics::Font(font_path + "DejaVuSans.ttf", 32),
 	graphics::Font(font_path + "DejaVuSans.ttf", 24),

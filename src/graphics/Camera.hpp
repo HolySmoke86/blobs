@@ -34,15 +34,8 @@ public:
 	const world::Body &Reference() const noexcept { return *ref; }
 	Camera &Reference(const world::Body &) noexcept;
 
-	/// standing on given surface, with pos.z being elevation over NN
-	/// looking at given coordinates
-	Camera &FirstPerson(int surface, const glm::vec3 &pos, const glm::vec3 &at) noexcept;
-	/// looking straight down at surface from above
-	Camera &MapView(int surface, const glm::vec3 &pos, float roll = 0.0f) noexcept;
 	/// look at center, position relative to orbital reference plane for children
 	Camera &Orbital(const glm::vec3 &pos) noexcept;
-	/// look at creature from above
-	Camera &TopDown(const creature::Creature &, double distance, double roll = 0.0f);
 	/// look at creature from the side, angle in euler (ZXY in surface reference plane)
 	Camera &Radial(const creature::Creature &, double distance, const glm::dvec3 &angle);
 

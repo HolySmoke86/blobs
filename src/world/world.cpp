@@ -355,28 +355,107 @@ Planet::Planet(int sidelength)
 Planet::~Planet() {
 }
 
-const TileType &Planet::TypeAt(int srf, int x, int y) const {
+namespace {
+/// map p onto cube, s gives the surface, u and v the position in [-1,1]
+void cubemap(const glm::dvec3 &p, int &s, double &u, double &v) noexcept {
+	const glm::dvec3 p_abs(abs(p));
+	const glm::bvec3 p_pos(greaterThan(p, glm::dvec3(0.0)));
+	double max_axis = 0.0;
+
+	if (p_pos.x && p_abs.x >= p_abs.y && p_abs.x >= p_abs.z) {
+		max_axis = p_abs.x;
+		u = p.y;
+		v = p.z;
+		s = 1;
+	}
+	if (!p_pos.x && p_abs.x >= p_abs.y && p_abs.x >= p_abs.z) {
+		max_axis = p_abs.x;
+		u = -p.y;
+		v = -p.z;
+		s = 4;
+	}
+	if (p_pos.y && p_abs.y >= p_abs.x && p_abs.y >= p_abs.z) {
+		max_axis = p_abs.y;
+		u = p.z;
+		v = p.x;
+		s = 2;
+	}
+	if (!p_pos.y && p_abs.y >= p_abs.x && p_abs.y >= p_abs.z) {
+		max_axis = p_abs.y;
+		u = -p.z;
+		v = -p.x;
+		s = 5;
+	}
+	if (p_pos.z && p_abs.z >= p_abs.x && p_abs.z >= p_abs.y) {
+		max_axis = p_abs.z;
+		u = p.x;
+		v = p.y;
+		s = 0;
+	}
+	if (!p_pos.z && p_abs.z >= p_abs.x && p_abs.z >= p_abs.y) {
+		max_axis = p_abs.z;
+		u = -p.x;
+		v = -p.y;
+		s = 3;
+	}
+	u /= max_axis;
+	v /= max_axis;
+}
+/// get p from cube, s being surface, u and v the position in [-1,1],
+/// gives a vector from the center to the surface
+glm::dvec3 cubeunmap(int s, double u, double v) {
+	switch (s) {
+		default:
+		case 0: return glm::dvec3(u, v, 1.0); // +Z
+		case 1: return glm::dvec3(1.0, u, v); // +X
+		case 2: return glm::dvec3(v, 1.0, u); // +Y
+		case 3: return glm::dvec3(-u, -v, -1.0); // -Z
+		case 4: return glm::dvec3(-1.0, -u, -v); // -X
+		case 5: return glm::dvec3(-v, -1.0, -u); // -Y
+	};
+}
+}
+
+Tile &Planet::TileAt(const glm::dvec3 &p) noexcept {
+	int srf = 0;
+	double u = 0.0;
+	double v = 0.0;
+	cubemap(p, srf, u, v);
+	int x = glm::clamp(int(u * Radius() + Radius()), 0, sidelength - 1);
+	int y = glm::clamp(int(v * Radius() + Radius()), 0, sidelength - 1);
+	return TileAt(srf, x, y);
+}
+
+const Tile &Planet::TileAt(const glm::dvec3 &p) const noexcept {
+	int srf = 0;
+	double u = 0.0;
+	double v = 0.0;
+	cubemap(p, srf, u, v);
+	int x = glm::clamp(int(u * Radius() + Radius()), 0, sidelength - 1);
+	int y = glm::clamp(int(v * Radius() + Radius()), 0, sidelength - 1);
+	return TileAt(srf, x, y);
+}
+
+const TileType &Planet::TileTypeAt(const glm::dvec3 &p) const noexcept {
+	return GetSimulation().TileTypes()[TileAt(p).type];
+}
+
+Tile &Planet::TileAt(int surface, int x, int y) noexcept {
+	return tiles[IndexOf(surface, x, y)];
+}
+
+const Tile &Planet::TileAt(int surface, int x, int y) const noexcept {
+	return tiles[IndexOf(surface, x, y)];
+}
+
+const TileType &Planet::TypeAt(int srf, int x, int y) const noexcept {
 	return GetSimulation().TileTypes()[TileAt(srf, x, y).type];
 }
 
-glm::ivec2 Planet::SurfacePosition(int srf, const glm::dvec3 &pos) const noexcept {
-	return glm::ivec2(
-		PositionToTile(pos[(srf + 0) % 3]),
-		PositionToTile(pos[(srf + 1) % 3]));
-}
-
-double Planet::SurfaceElevation(int srf, const glm::dvec3 &pos) const noexcept {
-	return srf < 3
-		? pos[(srf + 2) % 3] - Radius()
-		: -pos[(srf + 2) % 3] - Radius();
-}
-
 glm::dvec3 Planet::TileCenter(int srf, int x, int y, double e) const noexcept {
-	glm::dvec3 center(0.0f);
-	center[(srf + 0) % 3] = x + 0.5 - Radius();
-	center[(srf + 1) % 3] = y + 0.5 - Radius();
-	center[(srf + 2) % 3] = srf < 3 ? (Radius() + e) : -(Radius() + e);
-	return center;
+	double u = (double(x) - Radius() + 0.5) / Radius();
+	double v = (double(y) - Radius() + 0.5) / Radius();
+	return normalize(cubeunmap(srf, u, v)) * (Radius() + e);
 }
 
 void Planet::BuildVAO(const Set<TileType> &ts) {
@@ -385,8 +464,10 @@ void Planet::BuildVAO(const Set<TileType> &ts) {
 	vao->BindAttributes();
 	vao->EnableAttribute(0);
 	vao->EnableAttribute(1);
+	vao->EnableAttribute(2);
 	vao->AttributePointer<glm::vec3>(0, false, offsetof(Attributes, position));
-	vao->AttributePointer<glm::vec3>(1, false, offsetof(Attributes, tex_coord));
+	vao->AttributePointer<glm::vec3>(1, false, offsetof(Attributes, normal));
+	vao->AttributePointer<glm::vec3>(2, false, offsetof(Attributes, tex_coord));
 	vao->ReserveAttributes(TilesTotal() * 4, GL_STATIC_DRAW);
 	{
 		auto attrib = vao->MapAttributes(GL_WRITE_ONLY);
@@ -398,33 +479,44 @@ void Planet::BuildVAO(const Set<TileType> &ts) {
 		for (int index = 0, surface = 0; surface < 6; ++surface) {
 			for (int y = 0; y < sidelength; ++y) {
 				for (int x = 0; x < sidelength; ++x, ++index) {
+					glm::vec3 pos[5];
+					pos[0][(surface + 0) % 3] = x + 0 - offset;
+					pos[0][(surface + 1) % 3] = y + 0 - offset;
+					pos[0][(surface + 2) % 3] = surface < 3 ? offset : -offset;
+					pos[1][(surface + 0) % 3] = x + 0 - offset;
+					pos[1][(surface + 1) % 3] = y + 1 - offset;
+					pos[1][(surface + 2) % 3] = surface < 3 ? offset : -offset;
+					pos[2][(surface + 0) % 3] = x + 1 - offset;
+					pos[2][(surface + 1) % 3] = y + 0 - offset;
+					pos[2][(surface + 2) % 3] = surface < 3 ? offset : -offset;
+					pos[3][(surface + 0) % 3] = x + 1 - offset;
+					pos[3][(surface + 1) % 3] = y + 1 - offset;
+					pos[3][(surface + 2) % 3] = surface < 3 ? offset : -offset;
+
 					float tex = ts[TileAt(surface, x, y).type].texture;
 					const float tex_v_begin = surface < 3 ? 1.0f : 0.0f;
 					const float tex_v_end = surface < 3 ? 0.0f : 1.0f;
-					attrib[4 * index + 0].position[(surface + 0) % 3] = x + 0 - offset;
-					attrib[4 * index + 0].position[(surface + 1) % 3] = y + 0 - offset;
-					attrib[4 * index + 0].position[(surface + 2) % 3] = surface < 3 ? offset : -offset;
+
+					attrib[4 * index + 0].position = normalize(pos[0]) * offset;
+					attrib[4 * index + 0].normal = pos[0];
 					attrib[4 * index + 0].tex_coord[0] = 0.0f;
 					attrib[4 * index + 0].tex_coord[1] = tex_v_begin;
 					attrib[4 * index + 0].tex_coord[2] = tex;
 
-					attrib[4 * index + 1].position[(surface + 0) % 3] = x + 0 - offset;
-					attrib[4 * index + 1].position[(surface + 1) % 3] = y + 1 - offset;
-					attrib[4 * index + 1].position[(surface + 2) % 3] = surface < 3 ? offset : -offset;
+					attrib[4 * index + 1].position = normalize(pos[1]) * offset;
+					attrib[4 * index + 1].normal = pos[1];
 					attrib[4 * index + 1].tex_coord[0] = 0.0f;
 					attrib[4 * index + 1].tex_coord[1] = tex_v_end;
 					attrib[4 * index + 1].tex_coord[2] = tex;
 
-					attrib[4 * index + 2].position[(surface + 0) % 3] = x + 1 - offset;
-					attrib[4 * index + 2].position[(surface + 1) % 3] = y + 0 - offset;
-					attrib[4 * index + 2].position[(surface + 2) % 3] = surface < 3 ? offset : -offset;
+					attrib[4 * index + 2].position = normalize(pos[2]) * offset;
+					attrib[4 * index + 2].normal = pos[2];
 					attrib[4 * index + 2].tex_coord[0] = 1.0f;
 					attrib[4 * index + 2].tex_coord[1] = tex_v_begin;
 					attrib[4 * index + 2].tex_coord[2] = tex;
 
-					attrib[4 * index + 3].position[(surface + 0) % 3] = x + 1 - offset;
-					attrib[4 * index + 3].position[(surface + 1) % 3] = y + 1 - offset;
-					attrib[4 * index + 3].position[(surface + 2) % 3] = surface < 3 ? offset : -offset;
+					attrib[4 * index + 3].position = normalize(pos[3]) * offset;
+					attrib[4 * index + 3].normal = pos[3];
 					attrib[4 * index + 3].tex_coord[0] = 1.0f;
 					attrib[4 * index + 3].tex_coord[1] = tex_v_end;
 					attrib[4 * index + 3].tex_coord[2] = tex;
@@ -469,19 +561,7 @@ void Planet::Draw(app::Assets &assets, graphics::Viewport &viewport) {
 	if (!vao) return;
 
 	vao->Bind();
-	const glm::mat4 &MV = assets.shaders.planet_surface.MV();
-	assets.shaders.planet_surface.SetNormal(glm::vec3(MV * glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)));
-	vao->DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 0);
-	assets.shaders.planet_surface.SetNormal(glm::vec3(MV * glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)));
-	vao->DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 1);
-	assets.shaders.planet_surface.SetNormal(glm::vec3(MV * glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
-	vao->DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 2);
-	assets.shaders.planet_surface.SetNormal(glm::vec3(MV * glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)));
-	vao->DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 3);
-	assets.shaders.planet_surface.SetNormal(glm::vec3(MV * glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)));
-	vao->DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 4);
-	assets.shaders.planet_surface.SetNormal(glm::vec3(MV * glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)));
-	vao->DrawTriangles(TilesPerSurface() * 6, TilesPerSurface() * 6 * 5);
+	vao->DrawTriangles(TilesTotal() * 6);
 }
 
 

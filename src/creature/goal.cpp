@@ -219,7 +219,7 @@ void IngestGoal::Action() {
 }
 
 bool IngestGoal::OnSuitableTile() {
-	if (!GetSituation().OnTile()) {
+	if (!GetSituation().OnSurface()) {
 		return false;
 	}
 	const world::TileType &t = GetSituation().GetTileType();
@@ -315,8 +315,6 @@ LocateResourceGoal::LocateResourceGoal(Creature &c)
 , accept()
 , found(false)
 , target_pos(0.0)
-, target_srf(0)
-, target_tile(0)
 , searching(false)
 , reevaluate(0.0) {
 }
@@ -355,7 +353,7 @@ void LocateResourceGoal::Action() {
 				GetSteering().GoTo(target_pos);
 			}
 		}
-	} else if (OnTargetTile()) {
+	} else if (NearTarget()) {
 		GetSteering().Halt();
 		if (!GetSituation().Moving()) {
 			SetComplete();
@@ -367,7 +365,7 @@ void LocateResourceGoal::Action() {
 }
 
 void LocateResourceGoal::LocateResource() {
-	if (GetSituation().OnTile()) {
+	if (GetSituation().OnSurface()) {
 		const world::TileType &t = GetSituation().GetTileType();
 		auto yield = t.FindBestResource(accept);
 		if (yield != t.resources.cend()) {
@@ -376,8 +374,6 @@ void LocateResourceGoal::LocateResource() {
 			found = true;
 			searching = false;
 			target_pos = GetSituation().Position();
-			target_srf = GetSituation().Surface();
-			target_tile = GetSituation().GetPlanet().SurfacePosition(target_srf, target_pos);
 		} else {
 			// go find somewhere else
 			SearchVicinity();
@@ -391,51 +387,52 @@ void LocateResourceGoal::LocateResource() {
 
 void LocateResourceGoal::SearchVicinity() {
 	const world::Planet &planet = GetSituation().GetPlanet();
-	int srf = GetSituation().Surface();
 	const glm::dvec3 &pos = GetSituation().Position();
+	const glm::dvec3 normal(planet.NormalAt(pos));
+	const glm::dvec3 step_x(normalize(cross(normal, glm::dvec3(normal.z, normal.x, normal.y))));
+	const glm::dvec3 step_y(normalize(cross(step_x, normal)));
 
-	glm::ivec2 loc = planet.SurfacePosition(srf, pos);
-	glm::ivec2 seek_radius(2);
-	glm::ivec2 begin(glm::max(glm::ivec2(0), loc - seek_radius));
-	glm::ivec2 end(glm::min(glm::ivec2(planet.SideLength()), loc + seek_radius + glm::ivec2(1)));
-
-	double rating[end.y - begin.y][end.x - begin.x];
-	std::memset(rating, 0, sizeof(double) * (end.y - begin.y) * (end.x - begin.x));
+	constexpr int search_radius = 2;
+	double rating[2 * search_radius + 1][2 * search_radius + 1] = {0};
 
 	// find close and rich field
-	for (int y = begin.y; y < end.y; ++y) {
-		for (int x = begin.x; x < end.x; ++x) {
-			const world::TileType &type = planet.TypeAt(srf, x, y);
+	for (int y = -search_radius; y < search_radius + 1; ++y) {
+		for (int x = -search_radius; x < search_radius + 1; ++x) {
+			const glm::dvec3 tpos(pos + (double(x) * step_x) + (double(y) * step_y));
+			if (!GetCreature().PerceptionTest(tpos)) continue;
+			const world::TileType &type = planet.TileTypeAt(tpos);
 			auto yield = type.FindBestResource(accept);
 			if (yield != type.resources.cend()) {
-				glm::dvec3 tc(planet.TileCenter(srf, x, y));
-				if (!GetCreature().PerceptionTest(tc)) continue;
 				// TODO: subtract minimum yield
-				rating[y - begin.y][x - begin.x] = yield->ubiquity * accept.Get(yield->resource);
-				double dist = std::max(0.125, 0.25 * glm::length(tc - pos));
-				rating[y - begin.y][x - begin.x] /= dist;
+				rating[y + search_radius][x + search_radius] = yield->ubiquity * accept.Get(yield->resource);
+				// penalize distance
+				double dist = std::max(0.125, 0.25 * glm::length(tpos - pos));
+				rating[y + search_radius][x + search_radius] /= dist;
 			}
 		}
 	}
 
-	// demote crowded tiles
+	// penalize crowding
 	for (auto &c : planet.Creatures()) {
 		if (&*c == &GetCreature()) continue;
-		if (c->GetSituation().Surface() != srf) continue;
-		glm::ivec2 coords(c->GetSituation().SurfacePosition());
-		if (coords.x < begin.x || coords.x >= end.x) continue;
-		if (coords.y < begin.y || coords.y >= end.y) continue;
-		rating[coords.y - begin.y][coords.x - begin.x] *= 0.8;
+		for (int y = -search_radius; y < search_radius + 1; ++y) {
+			for (int x = -search_radius; x < search_radius + 1; ++x) {
+				const glm::dvec3 tpos(pos + (double(x) * step_x) + (double(y) * step_y));
+				if (length2(tpos - c->GetSituation().Position()) < 1.0) {
+					rating[y + search_radius][x + search_radius] *= 0.8;
+				}
+			}
+		}
 	}
 
 	glm::ivec2 best_pos(0);
 	double best_rating = -1.0;
 
-	for (int y = begin.y; y < end.y; ++y) {
-		for (int x = begin.x; x < end.x; ++x) {
-			if (rating[y - begin.y][x - begin.x] > best_rating) {
+	for (int y = -search_radius; y < search_radius + 1; ++y) {
+		for (int x = -search_radius; x < search_radius + 1; ++x) {
+			if (rating[y + search_radius][x + search_radius] > best_rating) {
 				best_pos = glm::ivec2(x, y);
-				best_rating = rating[y - begin.y][x - begin.x];
+				best_rating = rating[y + search_radius][x + search_radius];
 			}
 		}
 	}
@@ -443,29 +440,24 @@ void LocateResourceGoal::SearchVicinity() {
 	if (best_rating) {
 		found = true;
 		searching = false;
-		target_pos = planet.TileCenter(srf, best_pos.x, best_pos.y);
-		target_srf = srf;
-		target_tile = best_pos;
+		target_pos = normalize(pos + (double(best_pos.x) * step_x) + (double(best_pos.y) * step_y)) * planet.Radius();
 		GetSteering().GoTo(target_pos);
 	} else if (!searching) {
 		found = false;
 		searching = true;
 		target_pos = GetSituation().Position();
-		target_pos[(srf + 0) % 3] += Assets().random.SNorm();
-		target_pos[(srf + 1) % 3] += Assets().random.SNorm();
+		target_pos += Assets().random.SNorm() * step_x;
+		target_pos += Assets().random.SNorm() * step_y;
 		// bias towards current heading
 		target_pos += GetSituation().Heading() * 0.5;
-		target_pos = clamp(target_pos, -planet.Radius(), planet.Radius());
+		target_pos = normalize(target_pos) * planet.Radius();
 		GetSteering().GoTo(target_pos);
 	}
 }
 
-bool LocateResourceGoal::OnTargetTile() const noexcept {
+bool LocateResourceGoal::NearTarget() const noexcept {
 	const Situation &s = GetSituation();
-	return s.OnSurface()
-		&& s.Surface() == target_srf
-		&& s.OnTile()
-		&& s.SurfacePosition() == target_tile;
+	return s.OnSurface() && length2(s.Position() - target_pos) < 0.5;
 }
 
 }

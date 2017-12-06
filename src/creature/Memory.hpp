@@ -19,8 +19,7 @@ class Memory {
 public:
 	struct Location {
 		world::Planet *planet;
-		int surface;
-		glm::ivec2 coords;
+		glm::dvec3 position;
 	};
 
 public:

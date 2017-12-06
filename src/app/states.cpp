@@ -109,7 +109,7 @@ void MasterState::OnMouseMotion(const SDL_MouseMotionEvent &e) {
 	constexpr double pitch_scale = PI * 0.001;
 	constexpr double yaw_scale = PI * 0.002;
 	if (cam_dragging) {
-		cam_orient.x = glm::clamp(cam_orient.x + double(e.yrel) * pitch_scale, 0.0, PI * 0.5);
+		cam_orient.x = glm::clamp(cam_orient.x + double(e.yrel) * pitch_scale, 0.0, PI * 0.499);
 		cam_orient.y = std::fmod(cam_orient.y + double(e.xrel) * yaw_scale, PI * 2.0);
 	}
 }

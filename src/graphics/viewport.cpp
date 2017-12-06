@@ -60,64 +60,10 @@ Camera &Camera::Reference(const world::Body &r) noexcept {
 	return *this;
 }
 
-Camera &Camera::FirstPerson(int srf, const glm::vec3 &pos, const glm::vec3 &at) noexcept {
-	track_orient = true;
-
-	float dir = srf < 3 ? 1.0f : -1.0f;
-
-	glm::vec3 position;
-	position[(srf + 0) % 3] = pos.x;
-	position[(srf + 1) % 3] = pos.y;
-	position[(srf + 2) % 3] = dir * (pos.z + Reference().Radius());
-
-	glm::vec3 up(world::Planet::SurfaceNormal(srf));
-
-	glm::vec3 target;
-	target[(srf + 0) % 3] = at.x;
-	target[(srf + 1) % 3] = at.y;
-	target[(srf + 2) % 3] = dir * (at.z + Reference().Radius());
-
-	view = glm::lookAt(position, target, up);
-
-	return *this;
-}
-
-Camera &Camera::MapView(int srf, const glm::vec3 &pos, float roll) noexcept {
-	track_orient = true;
-
-	float dir = srf < 3 ? 1.0f : -1.0f;
-
-	glm::vec3 up(0.0f);
-	up[(srf + 0) % 3] = std::sin(roll);
-	up[(srf + 1) % 3] = std::cos(roll);
-	up[(srf + 2) % 3] = 0.0f;
-
-	glm::vec3 target = pos;
-	target[(srf + 2) % 3] -= dir;
-
-	view = glm::lookAt(pos, target, up);
-
-	return *this;
-}
-
 Camera &Camera::Orbital(const glm::vec3 &pos) noexcept {
 	track_orient = false;
 	view = glm::lookAt(pos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	return *this;
-}
-
-Camera &Camera::TopDown(const creature::Creature &c, double distance, double roll) {
-	const creature::Situation &s = c.GetSituation();
-	if (s.OnSurface()) {
-		int srf = s.Surface();
-		glm::vec3 pos(s.Position() + (world::Planet::SurfaceNormal(srf) * distance));
-		Reference(s.GetPlanet());
-		return MapView(srf, pos, roll);
-	} else {
-		glm::vec3 pos(s.Position());
-		pos += glm::normalize(pos) * float(distance);
-		return Orbital(pos);
-	}
 }
 
 Camera &Camera::Radial(const creature::Creature &c, double distance, const glm::dvec3 &angle) {
@@ -128,10 +74,10 @@ Camera &Camera::Radial(const creature::Creature &c, double distance, const glm::
 	if (s.OnSurface()) {
 		Reference(s.GetPlanet());
 		track_orient = true;
-		int srf = s.Surface();
-		up = world::Planet::SurfaceNormal(srf);
+		up = s.GetPlanet().NormalAt(s.Position());
+		glm::dvec3 ref(normalize(cross(up, glm::dvec3(up.z, up.x, up.y))));
 		dir =
-			world::Planet::SurfaceOrientation(srf)
+			glm::dmat3(ref, up, cross(ref, up))
 			* glm::dmat3(glm::eulerAngleYX(-angle.y, -angle.x))
 			* dir;
 	} else {

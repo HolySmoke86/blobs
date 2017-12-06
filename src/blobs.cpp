@@ -13,7 +13,6 @@
 #include <cstdint>
 #include <iostream>
 
-
 using namespace blobs;
 
 namespace {
@@ -98,22 +97,6 @@ int main(int argc, char *argv[]) {
 	blob->BuildVAO();
 
 	app::MasterState state(assets, sim);
-	state.GetCamera()
-		.Reference(planet)
-		// sunrise
-		//.FirstPerson(0, glm::vec3(0.0f, 0.0f, 0.1f), glm::vec3(1.0f, -0.75f, 0.1f))
-		// sunset
-		//.FirstPerson(3, glm::vec3(0.0f, 0.0f, 0.1f), glm::vec3(1.0f, -0.75f, 0.1f))
-		// from afar
-		.MapView(0, glm::vec3(0.0f, 0.0f, 30.0f), 0.0f)
-		// from afar, rotating
-		//.Orbital(glm::vec3(-60.0f, 0.0f, 0.0f))
-	;
-	// system view
-	//state.GetCamera()
-	//	.Reference(sun)
-	//	.Orbital(glm::vec3(-500.0f, 500.0f, 500.0f))
-	//;
 	state.GetCreaturePanel().Show(*blob);
 	state.GetTimePanel().SetBody(planet);
 

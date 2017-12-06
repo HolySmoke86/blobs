@@ -399,7 +399,7 @@ void Creature::TickState(double dt) {
 		if (ang < turn_rate) {
 			state.dir = normalize(state.vel);
 		} else if (std::abs(ang - PI) < 0.001) {
-			state.dir = rotate(state.dir, turn_rate, world::Planet::SurfaceNormal(situation.Surface()));
+			state.dir = rotate(state.dir, turn_rate, situation.GetPlanet().NormalAt(state.pos));
 		} else {
 			state.dir = rotate(state.dir, turn_rate, normalize(cross(state.dir, nvel)));
 		}
@@ -415,8 +415,8 @@ Situation::Derivative Creature::Step(const Situation::Derivative &ds, double dt)
 	s.vel += ds.acc * dt;
 	glm::dvec3 force(steering.Force(s));
 	// gravity = antinormal * mass * Gm / r²
-	double elevation = s.pos[(situation.Surface() + 2) % 3];
-	glm::dvec3 normal(world::Planet::SurfaceNormal(situation.Surface()));
+	double elevation = situation.GetPlanet().DistanceAt(s.pos);
+	glm::dvec3 normal(situation.GetPlanet().NormalAt(s.pos));
 	force += glm::dvec3(
 		-normal
 		* Mass() * situation.GetPlanet().GravitationalParameter()
@@ -491,10 +491,16 @@ math::AABB Creature::CollisionBox() const noexcept {
 glm::dmat4 Creature::CollisionTransform() const noexcept {
 	const double half_size = size * 0.5;
 	const glm::dvec3 &pos = situation.Position();
-	const glm::dmat3 srf(world::Planet::SurfaceOrientation(situation.Surface()));
+	glm::dmat3 orient;
+	orient[1] = situation.GetPlanet().NormalAt(pos);
+	orient[2] = situation.Heading();
+	if (std::abs(dot(orient[1], orient[2])) > 0.999) {
+		orient[2] = glm::dvec3(orient[1].z, orient[1].x, orient[1].y);
+	}
+	orient[0] = normalize(cross(orient[1], orient[2]));
+	orient[2] = normalize(cross(orient[0], orient[1]));
 	return glm::translate(glm::dvec3(pos.x, pos.y, pos.z + half_size))
-		* glm::rotate(glm::orientedAngle(-srf[2], situation.Heading(), srf[1]), srf[1])
-		* glm::dmat4(srf);
+		* glm::dmat4(orient);
 }
 
 glm::dmat4 Creature::LocalTransform() noexcept {
@@ -599,8 +605,8 @@ void Creature::Draw(graphics::Viewport &viewport) {
 
 void Spawn(Creature &c, world::Planet &p) {
 	p.AddCreature(&c);
-	c.GetSituation().SetPlanetSurface(p, 0, p.TileCenter(0, p.SideLength() / 2, p.SideLength() / 2));
-	c.GetSituation().Heading(-world::Planet::SurfaceOrientation(0)[2]);
+	c.GetSituation().SetPlanetSurface(p, glm::dvec3(0.0, 0.0, p.Radius()));
+	c.GetSituation().Heading(glm::dvec3(1.0, 0.0, 0.0));
 
 	// probe surrounding area for common resources
 	int start = p.SideLength() / 2 - 2;
@@ -718,7 +724,7 @@ void Split(Creature &c) {
 	s.GetPlanet().AddCreature(a);
 	// TODO: duplicate situation somehow
 	a->GetSituation().SetPlanetSurface(
-		s.GetPlanet(), s.Surface(),
+		s.GetPlanet(),
 		s.Position() + glm::dvec3(0.0, 0.55 * a->Size(), 0.0));
 	a->BuildVAO();
 	c.GetSimulation().Log() << a->Name() << " was born" << std::endl;
@@ -732,7 +738,7 @@ void Split(Creature &c) {
 	}
 	s.GetPlanet().AddCreature(b);
 	b->GetSituation().SetPlanetSurface(
-		s.GetPlanet(), s.Surface(),
+		s.GetPlanet(),
 		s.Position() - glm::dvec3(0.0, 0.55 * b->Size(), 0.0));
 	b->BuildVAO();
 	c.GetSimulation().Log() << b->Name() << " was born" << std::endl;
@@ -754,13 +760,13 @@ void Memory::Erase() {
 
 void Memory::Tick(double dt) {
 	Situation &s = c.GetSituation();
-	if (s.OnTile()) {
-		TrackStay({ &s.GetPlanet(), s.Surface(), s.SurfacePosition() }, dt);
+	if (s.OnSurface()) {
+		TrackStay({ &s.GetPlanet(), s.Position() }, dt);
 	}
 }
 
 void Memory::TrackStay(const Location &l, double t) {
-	const world::TileType &type = l.planet->TypeAt(l.surface, l.coords.x, l.coords.y);
+	const world::TileType &type = l.planet->TileTypeAt(l.position);
 	auto entry = known_types.find(type.id);
 	if (entry != known_types.end()) {
 		if (c.GetSimulation().Time() - entry->second.last_been > c.GetProperties().Lifetime() * 0.1) {
@@ -808,7 +814,6 @@ std::string NameGenerator::Sequential() {
 Situation::Situation()
 : planet(nullptr)
 , state(glm::dvec3(0.0), glm::dvec3(0.0))
-, surface(0)
 , type(LOST) {
 }
 
@@ -823,25 +828,12 @@ bool Situation::OnSurface() const noexcept {
 	return type == PLANET_SURFACE;
 }
 
-bool Situation::OnTile() const noexcept {
-	if (type != PLANET_SURFACE) return false;
-	glm::ivec2 t(planet->SurfacePosition(surface, state.pos));
-	return t.x >= 0 && t.x < planet->SideLength()
-		&& t.y >= 0 && t.y < planet->SideLength();
-}
-
-glm::ivec2 Situation::SurfacePosition() const noexcept {
-	return planet->SurfacePosition(surface, state.pos);
-}
-
 world::Tile &Situation::GetTile() const noexcept {
-	glm::ivec2 t(planet->SurfacePosition(surface, state.pos));
-	return planet->TileAt(surface, t.x, t.y);
+	return planet->TileAt(state.pos);
 }
 
 const world::TileType &Situation::GetTileType() const noexcept {
-	glm::ivec2 t(planet->SurfacePosition(surface, state.pos));
-	return planet->TypeAt(surface, t.x, t.y);
+	return planet->TileTypeAt(state.pos);
 }
 
 void Situation::Move(const glm::dvec3 &dp) noexcept {
@@ -856,24 +848,16 @@ void Situation::Accelerate(const glm::dvec3 &dv) noexcept {
 
 void Situation::EnforceConstraints(State &s) noexcept {
 	if (OnSurface()) {
-		if (Surface() < 3) {
-			if (s.pos[(Surface() + 2) % 3] < GetPlanet().Radius()) {
-				s.pos[(Surface() + 2) % 3] = GetPlanet().Radius();
-				s.vel[(Surface() + 2) % 3] = std::max(0.0, s.vel[(Surface() + 2) % 3]);
-			}
-		} else {
-			if (s.pos[(Surface() + 2) % 3] > -GetPlanet().Radius()) {
-				s.pos[(Surface() + 2) % 3] = -GetPlanet().Radius();
-				s.vel[(Surface() + 2) % 3] = std::min(0.0, s.vel[(Surface() + 2) % 3]);
-			}
+		double r = GetPlanet().Radius();
+		if (length2(s.pos) < r * r) {
+			s.pos = normalize(s.pos) * r;
 		}
 	}
 }
 
-void Situation::SetPlanetSurface(world::Planet &p, int srf, const glm::dvec3 &pos) noexcept {
+void Situation::SetPlanetSurface(world::Planet &p, const glm::dvec3 &pos) noexcept {
 	type = PLANET_SURFACE;
 	planet = &p;
-	surface = srf;
 	state.pos = pos;
 	EnforceConstraints(state);
 }
