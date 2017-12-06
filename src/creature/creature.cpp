@@ -193,7 +193,7 @@ void Creature::Ingest(int res, double amount) noexcept {
 }
 
 void Creature::DoWork(double amount) noexcept {
-	stats.Exhaustion().Add(amount / Stamina());
+	stats.Exhaustion().Add(amount / (Stamina() + 1.0));
 	// burn resources proportional to composition
 	// factor = 1/total * 1/efficiency * amount * -1
 	double factor = -amount / (composition.TotalMass() * EnergyEfficiency());
@@ -204,6 +204,8 @@ void Creature::DoWork(double amount) noexcept {
 		double value = cmp.value * factor * sim.Resources()[cmp.resource].inverse_energy;
 		AddMass(cmp.resource, value);
 	}
+	// doing work improves strength a little
+	properties.Strength() += amount * 0.0001;
 }
 
 void Creature::Hurt(double amount) noexcept {
@@ -360,6 +362,9 @@ double Creature::AdaptChance() const noexcept {
 
 void Creature::AddGoal(std::unique_ptr<Goal> &&g) {
 	g->Enable();
+	if (goals.empty()) {
+		g->SetForeground();
+	}
 	goals.emplace_back(std::move(g));
 }
 
@@ -470,9 +475,15 @@ void Creature::TickBrain(double dt) {
 	for (auto &goal : goals) {
 		goal->Tick(dt);
 	}
+	Goal *top = &*goals.front();
 	// if active goal can be interrupted, check priorities
 	if (goals.size() > 1 && goals[0]->Interruptible()) {
 		std::sort(goals.begin(), goals.end(), GoalCompare);
+	}
+	if (&*goals.front() != top) {
+		top->SetBackground();
+		goals.front()->SetForeground();
+		top = &*goals.front();
 	}
 	goals[0]->Action();
 	for (auto goal = goals.begin(); goal != goals.end();) {
@@ -481,6 +492,9 @@ void Creature::TickBrain(double dt) {
 		} else {
 			++goal;
 		}
+	}
+	if (&*goals.front() != top) {
+		goals.front()->SetForeground();
 	}
 }
 
@@ -499,8 +513,9 @@ glm::dmat4 Creature::CollisionTransform() const noexcept {
 	}
 	orient[0] = normalize(cross(orient[1], orient[2]));
 	orient[2] = normalize(cross(orient[0], orient[1]));
-	return glm::translate(glm::dvec3(pos.x, pos.y, pos.z + half_size))
-		* glm::dmat4(orient);
+	return glm::translate(glm::dvec3(pos.x, pos.y, pos.z))
+		* glm::dmat4(orient)
+		* glm::translate(glm::dvec3(0.0, half_size, 0.0));
 }
 
 glm::dmat4 Creature::LocalTransform() noexcept {

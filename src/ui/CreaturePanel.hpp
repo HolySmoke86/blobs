@@ -52,6 +52,9 @@ private:
 	Label *age;
 	Label *mass;
 	Label *goal;
+	Label *pos;
+	Label *tile;
+	Label *head;
 	Panel *composition;
 	std::vector<Label *> components;
 	Meter *stats[7];

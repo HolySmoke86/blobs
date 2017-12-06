@@ -3,6 +3,7 @@
 #include "IdleGoal.hpp"
 #include "IngestGoal.hpp"
 #include "LocateResourceGoal.hpp"
+#include "StrollGoal.hpp"
 
 #include "Creature.hpp"
 #include "../app/Assets.hpp"
@@ -74,7 +75,7 @@ void BlobBackgroundTask::CheckStats() {
 				drink_subtask->Accept(cmp.resource, 1.0);
 			}
 		}
-		drink_subtask->OnComplete([&](Goal &) { drink_subtask = nullptr; });
+		drink_subtask->WhenComplete([&](Goal &) { drink_subtask = nullptr; });
 		GetCreature().AddGoal(std::unique_ptr<Goal>(drink_subtask));
 	}
 
@@ -85,7 +86,7 @@ void BlobBackgroundTask::CheckStats() {
 				eat_subtask->Accept(cmp.resource, 1.0);
 			}
 		}
-		eat_subtask->OnComplete([&](Goal &) { eat_subtask = nullptr; });
+		eat_subtask->WhenComplete([&](Goal &) { eat_subtask = nullptr; });
 		GetCreature().AddGoal(std::unique_ptr<Goal>(eat_subtask));
 	}
 
@@ -99,7 +100,7 @@ void BlobBackgroundTask::CheckStats() {
 
 void BlobBackgroundTask::CheckSplit() {
 	if (GetCreature().Mass() > GetCreature().OffspringMass() * 2.0
-		&& GetCreature().OffspringChance() > Assets().random.UNorm()) {
+		&& GetCreature().OffspringChance() > Random().UNorm()) {
 		GetCreature().GetSimulation().Log() << GetCreature().Name() << " split" << std::endl;
 		Split(GetCreature());
 		return;
@@ -108,16 +109,123 @@ void BlobBackgroundTask::CheckSplit() {
 
 void BlobBackgroundTask::CheckMutate() {
 	// check for random property mutation
-	if (GetCreature().MutateChance() > Assets().random.UNorm()) {
-		double amount = 1.0 + (Assets().random.SNorm() * 0.05);
-		math::Distribution &d = GetCreature().GetGenome().properties.props[Assets().random.UInt(9)];
-		if (Assets().random.UNorm() < 0.5) {
+	if (GetCreature().MutateChance() > Random().UNorm()) {
+		double amount = 1.0 + (Random().SNorm() * 0.05);
+		math::Distribution &d = GetCreature().GetGenome().properties.props[Random().UInt(9)];
+		if (Random().UNorm() < 0.5) {
 			d.Mean(d.Mean() * amount);
 		} else {
 			d.StandardDeviation(d.StandardDeviation() * amount);
 		}
 	}
 }
+
+
+Goal::Goal(Creature &c)
+: c(c)
+, on_complete()
+, on_foreground()
+, on_background()
+, urgency(0.0)
+, interruptible(true)
+, complete(false) {
+}
+
+Goal::~Goal() noexcept {
+}
+
+Situation &Goal::GetSituation() noexcept {
+	return c.GetSituation();
+}
+
+const Situation &Goal::GetSituation() const noexcept {
+	return c.GetSituation();
+}
+
+Steering &Goal::GetSteering() noexcept {
+	return c.GetSteering();
+}
+
+const Steering &Goal::GetSteering() const noexcept {
+	return c.GetSteering();
+}
+
+app::Assets &Goal::Assets() noexcept {
+	return c.GetSimulation().Assets();
+}
+
+const app::Assets &Goal::Assets() const noexcept {
+	return c.GetSimulation().Assets();
+}
+
+math::GaloisLFSR &Goal::Random() noexcept {
+	return Assets().random;
+}
+
+void Goal::SetComplete() {
+	if (!complete) {
+		complete = true;
+		OnComplete();
+		if (on_complete) {
+			on_complete(*this);
+		}
+	}
+}
+
+void Goal::SetForeground() {
+	OnForeground();
+	if (on_foreground) {
+		on_foreground(*this);
+	}
+}
+
+void Goal::SetBackground() {
+	OnBackground();
+	if (on_background) {
+		on_background(*this);
+	}
+}
+
+void Goal::WhenComplete(std::function<void(Goal &)> cb) noexcept {
+	on_complete = cb;
+	if (complete) {
+		on_complete(*this);
+	}
+}
+
+void Goal::WhenForeground(std::function<void(Goal &)> cb) noexcept {
+	on_foreground = cb;
+}
+
+void Goal::WhenBackground(std::function<void(Goal &)> cb) noexcept {
+	on_background = cb;
+}
+
+
+IdleGoal::IdleGoal(Creature &c)
+: Goal(c) {
+	Urgency(-1.0);
+	Interruptible(true);
+}
+
+IdleGoal::~IdleGoal() {
+}
+
+std::string IdleGoal::Describe() const {
+	return "idle";
+}
+
+void IdleGoal::Action() {
+	// use boredom as chance per minute
+	if (Random().UNorm() < GetCreature().GetStats().Boredom().value * (1.0 / 3600.0)) {
+		PickActivity();
+	}
+}
+
+void IdleGoal::PickActivity() {
+	GetCreature().AddGoal(std::unique_ptr<Goal>(new StrollGoal(GetCreature())));
+}
+
 
 namespace {
 
@@ -204,6 +312,7 @@ void IngestGoal::Action() {
 			GetSteering().Halt();
 		} else {
 			// finally
+			// TODO: somehow this still gets interrupted
 			Interruptible(false);
 			ingesting = true;
 		}
@@ -213,7 +322,7 @@ void IngestGoal::Action() {
 			locate_subtask->Accept(c.resource, c.value);
 		}
 		locate_subtask->Urgency(Urgency() + 0.1);
-		locate_subtask->OnComplete([&](Goal &){ locate_subtask = nullptr; });
+		locate_subtask->WhenComplete([&](Goal &){ locate_subtask = nullptr; });
 		GetCreature().AddGoal(std::unique_ptr<Goal>(locate_subtask));
 	}
 }
@@ -232,81 +341,6 @@ bool IngestGoal::OnSuitableTile() {
 		resource = -1;
 		return false;
 	}
-}
-
-
-Goal::Goal(Creature &c)
-: c(c)
-, on_complete()
-, urgency(0.0)
-, interruptible(true)
-, complete(false) {
-}
-
-Goal::~Goal() noexcept {
-}
-
-Situation &Goal::GetSituation() noexcept {
-	return c.GetSituation();
-}
-
-const Situation &Goal::GetSituation() const noexcept {
-	return c.GetSituation();
-}
-
-Steering &Goal::GetSteering() noexcept {
-	return c.GetSteering();
-}
-
-const Steering &Goal::GetSteering() const noexcept {
-	return c.GetSteering();
-}
-
-app::Assets &Goal::Assets() noexcept {
-	return c.GetSimulation().Assets();
-}
-
-const app::Assets &Goal::Assets() const noexcept {
-	return c.GetSimulation().Assets();
-}
-
-void Goal::SetComplete() noexcept {
-	if (!complete) {
-		complete = true;
-		if (on_complete) {
-			on_complete(*this);
-		}
-	}
-}
-
-void Goal::OnComplete(std::function<void(Goal &)> cb) noexcept {
-	on_complete = cb;
-	if (complete) {
-		on_complete(*this);
-	}
-}
-
-
-IdleGoal::IdleGoal(Creature &c)
-: Goal(c) {
-	Urgency(-1.0);
-	Interruptible(true);
-}
-
-IdleGoal::~IdleGoal() {
-}
-
-std::string IdleGoal::Describe() const {
-	return "idle";
-}
-
-void IdleGoal::Enable() {
-}
-
-void IdleGoal::Tick(double dt) {
-}
-
-void IdleGoal::Action() {
 }
 
 
@@ -348,6 +382,7 @@ void LocateResourceGoal::Action() {
 		} else {
 			double dist = glm::length2(GetSituation().Position() - target_pos);
 			if (dist < 0.0001) {
+				searching = false;
 				LocateResource();
 			} else {
 				GetSteering().GoTo(target_pos);
@@ -437,7 +472,7 @@ void LocateResourceGoal::SearchVicinity() {
 		}
 	}
 
-	if (best_rating) {
+	if (best_rating > 0.0) {
 		found = true;
 		searching = false;
 		target_pos = normalize(pos + (double(best_pos.x) * step_x) + (double(best_pos.y) * step_y)) * planet.Radius();
@@ -446,10 +481,10 @@ void LocateResourceGoal::SearchVicinity() {
 		found = false;
 		searching = true;
 		target_pos = GetSituation().Position();
-		target_pos += Assets().random.SNorm() * step_x;
-		target_pos += Assets().random.SNorm() * step_y;
+		target_pos += Random().SNorm() * step_x;
+		target_pos += Random().SNorm() * step_y;
 		// bias towards current heading
-		target_pos += GetSituation().Heading() * 0.5;
+		target_pos += GetSituation().Heading() * 1.5;
 		target_pos = normalize(target_pos) * planet.Radius();
 		GetSteering().GoTo(target_pos);
 	}
@@ -458,6 +493,50 @@ void LocateResourceGoal::SearchVicinity() {
 bool LocateResourceGoal::NearTarget() const noexcept {
 	const Situation &s = GetSituation();
 	return s.OnSurface() && length2(s.Position() - target_pos) < 0.5;
+}
+
+
+StrollGoal::StrollGoal(Creature &c)
+: Goal(c)
+, last(GetSituation().Position())
+, next(last) {
+}
+
+StrollGoal::~StrollGoal() {
+}
+
+std::string StrollGoal::Describe() const {
+	return "take a walk";
+}
+
+void StrollGoal::Enable() {
+	last = GetSituation().Position();
+	GetSteering().Haste(0.0);
+	PickTarget();
+}
+
+void StrollGoal::Action() {
+	if (length2(next - GetSituation().Position()) < 0.0001) {
+		PickTarget();
+	}
+}
+
+void StrollGoal::OnBackground() {
+	SetComplete();
+}
+
+void StrollGoal::PickTarget() noexcept {
+	last = next;
+	next += GetSituation().Heading() * 1.5;
+	const glm::dvec3 normal(GetSituation().GetPlanet().NormalAt(GetSituation().Position()));
+	glm::dvec3 rand_x(GetSituation().Heading());
+	if (std::abs(dot(normal, rand_x)) > 0.999) {
+		rand_x = glm::dvec3(normal.z, normal.x, normal.y);
+	}
+	glm::dvec3 rand_y = cross(normal, rand_x);
+	next += ((rand_x * Random().SNorm()) + (rand_y * Random().SNorm())) * 1.5;
+	next = normalize(next) * GetSituation().GetPlanet().Radius();
+	GetSteering().GoTo(next);
 }
 
 }

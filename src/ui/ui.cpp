@@ -30,6 +30,9 @@ CreaturePanel::CreaturePanel(app::Assets &assets)
 , age(new Label(assets.fonts.medium))
 , mass(new Label(assets.fonts.medium))
 , goal(new Label(assets.fonts.medium))
+, pos(new Label(assets.fonts.medium))
+, tile(new Label(assets.fonts.medium))
+, head(new Label(assets.fonts.medium))
 , composition(new Panel)
 , stats{nullptr}
 , props{nullptr}
@@ -67,6 +70,32 @@ CreaturePanel::CreaturePanel(app::Assets &assets)
 		->Spacing(10.0f)
 		->Add(info_label_panel)
 		->Add(info_value_panel);
+
+	Label *pos_label = new Label(assets.fonts.medium);
+	pos_label->Text("Pos");
+	Label *tile_label = new Label(assets.fonts.medium);
+	tile_label->Text("Tile");
+	Label *head_label = new Label(assets.fonts.medium);
+	head_label->Text("Heading");
+
+	Panel *loc_label_panel = new Panel;
+	loc_label_panel
+		->Direction(Panel::VERTICAL)
+		->Add(pos_label)
+		->Add(tile_label)
+		->Add(head_label);
+	Panel *loc_value_panel = new Panel;
+	loc_value_panel
+		->Direction(Panel::VERTICAL)
+		->Add(pos)
+		->Add(tile)
+		->Add(head);
+	Panel *loc_panel = new Panel;
+	loc_panel
+		->Direction(Panel::HORIZONTAL)
+		->Spacing(10.0f)
+		->Add(loc_label_panel)
+		->Add(loc_value_panel);
 
 	Label *stat_label[7];
 	for (int i = 0; i < 7; ++i) {
@@ -144,6 +173,7 @@ CreaturePanel::CreaturePanel(app::Assets &assets)
 	panel
 		.Add(name)
 		->Add(info_panel)
+		->Add(loc_panel)
 		->Add(composition)
 		->Add(stat_panel)
 		->Add(prop_panel)
@@ -193,6 +223,10 @@ void CreaturePanel::Draw(graphics::Viewport &viewport) noexcept {
 	} else {
 		goal->Text(c->Goals()[0]->Describe());
 	}
+
+	pos->Text(VectorString(c->GetSituation().Position(), 2));
+	tile->Text(c->GetSituation().GetTileType().label);
+	head->Text(VectorString(c->GetSituation().Heading(), 2));
 
 	const creature::Composition &comp = c->GetComposition();
 	if (comp.size() < components.size()) {

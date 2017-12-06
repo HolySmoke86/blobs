@@ -32,7 +32,7 @@ struct SwitchPanel {
 			for (auto a : planet.Creatures()) {
 				if (a != &c) {
 					state.GetCreaturePanel().Show(*a);
-					a->OnDeath([&](creature::Creature &b) { (*this)(b); });
+					a->WhenDead([&](creature::Creature &b) { (*this)(b); });
 					break;
 				}
 			}
@@ -102,7 +102,7 @@ int main(int argc, char *argv[]) {
 
 	app::Application app(init.window, init.viewport);
 	SwitchPanel swp(planet, app, state);
-	blob->OnDeath([&](creature::Creature &c) { swp(c); });
+	blob->WhenDead([&](creature::Creature &c) { swp(c); });
 	app.PushState(&state);
 	app.Run();
 

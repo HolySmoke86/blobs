@@ -16,9 +16,9 @@ public:
 
 public:
 	std::string Describe() const override;
-	void Enable() override;
-	void Tick(double dt) override;
 	void Action() override;
+
+	void PickActivity();
 
 };
 

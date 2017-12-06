@@ -482,40 +482,40 @@ void Planet::BuildVAO(const Set<TileType> &ts) {
 					glm::vec3 pos[5];
 					pos[0][(surface + 0) % 3] = x + 0 - offset;
 					pos[0][(surface + 1) % 3] = y + 0 - offset;
-					pos[0][(surface + 2) % 3] = surface < 3 ? offset : -offset;
+					pos[0][(surface + 2) % 3] = offset;
 					pos[1][(surface + 0) % 3] = x + 0 - offset;
 					pos[1][(surface + 1) % 3] = y + 1 - offset;
-					pos[1][(surface + 2) % 3] = surface < 3 ? offset : -offset;
+					pos[1][(surface + 2) % 3] = offset;
 					pos[2][(surface + 0) % 3] = x + 1 - offset;
 					pos[2][(surface + 1) % 3] = y + 0 - offset;
-					pos[2][(surface + 2) % 3] = surface < 3 ? offset : -offset;
+					pos[2][(surface + 2) % 3] = offset;
 					pos[3][(surface + 0) % 3] = x + 1 - offset;
 					pos[3][(surface + 1) % 3] = y + 1 - offset;
-					pos[3][(surface + 2) % 3] = surface < 3 ? offset : -offset;
+					pos[3][(surface + 2) % 3] = offset;
 
 					float tex = ts[TileAt(surface, x, y).type].texture;
 					const float tex_v_begin = surface < 3 ? 1.0f : 0.0f;
 					const float tex_v_end = surface < 3 ? 0.0f : 1.0f;
 
-					attrib[4 * index + 0].position = normalize(pos[0]) * offset;
+					attrib[4 * index + 0].position = normalize(pos[0]) * (surface < 3 ? offset : -offset);
 					attrib[4 * index + 0].normal = pos[0];
 					attrib[4 * index + 0].tex_coord[0] = 0.0f;
 					attrib[4 * index + 0].tex_coord[1] = tex_v_begin;
 					attrib[4 * index + 0].tex_coord[2] = tex;
 
-					attrib[4 * index + 1].position = normalize(pos[1]) * offset;
+					attrib[4 * index + 1].position = normalize(pos[1]) * (surface < 3 ? offset : -offset);
 					attrib[4 * index + 1].normal = pos[1];
 					attrib[4 * index + 1].tex_coord[0] = 0.0f;
 					attrib[4 * index + 1].tex_coord[1] = tex_v_end;
 					attrib[4 * index + 1].tex_coord[2] = tex;
 
-					attrib[4 * index + 2].position = normalize(pos[2]) * offset;
+					attrib[4 * index + 2].position = normalize(pos[2]) * (surface < 3 ? offset : -offset);
 					attrib[4 * index + 2].normal = pos[2];
 					attrib[4 * index + 2].tex_coord[0] = 1.0f;
 					attrib[4 * index + 2].tex_coord[1] = tex_v_begin;
 					attrib[4 * index + 2].tex_coord[2] = tex;
 
-					attrib[4 * index + 3].position = normalize(pos[3]) * offset;
+					attrib[4 * index + 3].position = normalize(pos[3]) * (surface < 3 ? offset : -offset);
 					attrib[4 * index + 3].normal = pos[3];
 					attrib[4 * index + 3].tex_coord[0] = 1.0f;
 					attrib[4 * index + 3].tex_coord[1] = tex_v_end;

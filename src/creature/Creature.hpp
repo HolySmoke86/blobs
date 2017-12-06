@@ -144,7 +144,7 @@ public:
 	void Hurt(double d) noexcept;
 	void Die() noexcept;
 	bool Dead() const noexcept;
-	void OnDeath(Callback cb) noexcept { on_death = cb; }
+	void WhenDead(Callback cb) noexcept { on_death = cb; }
 	void Remove() noexcept;
 	bool Removable() const noexcept { return removable; }
 	void Removed() noexcept;

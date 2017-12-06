@@ -65,6 +65,7 @@ public:
 	void Move(const glm::dvec3 &dp) noexcept;
 	void Accelerate(const glm::dvec3 &dv) noexcept;
 	void EnforceConstraints(State &) noexcept;
+	void CheckWrap() noexcept;
 
 	void Heading(const glm::dvec3 &h) noexcept { state.dir = h; }
 	const glm::dvec3 &Heading() const noexcept { return state.dir; }
