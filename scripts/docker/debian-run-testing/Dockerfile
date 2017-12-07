@@ -13,7 +13,7 @@ RUN apt -y update \
 
 RUN apt -y install --no-install-recommends \
 		libalut0 \
-		libglew1.10 \
+		libglew2.0 \
 		libglu1-mesa \
 		libopenal1 \
 		libsdl2-2.0-0 \
