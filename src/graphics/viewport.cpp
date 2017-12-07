@@ -17,7 +17,7 @@ namespace blobs {
 namespace graphics {
 
 Camera::Camera(const world::Body &r) noexcept
-: fov(PI_0p25)
+: fov(PI * 0.25)
 , aspect(1.0f)
 , near(0.1f)
 , far(12560.0f)

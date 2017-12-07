@@ -26,9 +26,6 @@
 #include <glm/gtx/io.hpp>
 #include <glm/gtx/transform.hpp>
 
-using blobs::G;
-using blobs::PI_2p0;
-
 using std::sin;
 using std::cos;
 using std::pow;
@@ -104,7 +101,7 @@ double Body::GravitationalParameter() const noexcept {
 
 double Body::OrbitalPeriod() const noexcept {
 	if (parent) {
-		return PI_2p0 * sqrt(pow(orbit.SemiMajorAxis(), 3) / (G * (parent->Mass() + Mass())));
+		return PI * 2.0 * sqrt(pow(orbit.SemiMajorAxis(), 3) / (G * (parent->Mass() + Mass())));
 	} else {
 		return 0.0;
 	}
@@ -114,7 +111,7 @@ double Body::RotationalPeriod() const noexcept {
 	if (std::abs(angular) < std::numeric_limits<double>::epsilon()) {
 		return std::numeric_limits<double>::infinity();
 	} else {
-		return PI_2p0 * Inertia() / angular;
+		return PI * 2.0 * Inertia() / angular;
 	}
 }
 
@@ -165,11 +162,11 @@ void Body::Tick(double dt) {
 void Body::Cache() noexcept {
 	if (parent) {
 		orbital =
-			orbit.Matrix(PI_2p0 * (GetSimulation().Time() / OrbitalPeriod()))
+			orbit.Matrix(PI * 2.0 * (GetSimulation().Time() / OrbitalPeriod()))
 			* glm::eulerAngleXY(axis_tilt.x, axis_tilt.y);
 		inverse_orbital =
 			glm::eulerAngleYX(-axis_tilt.y, -axis_tilt.x)
-			* orbit.InverseMatrix(PI_2p0 * (GetSimulation().Time() / OrbitalPeriod()));
+			* orbit.InverseMatrix(PI * 2.0 * (GetSimulation().Time() / OrbitalPeriod()));
 	} else {
 		orbital = glm::eulerAngleXY(axis_tilt.x, axis_tilt.y);
 		inverse_orbital = glm::eulerAngleYX(-axis_tilt.y, -axis_tilt.x);

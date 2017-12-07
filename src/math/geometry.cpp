@@ -94,5 +94,59 @@ bool Intersect(
 }
 
 
+bool Intersect(
+	const Ray &ray,
+	const AABB &aabb,
+	const glm::dmat4 &M,
+	glm::dvec3 &normal,
+	double &dist
+) noexcept {
+	double t_min = 0.0;
+	double t_max = std::numeric_limits<double>::infinity();
+	const glm::dvec3 aabb_pos(M[3].x, M[3].y, M[3].z);
+	const glm::dvec3 delta = aabb_pos - ray.Origin();
+
+	glm::dvec3 t1(t_min, t_min, t_min), t2(t_max, t_max, t_max);
+
+	for (int i = 0; i < 3; ++i) {
+		const glm::dvec3 axis(M[i].x, M[i].y, M[i].z);
+		const double e = glm::dot(axis, delta);
+		const double f = glm::dot(axis, ray.Direction());
+
+		if (std::abs(f) > std::numeric_limits<double>::epsilon()) {
+			t1[i] = (e + aabb.min[i]) / f;
+			t2[i] = (e + aabb.max[i]) / f;
+
+			t_min = std::max(t_min, std::min(t1[i], t2[i]));
+			t_max = std::min(t_max, std::max(t1[i], t2[i]));
+
+			if (t_max < t_min) {
+				return false;
+			}
+		} else {
+			if (aabb.min[i] - e > 0.0 || aabb.max[i] - e < 0.0) {
+				return false;
+			}
+		}
+	}
+
+	dist = t_min;
+
+	glm::dvec3 min_all(glm::min(t1, t2));
+	if (min_all.x > min_all.y) {
+		if (min_all.x > min_all.z) {
+			normal = glm::dvec3(t2.x < t1.x ? 1 : -1, 0, 0);
+		} else {
+			normal = glm::dvec3(0, 0, t2.z < t1.z ? 1 : -1);
+		}
+	} else if (min_all.y > min_all.z) {
+		normal = glm::dvec3(0, t2.y < t1.y ? 1 : -1, 0);
+	} else {
+		normal = glm::dvec3(0, 0, t2.z < t1.z ? 1 : -1);
+	}
+
+	return true;
+}
+
 }
 }
