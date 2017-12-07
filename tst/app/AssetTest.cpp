@@ -18,7 +18,7 @@ void AssetTest::tearDown() {
 
 
 void AssetTest::testLoadAll() {
-	Init init(true, 8);
+	Init init(false, 1);
 	Assets assets;
 
 	CPPUNIT_ASSERT_MESSAGE(
