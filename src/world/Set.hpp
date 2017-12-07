@@ -25,6 +25,8 @@ public:
 	bool Has(int id) const noexcept { return id < types.size(); }
 	bool Has(const std::string &name) const noexcept { return names.find(name) != names.end(); }
 
+	typename std::vector<Type>::size_type Size() const noexcept { return types.size(); }
+
 	Type &operator [](int id) noexcept { return types[id]; }
 	const Type &operator [](int id) const noexcept { return types[id]; }
 

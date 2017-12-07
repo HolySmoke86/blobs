@@ -135,9 +135,13 @@ callgrind: $(ASSET_DEP) blobs.profile
 		--dump-instr=yes --simulate-hwpref=yes --simulate-wb=yes \
 		./blobs.profile
 
-test: blobs.test
+test: blobs.test $(ASSET_DEP)
 	@echo run: blobs.test
 	@./blobs.test
+
+headless-test: blobs.test
+	@echo run: blobs.test --headless
+	@./blobs.test --headless
 
 coverage: blobs.cover
 	@echo run: blobs.cover
@@ -162,7 +166,7 @@ distclean: clean
 	rm -f $(BIN) cachegrind.out.* callgrind.out.*
 	rm -Rf build client-saves saves
 
-.PHONY: all release cover debug profile tests run gdb cachegrind callgrind test coverage codecov lint clean distclean
+.PHONY: all release cover debug profile tests run gdb cachegrind callgrind test headless-test coverage codecov lint clean distclean
 
 -include $(DEP)
 
