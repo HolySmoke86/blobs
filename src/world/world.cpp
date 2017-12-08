@@ -189,7 +189,7 @@ void Body::CheckCollision() noexcept {
 		for (auto j = (i + 1); j != end; ++j) {
 			glm::dvec3 diff((*i)->GetSituation().Position() - (*j)->GetSituation().Position());
 			double max_dist = ((*i)->Size() + (*j)->Size()) * 1.74;
-			if (length2(diff) > max_dist * max_dist) continue;
+			if (glm::length2(diff) > max_dist * max_dist) continue;
 			math::AABB j_box((*j)->CollisionBox());
 			glm::dmat4 j_mat((*j)->CollisionTransform());
 			glm::dvec3 normal;
@@ -202,8 +202,8 @@ void Body::CheckCollision() noexcept {
 	for (auto &c : collisions) {
 		c.A().GetSituation().Move(c.Normal() * (c.Depth() * -0.5));
 		c.B().GetSituation().Move(c.Normal() * (c.Depth() * 0.5));
-		c.A().GetSituation().Accelerate(c.Normal() * -dot(c.Normal(), c.AVel()));
-		c.B().GetSituation().Accelerate(c.Normal() * -dot(c.Normal(), c.BVel()));
+		c.A().GetSituation().Accelerate(c.Normal() * -glm::dot(c.Normal(), c.AVel()));
+		c.B().GetSituation().Accelerate(c.Normal() * -glm::dot(c.Normal(), c.BVel()));
 		// TODO: notify participants so they can be annoyed
 	}
 }
@@ -314,7 +314,7 @@ double mean2eccentric(double M, double e) {
 	for (int i = 0; i < 100; ++i) {
 		double dE = (E - e * sin(E) - M) / (1 - e * cos(E));
 		E -= dE;
-		if (abs(dE) < 1.0e-6) break;
+		if (std::abs(dE) < 1.0e-6) break;
 	}
 	return E;
 }
@@ -355,8 +355,8 @@ Planet::~Planet() {
 namespace {
 /// map p onto cube, s gives the surface, u and v the position in [-1,1]
 void cubemap(const glm::dvec3 &p, int &s, double &u, double &v) noexcept {
-	const glm::dvec3 p_abs(abs(p));
-	const glm::bvec3 p_pos(greaterThan(p, glm::dvec3(0.0)));
+	const glm::dvec3 p_abs(glm::abs(p));
+	const glm::bvec3 p_pos(glm::greaterThan(p, glm::dvec3(0.0)));
 	double max_axis = 0.0;
 
 	if (p_pos.x && p_abs.x >= p_abs.y && p_abs.x >= p_abs.z) {
@@ -452,7 +452,7 @@ const TileType &Planet::TypeAt(int srf, int x, int y) const noexcept {
 glm::dvec3 Planet::TileCenter(int srf, int x, int y, double e) const noexcept {
 	double u = (double(x) - Radius() + 0.5) / Radius();
 	double v = (double(y) - Radius() + 0.5) / Radius();
-	return normalize(cubeunmap(srf, u, v)) * (Radius() + e);
+	return glm::normalize(cubeunmap(srf, u, v)) * (Radius() + e);
 }
 
 void Planet::BuildVAO(const Set<TileType> &ts) {
@@ -494,25 +494,25 @@ void Planet::BuildVAO(const Set<TileType> &ts) {
 					const float tex_v_begin = surface < 3 ? 1.0f : 0.0f;
 					const float tex_v_end = surface < 3 ? 0.0f : 1.0f;
 
-					attrib[4 * index + 0].position = normalize(pos[0]) * (surface < 3 ? offset : -offset);
+					attrib[4 * index + 0].position = glm::normalize(pos[0]) * (surface < 3 ? offset : -offset);
 					attrib[4 * index + 0].normal = pos[0];
 					attrib[4 * index + 0].tex_coord[0] = 0.0f;
 					attrib[4 * index + 0].tex_coord[1] = tex_v_begin;
 					attrib[4 * index + 0].tex_coord[2] = tex;
 
-					attrib[4 * index + 1].position = normalize(pos[1]) * (surface < 3 ? offset : -offset);
+					attrib[4 * index + 1].position = glm::normalize(pos[1]) * (surface < 3 ? offset : -offset);
 					attrib[4 * index + 1].normal = pos[1];
 					attrib[4 * index + 1].tex_coord[0] = 0.0f;
 					attrib[4 * index + 1].tex_coord[1] = tex_v_end;
 					attrib[4 * index + 1].tex_coord[2] = tex;
 
-					attrib[4 * index + 2].position = normalize(pos[2]) * (surface < 3 ? offset : -offset);
+					attrib[4 * index + 2].position = glm::normalize(pos[2]) * (surface < 3 ? offset : -offset);
 					attrib[4 * index + 2].normal = pos[2];
 					attrib[4 * index + 2].tex_coord[0] = 1.0f;
 					attrib[4 * index + 2].tex_coord[1] = tex_v_begin;
 					attrib[4 * index + 2].tex_coord[2] = tex;
 
-					attrib[4 * index + 3].position = normalize(pos[3]) * (surface < 3 ? offset : -offset);
+					attrib[4 * index + 3].position = glm::normalize(pos[3]) * (surface < 3 ? offset : -offset);
 					attrib[4 * index + 3].normal = pos[3];
 					attrib[4 * index + 3].tex_coord[0] = 1.0f;
 					attrib[4 * index + 3].tex_coord[1] = tex_v_end;
@@ -604,7 +604,7 @@ void GenerateEarthlike(const Set<TileType> &tiles, Planet &p) noexcept {
 				}
 				float elevation = math::OctaveNoise(
 					elevation_gen,
-					to_tile / p.Radius(),
+					glm::vec3(to_tile / p.Radius()),
 					3,   // octaves
 					0.5, // persistence
 					5 / p.Radius(), // frequency
@@ -613,7 +613,7 @@ void GenerateEarthlike(const Set<TileType> &tiles, Planet &p) noexcept {
 				);
 				float variation = math::OctaveNoise(
 					variation_gen,
-					to_tile / p.Radius(),
+					glm::vec3(to_tile / p.Radius()),
 					3,   // octaves
 					0.5, // persistence
 					16 / p.Radius(), // frequency

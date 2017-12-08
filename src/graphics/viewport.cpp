@@ -75,9 +75,9 @@ Camera &Camera::Radial(const creature::Creature &c, double distance, const glm::
 		Reference(s.GetPlanet());
 		track_orient = true;
 		up = s.GetPlanet().NormalAt(s.Position());
-		glm::dvec3 ref(normalize(cross(up, glm::dvec3(up.z, up.x, up.y))));
+		glm::dvec3 ref(glm::normalize(glm::cross(up, glm::dvec3(up.z, up.x, up.y))));
 		dir =
-			glm::dmat3(ref, up, cross(ref, up))
+			glm::dmat3(ref, up, glm::cross(ref, up))
 			* glm::dmat3(glm::eulerAngleYX(-angle.y, -angle.x))
 			* dir;
 	} else {
@@ -94,17 +94,17 @@ glm::mat4 Camera::Model(const world::Body &b) const noexcept {
 	if (&b == ref) {
 		return track_orient ? glm::mat4(1.0f) : glm::mat4(ref->LocalTransform());
 	} else if (b.HasParent() && &b.Parent() == ref) {
-		return track_orient
+		return glm::mat4(track_orient
 			? ref->InverseTransform() * b.FromParent() * b.LocalTransform()
-			: b.FromParent() * b.LocalTransform();
+			: b.FromParent() * b.LocalTransform());
 	} else if (ref->HasParent() && &ref->Parent() == &b) {
-		return track_orient
+		return glm::mat4(track_orient
 			? ref->InverseTransform() * ref->ToParent() * b.LocalTransform()
-			: ref->ToParent() * b.LocalTransform();
+			: ref->ToParent() * b.LocalTransform());
 	} else {
-		return track_orient
+		return glm::mat4(track_orient
 			? ref->InverseTransform() * ref->ToUniverse() * b.FromUniverse() * b.LocalTransform()
-			: ref->ToUniverse() * b.FromUniverse() * b.LocalTransform();
+			: ref->ToUniverse() * b.FromUniverse() * b.LocalTransform());
 	}
 }
 

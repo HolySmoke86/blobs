@@ -342,10 +342,10 @@ double Creature::PerceptionField() const noexcept {
 bool Creature::PerceptionTest(const glm::dvec3 &p) const noexcept {
 	const glm::dvec3 diff(p - situation.Position());
 	double omni_range = PerceptionOmniRange();
-	if (length2(diff) < omni_range * omni_range) return true;
+	if (glm::length2(diff) < omni_range * omni_range) return true;
 	double range = PerceptionRange();
-	if (length2(diff) > range * range) return false;
-	return dot(normalize(diff), situation.Heading()) > PerceptionField();
+	if (glm::length2(diff) > range * range) return false;
+	return glm::dot(glm::normalize(diff), situation.Heading()) > PerceptionField();
 }
 
 double Creature::OffspringChance() const noexcept {
@@ -397,21 +397,21 @@ void Creature::TickState(double dt) {
 	state.pos += f.vel * dt;
 	state.vel += f.acc * dt;
 	situation.EnforceConstraints(state);
-	if (length2(state.vel) > 0.000001) {
-		glm::dvec3 nvel(normalize(state.vel));
-		double ang = angle(nvel, state.dir);
+	if (glm::length2(state.vel) > 0.000001) {
+		glm::dvec3 nvel(glm::normalize(state.vel));
+		double ang = glm::angle(nvel, state.dir);
 		double turn_rate = PI * 0.75 * dt;
 		if (ang < turn_rate) {
-			state.dir = normalize(state.vel);
+			state.dir = glm::normalize(state.vel);
 		} else if (std::abs(ang - PI) < 0.001) {
-			state.dir = rotate(state.dir, turn_rate, situation.GetPlanet().NormalAt(state.pos));
+			state.dir = glm::rotate(state.dir, turn_rate, situation.GetPlanet().NormalAt(state.pos));
 		} else {
-			state.dir = rotate(state.dir, turn_rate, normalize(cross(state.dir, nvel)));
+			state.dir = glm::rotate(state.dir, turn_rate, glm::normalize(glm::cross(state.dir, nvel)));
 		}
 	}
 	situation.SetState(state);
 	// work is force times distance
-	DoWork(length(f.acc) * Mass() * length(f.vel) * dt);
+	DoWork(glm::length(f.acc) * Mass() * glm::length(f.vel) * dt);
 }
 
 Situation::Derivative Creature::Step(const Situation::Derivative &ds, double dt) const noexcept {
@@ -429,10 +429,10 @@ Situation::Derivative Creature::Step(const Situation::Derivative &ds, double dt)
 	// if net force is applied and in contact with surface
 	if (!allzero(force) && std::abs(std::abs(elevation) - situation.GetPlanet().Radius()) < 0.001) {
 		// apply friction = -|normal force| * tangential force * coefficient
-		glm::dvec3 fn(normal * dot(force, normal));
+		glm::dvec3 fn(normal * glm::dot(force, normal));
 		glm::dvec3 ft(force - fn);
 		double u = 0.4;
-		glm::dvec3 friction(-length(fn) * ft * u);
+		glm::dvec3 friction(-glm::length(fn) * ft * u);
 		force += friction;
 	}
 	return {
@@ -508,11 +508,11 @@ glm::dmat4 Creature::CollisionTransform() const noexcept {
 	glm::dmat3 orient;
 	orient[1] = situation.GetPlanet().NormalAt(pos);
 	orient[2] = situation.Heading();
-	if (std::abs(dot(orient[1], orient[2])) > 0.999) {
+	if (std::abs(glm::dot(orient[1], orient[2])) > 0.999) {
 		orient[2] = glm::dvec3(orient[1].z, orient[1].x, orient[1].y);
 	}
-	orient[0] = normalize(cross(orient[1], orient[2]));
-	orient[2] = normalize(cross(orient[0], orient[1]));
+	orient[0] = glm::normalize(glm::cross(orient[1], orient[2]));
+	orient[2] = glm::normalize(glm::cross(orient[0], orient[1]));
 	return glm::translate(glm::dvec3(pos.x, pos.y, pos.z))
 		* glm::dmat4(orient)
 		* glm::translate(glm::dvec3(0.0, half_size, 0.0));
@@ -864,8 +864,8 @@ void Situation::Accelerate(const glm::dvec3 &dv) noexcept {
 void Situation::EnforceConstraints(State &s) noexcept {
 	if (OnSurface()) {
 		double r = GetPlanet().Radius();
-		if (length2(s.pos) < r * r) {
-			s.pos = normalize(s.pos) * r;
+		if (glm::length2(s.pos) < r * r) {
+			s.pos = glm::normalize(s.pos) * r;
 		}
 	}
 }
@@ -947,10 +947,10 @@ glm::dvec3 Steering::Force(const Situation::State &s) const noexcept {
 		for (auto &other : s.GetPlanet().Creatures()) {
 			if (&*other == &c) continue;
 			glm::dvec3 diff = s.Position() - other->GetSituation().Position();
-			if (length2(diff) > max_look * max_look) continue;
+			if (glm::length2(diff) > max_look * max_look) continue;
 			if (!c.PerceptionTest(other->GetSituation().Position())) continue;
-			double sep = glm::clamp(length(diff) - other->Size() * 0.707 - c.Size() * 0.707, 0.0, min_dist);
-			repulse += normalize(diff) * (1.0 - sep / min_dist) * force;
+			double sep = glm::clamp(glm::length(diff) - other->Size() * 0.707 - c.Size() * 0.707, 0.0, min_dist);
+			repulse += glm::normalize(diff) * (1.0 - sep / min_dist) * force;
 		}
 		result += repulse;
 	}
@@ -961,18 +961,18 @@ glm::dvec3 Steering::Force(const Situation::State &s) const noexcept {
 	if (seeking) {
 		glm::dvec3 diff = target - s.pos;
 		if (!allzero(diff)) {
-			result += TargetVelocity(s, (normalize(diff) * speed), force);
+			result += TargetVelocity(s, (glm::normalize(diff) * speed), force);
 		}
 	}
 	if (arriving) {
 		glm::dvec3 diff = target - s.pos;
-		double dist = length(diff);
+		double dist = glm::length(diff);
 		if (!allzero(diff) && dist > std::numeric_limits<double>::epsilon()) {
 			result += TargetVelocity(s, diff * std::min(dist * force, speed) / dist, force);
 		}
 	}
-	if (length2(result) > max_force * max_force) {
-		result = normalize(result) * max_force;
+	if (glm::length2(result) > max_force * max_force) {
+		result = glm::normalize(result) * max_force;
 	}
 	return result;
 }

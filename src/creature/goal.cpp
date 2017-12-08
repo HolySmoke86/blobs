@@ -424,8 +424,8 @@ void LocateResourceGoal::SearchVicinity() {
 	const world::Planet &planet = GetSituation().GetPlanet();
 	const glm::dvec3 &pos = GetSituation().Position();
 	const glm::dvec3 normal(planet.NormalAt(pos));
-	const glm::dvec3 step_x(normalize(cross(normal, glm::dvec3(normal.z, normal.x, normal.y))));
-	const glm::dvec3 step_y(normalize(cross(step_x, normal)));
+	const glm::dvec3 step_x(glm::normalize(glm::cross(normal, glm::dvec3(normal.z, normal.x, normal.y))));
+	const glm::dvec3 step_y(glm::normalize(glm::cross(step_x, normal)));
 
 	constexpr int search_radius = 2;
 	double rating[2 * search_radius + 1][2 * search_radius + 1] = {0};
@@ -453,7 +453,7 @@ void LocateResourceGoal::SearchVicinity() {
 		for (int y = -search_radius; y < search_radius + 1; ++y) {
 			for (int x = -search_radius; x < search_radius + 1; ++x) {
 				const glm::dvec3 tpos(pos + (double(x) * step_x) + (double(y) * step_y));
-				if (length2(tpos - c->GetSituation().Position()) < 1.0) {
+				if (glm::length2(tpos - c->GetSituation().Position()) < 1.0) {
 					rating[y + search_radius][x + search_radius] *= 0.8;
 				}
 			}
@@ -475,7 +475,7 @@ void LocateResourceGoal::SearchVicinity() {
 	if (best_rating > 0.0) {
 		found = true;
 		searching = false;
-		target_pos = normalize(pos + (double(best_pos.x) * step_x) + (double(best_pos.y) * step_y)) * planet.Radius();
+		target_pos = glm::normalize(pos + (double(best_pos.x) * step_x) + (double(best_pos.y) * step_y)) * planet.Radius();
 		GetSteering().GoTo(target_pos);
 	} else if (!searching) {
 		found = false;
@@ -485,14 +485,14 @@ void LocateResourceGoal::SearchVicinity() {
 		target_pos += Random().SNorm() * step_y;
 		// bias towards current heading
 		target_pos += GetSituation().Heading() * 1.5;
-		target_pos = normalize(target_pos) * planet.Radius();
+		target_pos = glm::normalize(target_pos) * planet.Radius();
 		GetSteering().GoTo(target_pos);
 	}
 }
 
 bool LocateResourceGoal::NearTarget() const noexcept {
 	const Situation &s = GetSituation();
-	return s.OnSurface() && length2(s.Position() - target_pos) < 0.5;
+	return s.OnSurface() && glm::length2(s.Position() - target_pos) < 0.5;
 }
 
 
@@ -516,7 +516,7 @@ void StrollGoal::Enable() {
 }
 
 void StrollGoal::Action() {
-	if (length2(next - GetSituation().Position()) < 0.0001) {
+	if (glm::length2(next - GetSituation().Position()) < 0.0001) {
 		PickTarget();
 	}
 }
@@ -530,12 +530,12 @@ void StrollGoal::PickTarget() noexcept {
 	next += GetSituation().Heading() * 1.5;
 	const glm::dvec3 normal(GetSituation().GetPlanet().NormalAt(GetSituation().Position()));
 	glm::dvec3 rand_x(GetSituation().Heading());
-	if (std::abs(dot(normal, rand_x)) > 0.999) {
+	if (std::abs(glm::dot(normal, rand_x)) > 0.999) {
 		rand_x = glm::dvec3(normal.z, normal.x, normal.y);
 	}
-	glm::dvec3 rand_y = cross(normal, rand_x);
+	glm::dvec3 rand_y = glm::cross(normal, rand_x);
 	next += ((rand_x * Random().SNorm()) + (rand_y * Random().SNorm())) * 1.5;
-	next = normalize(next) * GetSituation().GetPlanet().Radius();
+	next = glm::normalize(next) * GetSituation().GetPlanet().Radius();
 	GetSteering().GoTo(next);
 }
 

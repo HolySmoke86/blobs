@@ -19,7 +19,7 @@ public:
 		const glm::dvec3 &n,
 		double depth
 	) : a(&a), b(&b), normal(n), depth(depth) {
-		if (dot(normal, BPos() - APos()) < 0.0) {
+		if (glm::dot(normal, BPos() - APos()) < 0.0) {
 			// make sure normal always is in direction from A to B
 			normal *= -1.0;
 		}

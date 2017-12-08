@@ -36,11 +36,11 @@ public:
 
 public:
 	/// surface normal
-	glm::dvec3 NormalAt(const glm::dvec3 &p) const noexcept { return normalize(p); }
+	glm::dvec3 NormalAt(const glm::dvec3 &p) const noexcept { return glm::normalize(p); }
 	/// height over surface
-	double ElevationAt(const glm::dvec3 &p) const noexcept { return length(p) - Radius(); }
+	double ElevationAt(const glm::dvec3 &p) const noexcept { return glm::length(p) - Radius(); }
 	/// distance to planet center
-	double DistanceAt(const glm::dvec3 &p) const noexcept { return length(p); }
+	double DistanceAt(const glm::dvec3 &p) const noexcept { return glm::length(p); }
 
 	/// get ground tile
 	Tile &TileAt(const glm::dvec3 &) noexcept;

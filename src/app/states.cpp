@@ -188,8 +188,8 @@ void MasterState::OnRender(graphics::Viewport &viewport) {
 	// TODO: extend to nearby bodies as well
 	for (auto c : cam.Reference().Creatures()) {
 		assets.shaders.creature_skin.SetM(cam.Model(cam.Reference()) * glm::mat4(c->LocalTransform()));
-		assets.shaders.creature_skin.SetBaseColor(c->BaseColor());
-		assets.shaders.creature_skin.SetHighlightColor(c->HighlightColor());
+		assets.shaders.creature_skin.SetBaseColor(glm::vec3(c->BaseColor()));
+		assets.shaders.creature_skin.SetHighlightColor(glm::vec4(c->HighlightColor()));
 		c->Draw(viewport);
 	}
 

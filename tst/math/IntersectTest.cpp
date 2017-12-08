@@ -177,8 +177,8 @@ void IntersectTest::testBoxBoxIntersection() {
 	glm::dvec3 normal(0);
 
 	AABB box{ { -1, -1, -1 }, { 1, 1, 1 } }; // 2x2x2 cube centered around origin
-	glm::mat4 Ma(1); // identity
-	glm::mat4 Mb(1); // identity
+	glm::dmat4 Ma(1); // identity
+	glm::dmat4 Mb(1); // identity
 	// they're identical, so should probably intersect ^^
 
 	CPPUNIT_ASSERT_MESSAGE(
@@ -209,11 +209,11 @@ void IntersectTest::testBoxBoxIntersection() {
 	);
 	CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
 		"bad penetration depth (with rotation)",
-		0.0142134428024292, depth, delta
+		0.014213562373095, depth, delta
 	);
 	AssertEqual(
 		"bad intersection normal (with rotation)",
-		glm::dvec3(1, 0, 0), abs(normal) // normal can be in + or - x, therefore abs()
+		glm::dvec3(1, 0, 0), glm::abs(normal) // normal can be in + or - x, therefore abs()
 	);
 
 	Mb = glm::translate(glm::dvec3(3, 0, 0)); // 3 to the right
