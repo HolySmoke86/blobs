@@ -266,7 +266,7 @@ void Creature::AddParent(Creature &p) {
 }
 
 double Creature::Age() const noexcept {
-	return sim.Time() - birth;
+	return Dead() ? death - birth : sim.Time() - birth;
 }
 
 double Creature::AgeFactor(double peak) const noexcept {
