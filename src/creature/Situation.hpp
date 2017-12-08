@@ -54,6 +54,7 @@ public:
 	world::Planet &GetPlanet() const noexcept { return *planet; }
 	bool OnSurface() const noexcept;
 	const glm::dvec3 &Position() const noexcept { return state.pos; }
+	glm::dvec3 SurfaceNormal() const noexcept;
 	world::Tile &GetTile() const noexcept;
 	const world::TileType &GetTileType() const noexcept;
 

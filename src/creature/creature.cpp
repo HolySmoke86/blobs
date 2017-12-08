@@ -756,7 +756,7 @@ void Split(Creature &c) {
 	// TODO: duplicate situation somehow
 	a->GetSituation().SetPlanetSurface(
 		s.GetPlanet(),
-		s.Position() + glm::dvec3(0.0, 0.55 * a->Size(), 0.0));
+		s.Position() + glm::rotate(s.Heading() * a->Size() * 0.6, PI * 0.5, s.SurfaceNormal()));
 	a->BuildVAO();
 	c.GetSimulation().Log() << a->Name() << " was born" << std::endl;
 
@@ -770,7 +770,7 @@ void Split(Creature &c) {
 	s.GetPlanet().AddCreature(b);
 	b->GetSituation().SetPlanetSurface(
 		s.GetPlanet(),
-		s.Position() - glm::dvec3(0.0, 0.55 * b->Size(), 0.0));
+		s.Position() + glm::rotate(s.Heading() * b->Size() * 0.6, PI * -0.5, s.SurfaceNormal()));
 	b->BuildVAO();
 	c.GetSimulation().Log() << b->Name() << " was born" << std::endl;
 
@@ -889,6 +889,10 @@ bool Situation::OnPlanet() const noexcept {
 
 bool Situation::OnSurface() const noexcept {
 	return type == PLANET_SURFACE;
+}
+
+glm::dvec3 Situation::SurfaceNormal() const noexcept {
+	return planet->NormalAt(state.pos);
 }
 
 world::Tile &Situation::GetTile() const noexcept {
