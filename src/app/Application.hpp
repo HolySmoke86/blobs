@@ -32,6 +32,12 @@ public:
 	State &GetState();
 	bool HasState() const noexcept;
 
+	Window &GetWindow() noexcept { return window; }
+	const Window &GetWindow() const noexcept { return window; }
+
+	graphics::Viewport &GetViewport() noexcept { return viewport; }
+	const graphics::Viewport &GetViewport() const noexcept { return viewport; }
+
 	/// Loop until states is empty.
 	void Run();
 	/// Evaluate a single frame of dt milliseconds.

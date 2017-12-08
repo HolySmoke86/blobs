@@ -1,5 +1,6 @@
 #include "MasterState.hpp"
 
+#include "Application.hpp"
 #include "../creature/Creature.hpp"
 #include "../graphics/Viewport.hpp"
 #include "../math/const.hpp"
@@ -92,14 +93,33 @@ void MasterState::OnKeyDown(const SDL_KeyboardEvent &e) {
 }
 
 void MasterState::OnMouseDown(const SDL_MouseButtonEvent &e) {
-	if (e.button == SDL_BUTTON_RIGHT) {
+	if (e.button == SDL_BUTTON_RIGHT && cp.Shown()) {
 		SDL_SetRelativeMouseMode(SDL_TRUE);
 		cam_dragging = true;
 	}
 }
 
 void MasterState::OnMouseUp(const SDL_MouseButtonEvent &e) {
-	if (e.button == SDL_BUTTON_RIGHT) {
+	if (e.button == SDL_BUTTON_LEFT) {
+		glm::dmat4 inverse(glm::inverse(cam.Projection() * cam.View()));
+		math::Ray ray(inverse * App().GetViewport().ShootPixel(e.x, e.y));
+		creature::Creature *closest = nullptr;
+		double closest_dist = 1.0e24;
+		for (creature::Creature *c : sim.LiveCreatures()) {
+			glm::dvec3 normal(0.0);
+			double dist = 0.0;
+			if (Intersect(ray, c->CollisionBox(), glm::dmat4(cam.Model(c->GetSituation().GetPlanet())) * c->CollisionTransform(), normal, dist)
+				&& dist < closest_dist) {
+				closest = c;
+				closest_dist = dist;
+			}
+		}
+		if (closest) {
+			cp.Show(*closest);
+		} else {
+			cp.Hide();
+		}
+	} else if (e.button == SDL_BUTTON_RIGHT) {
 		SDL_SetRelativeMouseMode(SDL_FALSE);
 		cam_dragging = false;
 	}

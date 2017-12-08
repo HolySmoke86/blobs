@@ -1,6 +1,8 @@
 #ifndef BLOBS_GRAPHICS_VIEWPORT_HPP_
 #define BLOBS_GRAPHICS_VIEWPORT_HPP_
 
+#include "../math/geometry.hpp"
+
 
 namespace blobs {
 namespace graphics {
@@ -25,6 +27,13 @@ public:
 		return height;
 	}
 	void Resize(int w, int h);
+
+	math::Ray ShootPixel(int x, int y) const noexcept {
+		return math::Ray({
+			((double(x) / double(width)) * 2.0) - 1.0,
+			1.0 - ((double(y) / double(height)) * 2.0),
+			-1.0 }, { 0.0, 0.0, 1.0 });
+	}
 
 	void Clear();
 	void ClearDepth();

@@ -15,36 +15,6 @@
 
 using namespace blobs;
 
-namespace {
-
-struct SwitchPanel {
-	SwitchPanel(world::Planet &p, app::Application &app, app::MasterState &state)
-	: planet(p), app(app), state(state) { }
-
-	void operator ()(creature::Creature &c) {
-		if (planet.Creatures().empty()) {
-			planet.GetSimulation().Log() << "no more creatures, game over" << std::endl;
-			state.GetCreaturePanel().Hide();
-			while (app.HasState()) {
-				app.PopState();
-			}
-		} else {
-			for (auto a : planet.Creatures()) {
-				if (a != &c) {
-					state.GetCreaturePanel().Show(*a);
-					a->WhenDead([&](creature::Creature &b) { (*this)(b); });
-					break;
-				}
-			}
-		}
-	}
-
-	world::Planet &planet;
-	app::Application &app;
-	app::MasterState &state;
-};
-}
-
 int main(int argc, char *argv[]) {
 	app::Init init(true, 8);
 	app::Assets assets;
@@ -101,8 +71,6 @@ int main(int argc, char *argv[]) {
 	state.GetTimePanel().SetBody(planet);
 
 	app::Application app(init.window, init.viewport);
-	SwitchPanel swp(planet, app, state);
-	blob->WhenDead([&](creature::Creature &c) { swp(c); });
 	app.PushState(&state);
 	app.Run();
 

@@ -4,6 +4,8 @@
 #include "glm.hpp"
 
 #include <algorithm>
+#include <ostream>
+#include <glm/gtx/io.hpp>
 
 
 namespace blobs {
@@ -26,6 +28,9 @@ struct AABB {
 
 };
 
+inline std::ostream &operator <<(std::ostream &out, const AABB &b) {
+	return out << "AABB(" << b.min << ", " << b.max << ")";
+}
 /// matrices must not scale
 bool Intersect(
 	const AABB &a_box,
@@ -53,6 +58,16 @@ private:
 	glm::dvec3 inv_dir;
 
 };
+
+inline Ray operator *(const glm::dmat4 &m, const Ray &r) noexcept {
+	glm::dvec4 o(m * glm::dvec4(r.Origin(), 1.0));
+	glm::dvec4 d(m * glm::dvec4(r.Origin() + r.Direction(), 1.0));
+	return Ray(glm::dvec3(o) / o.w, glm::normalize((glm::dvec3(d) / d.w) - (glm::dvec3(o) / o.w)));
+}
+
+inline std::ostream &operator <<(std::ostream &out, const Ray &r) {
+	return out << "Ray(" << r.Origin() << ", " << r.Direction() << ")";
+}
 
 /// oriented ray/box intersection test
 bool Intersect(
