@@ -1007,8 +1007,8 @@ glm::dvec3 Steering::Force(const Situation::State &s) const noexcept {
 		result += repulse;
 	}
 	if (halting) {
-		// break twice as hard
-		result += -2.0 * s.vel * force;
+		// brake hard
+		result += -5.0 * s.vel * force;
 	}
 	if (seeking) {
 		glm::dvec3 diff = target - s.pos;
