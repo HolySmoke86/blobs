@@ -379,68 +379,95 @@ SunSurface::SunSurface()
 	light_color_handle = prog.UniformLocation("light_color");
 	light_strength_handle = prog.UniformLocation("light_strength");
 
+	// "resolution" of sphere
+	constexpr int size = 10;
+
 	vao.Bind();
 	vao.BindAttributes();
 	vao.EnableAttribute(0);
 	vao.AttributePointer<glm::vec3>(0, false, offsetof(Attributes, position));
-	vao.ReserveAttributes(8, GL_STATIC_DRAW);
+	vao.ReserveAttributes(4 * 6 * size * size, GL_STATIC_DRAW);
 	{
 		auto attrib = vao.MapAttributes(GL_WRITE_ONLY);
-		attrib[0].position = glm::vec3(-1.0f, -1.0f, -1.0f);
-		attrib[1].position = glm::vec3(-1.0f, -1.0f,  1.0f);
-		attrib[2].position = glm::vec3(-1.0f,  1.0f, -1.0f);
-		attrib[3].position = glm::vec3(-1.0f,  1.0f,  1.0f);
-		attrib[4].position = glm::vec3( 1.0f, -1.0f, -1.0f);
-		attrib[5].position = glm::vec3( 1.0f, -1.0f,  1.0f);
-		attrib[6].position = glm::vec3( 1.0f,  1.0f, -1.0f);
-		attrib[7].position = glm::vec3( 1.0f,  1.0f,  1.0f);
+
+		constexpr float radius = float(size) * 0.5f;
+		int index = 0;
+		for (int surface = 0; surface < 3; ++surface) {
+			for (int y = 0; y < size; ++y) {
+				for (int x = 0; x < size; ++x, ++index) {
+					glm::vec3 pos[4];
+					pos[0][(surface + 0) % 3] = float(x + 0) - radius;
+					pos[0][(surface + 1) % 3] = float(y + 0) - radius;
+					pos[0][(surface + 2) % 3] = radius;
+					pos[1][(surface + 0) % 3] = float(x + 0) - radius;
+					pos[1][(surface + 1) % 3] = float(y + 1) - radius;
+					pos[1][(surface + 2) % 3] = radius;
+					pos[2][(surface + 0) % 3] = float(x + 1) - radius;
+					pos[2][(surface + 1) % 3] = float(y + 0) - radius;
+					pos[2][(surface + 2) % 3] = radius;
+					pos[3][(surface + 0) % 3] = float(x + 1) - radius;
+					pos[3][(surface + 1) % 3] = float(y + 1) - radius;
+					pos[3][(surface + 2) % 3] = radius;
+					attrib[4 * index + 0].position = glm::normalize(pos[0]);
+					attrib[4 * index + 1].position = glm::normalize(pos[1]);
+					attrib[4 * index + 2].position = glm::normalize(pos[2]);
+					attrib[4 * index + 3].position = glm::normalize(pos[3]);
+				}
+			}
+		}
+		for (int surface = 3; surface < 6; ++surface) {
+			for (int y = 0; y < size; ++y) {
+				for (int x = 0; x < size; ++x, ++index) {
+					glm::vec3 pos[4];
+					pos[0][(surface + 0) % 3] = float(x + 0) - radius;
+					pos[0][(surface + 1) % 3] = float(y + 0) - radius;
+					pos[0][(surface + 2) % 3] = radius;
+					pos[1][(surface + 0) % 3] = float(x + 0) - radius;
+					pos[1][(surface + 1) % 3] = float(y + 1) - radius;
+					pos[1][(surface + 2) % 3] = radius;
+					pos[2][(surface + 0) % 3] = float(x + 1) - radius;
+					pos[2][(surface + 1) % 3] = float(y + 0) - radius;
+					pos[2][(surface + 2) % 3] = radius;
+					pos[3][(surface + 0) % 3] = float(x + 1) - radius;
+					pos[3][(surface + 1) % 3] = float(y + 1) - radius;
+					pos[3][(surface + 2) % 3] = radius;
+					attrib[4 * index + 0].position = glm::normalize(pos[0]) * -1.0f;
+					attrib[4 * index + 1].position = glm::normalize(pos[1]) * -1.0f;
+					attrib[4 * index + 2].position = glm::normalize(pos[2]) * -1.0f;
+					attrib[4 * index + 3].position = glm::normalize(pos[3]) * -1.0f;
+				}
+			}
+		}
 	}
 	vao.BindElements();
-	vao.ReserveElements(36, GL_STATIC_DRAW);
+	vao.ReserveElements(6 * 6 * size * size, GL_STATIC_DRAW);
 	{
 		auto element = vao.MapElements(GL_WRITE_ONLY);
-		// -X
-		element[ 0] = 0;
-		element[ 1] = 1;
-		element[ 2] = 2;
-		element[ 3] = 2;
-		element[ 4] = 1;
-		element[ 5] = 3;
-		// -Y
-		element[ 6] = 0;
-		element[ 7] = 4;
-		element[ 8] = 1;
-		element[ 9] = 1;
-		element[10] = 4;
-		element[11] = 5;
-		// -Z
-		element[12] = 0;
-		element[13] = 2;
-		element[14] = 4;
-		element[15] = 4;
-		element[16] = 2;
-		element[17] = 6;
-		// +Z
-		element[18] = 1;
-		element[19] = 5;
-		element[20] = 3;
-		element[21] = 3;
-		element[22] = 5;
-		element[23] = 7;
-		// +Y
-		element[24] = 3;
-		element[25] = 7;
-		element[26] = 2;
-		element[27] = 2;
-		element[28] = 7;
-		element[29] = 6;
-		// +X
-		element[30] = 5;
-		element[31] = 4;
-		element[32] = 7;
-		element[33] = 7;
-		element[34] = 4;
-		element[35] = 6;
+		int index = 0;
+		for (int surface = 0; surface < 3; ++surface) {
+			for (int y = 0; y < size; ++y) {
+				for (int x = 0; x < size; ++x, ++index) {
+					element[6 * index + 0] = 4 * index + 0;
+					element[6 * index + 1] = 4 * index + 2;
+					element[6 * index + 2] = 4 * index + 1;
+					element[6 * index + 3] = 4 * index + 1;
+					element[6 * index + 4] = 4 * index + 2;
+					element[6 * index + 5] = 4 * index + 3;
+				}
+			}
+		}
+		for (int surface = 3; surface < 6; ++surface) {
+			for (int y = 0; y < size; ++y) {
+				for (int x = 0; x < size; ++x, ++index) {
+					element[6 * index + 0] = 4 * index + 0;
+					element[6 * index + 1] = 4 * index + 1;
+					element[6 * index + 2] = 4 * index + 2;
+					element[6 * index + 3] = 4 * index + 2;
+					element[6 * index + 4] = 4 * index + 1;
+					element[6 * index + 5] = 4 * index + 3;
+				}
+			}
+		}
 	}
 	vao.Unbind();
 }
@@ -499,8 +526,9 @@ void SunSurface::SetLight(const glm::vec3 &color, float strength) noexcept {
 }
 
 void SunSurface::Draw() const noexcept {
+	constexpr int size = 10;
 	vao.Bind();
-	vao.DrawTriangles(36);
+	vao.DrawTriangles(6 * 6 * size * size);
 }
 
 

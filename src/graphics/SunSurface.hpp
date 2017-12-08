@@ -4,8 +4,6 @@
 #include "Program.hpp"
 #include "SimpleVAO.hpp"
 
-#include <cstdint>
-
 
 namespace blobs {
 namespace graphics {
@@ -45,7 +43,7 @@ private:
 	struct Attributes {
 		glm::vec3 position;
 	};
-	SimpleVAO<Attributes, std::uint8_t> vao;
+	SimpleVAO<Attributes, unsigned short> vao;
 	Program prog;
 
 	glm::mat4 m;

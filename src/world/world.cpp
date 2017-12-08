@@ -476,18 +476,18 @@ void Planet::BuildVAO(const Set<TileType> &ts) {
 		for (int index = 0, surface = 0; surface < 6; ++surface) {
 			for (int y = 0; y < sidelength; ++y) {
 				for (int x = 0; x < sidelength; ++x, ++index) {
-					glm::vec3 pos[5];
-					pos[0][(surface + 0) % 3] = x + 0 - offset;
-					pos[0][(surface + 1) % 3] = y + 0 - offset;
+					glm::vec3 pos[4];
+					pos[0][(surface + 0) % 3] = float(x + 0) - offset;
+					pos[0][(surface + 1) % 3] = float(y + 0) - offset;
 					pos[0][(surface + 2) % 3] = offset;
-					pos[1][(surface + 0) % 3] = x + 0 - offset;
-					pos[1][(surface + 1) % 3] = y + 1 - offset;
+					pos[1][(surface + 0) % 3] = float(x + 0) - offset;
+					pos[1][(surface + 1) % 3] = float(y + 1) - offset;
 					pos[1][(surface + 2) % 3] = offset;
-					pos[2][(surface + 0) % 3] = x + 1 - offset;
-					pos[2][(surface + 1) % 3] = y + 0 - offset;
+					pos[2][(surface + 0) % 3] = float(x + 1) - offset;
+					pos[2][(surface + 1) % 3] = float(y + 0) - offset;
 					pos[2][(surface + 2) % 3] = offset;
-					pos[3][(surface + 0) % 3] = x + 1 - offset;
-					pos[3][(surface + 1) % 3] = y + 1 - offset;
+					pos[3][(surface + 0) % 3] = float(x + 1) - offset;
+					pos[3][(surface + 1) % 3] = float(y + 1) - offset;
 					pos[3][(surface + 2) % 3] = offset;
 
 					float tex = ts[TileAt(surface, x, y).type].texture;

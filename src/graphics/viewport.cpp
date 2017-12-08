@@ -21,7 +21,7 @@ Camera::Camera(const world::Body &r) noexcept
 , aspect(1.0f)
 , near(0.1f)
 , far(12560.0f)
-, projection(glm::perspective(fov, aspect, near, far))
+, projection(glm::infinitePerspective(fov, aspect, near))
 , view(1.0f)
 , ref(&r)
 , track_orient(false) {
@@ -109,7 +109,7 @@ glm::mat4 Camera::Model(const world::Body &b) const noexcept {
 }
 
 void Camera::UpdateProjection() noexcept {
-	projection = glm::perspective(fov, aspect, near, far);
+	projection = glm::infinitePerspective(fov, aspect, near);
 }
 
 
