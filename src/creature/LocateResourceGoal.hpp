@@ -26,6 +26,8 @@ public:
 private:
 	void LocateResource();
 	void SearchVicinity();
+	void Remember();
+	void RandomWalk();
 	bool NearTarget() const noexcept;
 
 private:

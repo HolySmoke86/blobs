@@ -27,9 +27,15 @@ public:
 	~Memory();
 
 public:
-	void Tick(double dt);
-
+	/// remove all memories
 	void Erase();
+
+	/// try to remember where stuff was
+	/// when true, pos contains an approximation of the
+	/// location of the best fitting resource
+	bool RememberLocation(const Composition &, glm::dvec3 &pos) const noexcept;
+
+	void Tick(double dt);
 
 private:
 	/// track time spent on a tile

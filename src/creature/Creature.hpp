@@ -121,9 +121,13 @@ public:
 
 	// stats with effects applied
 	double Strength() const noexcept;
+	double StrengthFactor() const noexcept;
 	double Stamina() const noexcept;
+	double StaminaFactor() const noexcept;
 	double Dexerty() const noexcept;
+	double DexertyFactor() const noexcept;
 	double Intelligence() const noexcept;
+	double IntelligenceFactor() const noexcept;
 	double Lifetime() const noexcept;
 	double Fertility() const noexcept;
 	double Mutability() const noexcept;

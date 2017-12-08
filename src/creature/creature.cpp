@@ -294,16 +294,32 @@ double Creature::Strength() const noexcept {
 	return properties.Strength() * ExhaustionFactor() * AgeFactor(0.25);
 }
 
+double Creature::StrengthFactor() const noexcept {
+	return Strength() / (Strength() + 1.0);
+}
+
 double Creature::Stamina() const noexcept {
 	return properties.Stamina() * ExhaustionFactor() * AgeFactor(0.25);
+}
+
+double Creature::StaminaFactor() const noexcept {
+	return Stamina() / (Stamina() + 1.0);
 }
 
 double Creature::Dexerty() const noexcept {
 	return properties.Dexerty() * ExhaustionFactor() * AgeFactor(0.25);
 }
 
+double Creature::DexertyFactor() const noexcept {
+	return Dexerty() / (Dexerty() + 1.0);
+}
+
 double Creature::Intelligence() const noexcept {
 	return properties.Intelligence() * FatigueFactor() * AgeFactor(0.25);
+}
+
+double Creature::IntelligenceFactor() const noexcept {
+	return Intelligence() / (Intelligence() + 1.0);
 }
 
 double Creature::Lifetime() const noexcept {
@@ -327,16 +343,16 @@ double Creature::OffspringMass() const noexcept {
 }
 
 double Creature::PerceptionRange() const noexcept {
-	return 3.0 * (Dexerty() / (Dexerty() + 1)) + Size();
+	return 3.0 * DexertyFactor() + Size();
 }
 
 double Creature::PerceptionOmniRange() const noexcept {
-	return 0.5 * (Dexerty() / (Dexerty() + 1)) + Size();
+	return 0.5 * DexertyFactor() + Size();
 }
 
 double Creature::PerceptionField() const noexcept {
 	// this is the cosine of half the angle, so 1.0 is none, -1.0 is perfect
-	return 0.8 - (Dexerty() / (Dexerty() + 1));
+	return 0.8 - DexertyFactor();
 }
 
 bool Creature::PerceptionTest(const glm::dvec3 &p) const noexcept {
@@ -773,11 +789,43 @@ void Memory::Erase() {
 	known_types.clear();
 }
 
+bool Memory::RememberLocation(const Composition &accept, glm::dvec3 &pos) const noexcept {
+	double best_rating = -1.0;
+	for (const auto &k : known_types) {
+		const world::TileType &t = c.GetSimulation().TileTypes()[k.first];
+		auto entry = t.FindBestResource(accept);
+		if (entry != t.resources.end()) {
+			double rating = entry->ubiquity / std::max(0.125, 0.25 * glm::length2(c.GetSituation().Position() - k.second.first_loc.position));
+			if (rating > best_rating) {
+				best_rating = rating;
+				pos = k.second.first_loc.position;
+			}
+			rating = entry->ubiquity / std::max(0.125, 0.25 * glm::length2(c.GetSituation().Position() - k.second.last_loc.position));
+			if (rating > best_rating) {
+				best_rating = rating;
+				pos = k.second.last_loc.position;
+			}
+		}
+	}
+	if (best_rating > 0.0) {
+		glm::dvec3 error(
+			c.GetSimulation().Assets().random.SNorm(),
+			c.GetSimulation().Assets().random.SNorm(),
+			c.GetSimulation().Assets().random.SNorm());
+		pos += error * (2.0 * (1.0 - c.IntelligenceFactor()));
+		pos = glm::normalize(pos) * c.GetSituation().GetPlanet().Radius();
+		return true;
+	} else {
+		return false;
+	}
+}
+
 void Memory::Tick(double dt) {
 	Situation &s = c.GetSituation();
 	if (s.OnSurface()) {
 		TrackStay({ &s.GetPlanet(), s.Position() }, dt);
 	}
+	// TODO: forget
 }
 
 void Memory::TrackStay(const Location &l, double t) {
