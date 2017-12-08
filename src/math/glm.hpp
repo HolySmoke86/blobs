@@ -16,10 +16,14 @@
 #if GLM_VERSION < 96
 
 namespace glm {
-	using tvec1 = detail::tvec1;
-	using tvec2 = detail::tvec2;
-	using tvec3 = detail::tvec3;
-	using tvec4 = detail::tvec4;
+	template<class T, precision P = defaultp>
+	using tvec1 = detail::tvec1<T, P>;
+	template<class T, precision P = defaultp>
+	using tvec2 = detail::tvec2<T, P>;
+	template<class T, precision P = defaultp>
+	using tvec3 = detail::tvec3<T, P>;
+	template<class T, precision P = defaultp>
+	using tvec4 = detail::tvec4<T, P>;
 }
 
 #endif
