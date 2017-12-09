@@ -236,19 +236,12 @@ void CreaturePanel::Draw(graphics::Viewport &viewport) noexcept {
 
 	const creature::Composition &comp = c->GetComposition();
 	if (comp.size() < components.size()) {
+		components.clear();
 		composition->Clear();
-		while (comp.size() < components.size()) {
-			delete components.back();
-			components.pop_back();
-		}
-		for (auto l : components) {
-			composition->Add(l);
-		}
-	} else {
-		while (comp.size() > components.size()) {
-			components.emplace_back(new Label(assets.fonts.medium));
-			composition->Add(components.back());
-		}
+	}
+	while (comp.size() > components.size()) {
+		components.emplace_back(new Label(assets.fonts.medium));
+		composition->Add(components.back());
 	}
 	{
 		int i = 0;
