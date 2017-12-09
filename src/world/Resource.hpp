@@ -3,6 +3,7 @@
 
 #include "../math/glm.hpp"
 
+#include <map>
 #include <string>
 
 
@@ -31,6 +32,8 @@ struct Resource {
 	int state = SOLID;
 
 	glm::dvec3 base_color = glm::dvec3(1.0);
+
+	std::map<int, double> compatibility;
 
 };
 

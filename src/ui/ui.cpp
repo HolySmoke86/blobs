@@ -29,6 +29,7 @@ CreaturePanel::CreaturePanel(app::Assets &assets)
 , born(new Label(assets.fonts.medium))
 , age(new Label(assets.fonts.medium))
 , mass(new Label(assets.fonts.medium))
+, size(new Label(assets.fonts.medium))
 , goal(new Label(assets.fonts.medium))
 , pos(new Label(assets.fonts.medium))
 , tile(new Label(assets.fonts.medium))
@@ -45,6 +46,8 @@ CreaturePanel::CreaturePanel(app::Assets &assets)
 	age_label->Text("Age");
 	Label *mass_label = new Label(assets.fonts.medium);
 	mass_label->Text("Mass");
+	Label *size_label = new Label(assets.fonts.medium);
+	size_label->Text("Size");
 	Label *goal_label = new Label(assets.fonts.medium);
 	goal_label->Text("Goal");
 
@@ -55,6 +58,7 @@ CreaturePanel::CreaturePanel(app::Assets &assets)
 		->Add(born_label)
 		->Add(age_label)
 		->Add(mass_label)
+		->Add(size_label)
 		->Add(goal_label);
 	Panel *info_value_panel = new Panel;
 	info_value_panel
@@ -63,6 +67,7 @@ CreaturePanel::CreaturePanel(app::Assets &assets)
 		->Add(born)
 		->Add(age)
 		->Add(mass)
+		->Add(size)
 		->Add(goal);
 	Panel *info_panel = new Panel;
 	info_panel
@@ -189,7 +194,6 @@ CreaturePanel::~CreaturePanel() {
 
 void CreaturePanel::Show(creature::Creature &cr) {
 	c = &cr;
-	name->Text(c->Name());
 	born->Text(TimeString(c->Born()));
 
 	if (c->Parents().empty()) {
@@ -216,8 +220,10 @@ void CreaturePanel::Hide() noexcept {
 void CreaturePanel::Draw(graphics::Viewport &viewport) noexcept {
 	if (!c) return;
 
+	name->Text(c->Name());
 	age->Text(TimeString(c->Age()));
 	mass->Text(MassString(c->Mass()));
+	size->Text(LengthString(c->Size()));
 	if (c->Goals().empty()) {
 		goal->Text("none");
 	} else {
@@ -265,12 +271,12 @@ void CreaturePanel::Draw(graphics::Viewport &viewport) noexcept {
 		}
 	}
 
-	props[0]->Text(DecimalString(c->Strength(), 2));
-	props[1]->Text(DecimalString(c->Stamina(), 2));
-	props[2]->Text(DecimalString(c->Dexerty(), 2));
-	props[3]->Text(DecimalString(c->Intelligence(), 2));
+	props[0]->Text(DecimalString(c->Strength(), 2) + " / " + DecimalString(c->GetProperties().Strength(), 2));
+	props[1]->Text(DecimalString(c->Stamina(), 2) + " / " + DecimalString(c->GetProperties().Stamina(), 2));
+	props[2]->Text(DecimalString(c->Dexerty(), 2) + " / " + DecimalString(c->GetProperties().Dexerty(), 2));
+	props[3]->Text(DecimalString(c->Intelligence(), 2) + " / " + DecimalString(c->GetProperties().Intelligence(), 2));
 	props[4]->Text(TimeString(c->Lifetime()));
-	props[5]->Text(PercentageString(c->Fertility()));
+	props[5]->Text(PercentageString(c->Fertility()) + " / " + PercentageString(c->GetProperties().Fertility()));
 	props[6]->Text(PercentageString(c->Mutability()));
 	props[7]->Text(PercentageString(c->Adaptability()));
 	props[8]->Text(MassString(c->OffspringMass()));

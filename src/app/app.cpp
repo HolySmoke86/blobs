@@ -269,6 +269,24 @@ void Assets::ReadResources(io::TokenStreamReader &in) {
 				}
 			} else if (name == "base_color") {
 				in.ReadVec(data.resources[id].base_color);
+			} else if (name == "compatibility") {
+				in.Skip(io::Token::ANGLE_BRACKET_OPEN);
+				while (in.Peek().type != io::Token::ANGLE_BRACKET_CLOSE) {
+					in.ReadIdentifier(name);
+					int sub_id = 0;
+					if (data.resources.Has(name)) {
+						sub_id = data.resources[name].id;
+					} else {
+						world::Resource res;
+						res.name = name;
+						sub_id = data.resources.Add(res);
+					}
+					in.Skip(io::Token::COLON);
+					double value = in.GetDouble();
+					in.Skip(io::Token::SEMICOLON);
+					data.resources[id].compatibility[sub_id] = value;
+				}
+				in.Skip(io::Token::ANGLE_BRACKET_CLOSE);
 			} else {
 				throw std::runtime_error("unknown resource property '" + name + "'");
 			}

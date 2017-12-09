@@ -16,6 +16,7 @@ public:
 	~LocateResourceGoal() noexcept override;
 
 public:
+	void SetMinimum(double m) noexcept { minimum = m; }
 	void Accept(int resource, double attractiveness);
 
 	std::string Describe() const override;
@@ -36,6 +37,7 @@ private:
 	glm::dvec3 target_pos;
 	bool searching;
 	double reevaluate;
+	double minimum;
 
 };
 

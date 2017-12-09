@@ -80,6 +80,35 @@ double Composition::Get(int res) const noexcept {
 	return 0.0;
 }
 
+double Composition::Proportion(int res) const noexcept {
+	return Get(res) / TotalMass();
+}
+
+double Composition::Compatibility(const world::Set<world::Resource> &resources, int res) const noexcept {
+	if (Has(res)) {
+		return Proportion(res);
+	}
+	double max_compat = -1.0;
+	double min_compat = 1.0;
+	for (const auto &c : components) {
+		double prop = c.value / TotalMass();
+		for (const auto &compat : resources[c.resource].compatibility) {
+			double value = compat.second * prop;
+			if (value > max_compat) {
+				max_compat = value;
+			}
+			if (value < min_compat) {
+				min_compat = value;
+			}
+		}
+	}
+	if (min_compat < 0.0) {
+		return min_compat;
+	} else {
+		return max_compat;
+	}
+}
+
 
 Creature::Creature(world::Simulation &sim)
 : sim(sim)
@@ -131,13 +160,12 @@ void Creature::HighlightColor(const glm::dvec3 &c) noexcept {
 }
 
 void Creature::Ingest(int res, double amount) noexcept {
-	// TODO: check foreign materials
 	if (sim.Resources()[res].state == world::Resource::SOLID) {
-		// 15% of solids stays in body
-		AddMass(res, amount * 0.15);
+		// 30% of solids stays in body
+		AddMass(res, amount * 0.3 * composition.Compatibility(sim.Resources(), res));
 	} else {
 		// 10% of fluids stays in body
-		AddMass(res, amount * 0.05);
+		AddMass(res, amount * 0.1 * composition.Compatibility(sim.Resources(), res));
 	}
 	math::GaloisLFSR &random = sim.Assets().random;
 	if (random.UNorm() < AdaptChance()) {

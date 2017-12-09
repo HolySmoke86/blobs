@@ -53,6 +53,7 @@ private:
 	Label *born;
 	Label *age;
 	Label *mass;
+	Label *size;
 	Label *goal;
 	Label *pos;
 	Label *tile;

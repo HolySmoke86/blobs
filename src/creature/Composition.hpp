@@ -1,10 +1,15 @@
 #ifndef BLOBLS_CREATURE_COMPOSITION_HPP_
 #define BLOBLS_CREATURE_COMPOSITION_HPP_
 
+#include "../world/Set.hpp"
+
 #include <vector>
 
 
 namespace blobs {
+namespace world {
+	class Resource;
+}
 namespace creature {
 
 class Composition {
@@ -31,6 +36,8 @@ public:
 	void Add(int res, double amount);
 	bool Has(int res) const noexcept;
 	double Get(int res) const noexcept;
+	double Proportion(int res) const noexcept;
+	double Compatibility(const world::Set<world::Resource> &, int res) const noexcept;
 	double TotalMass() const noexcept { return total_mass; }
 
 public:

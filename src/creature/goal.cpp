@@ -72,7 +72,13 @@ void BlobBackgroundTask::CheckStats() {
 		drink_subtask = new IngestGoal(GetCreature(), stats.Thirst());
 		for (const auto &cmp : GetCreature().GetComposition()) {
 			if (Assets().data.resources[cmp.resource].state == world::Resource::LIQUID) {
-				drink_subtask->Accept(cmp.resource, 1.0);
+				double value = cmp.value / GetCreature().GetComposition().TotalMass();
+				drink_subtask->Accept(cmp.resource, value);
+				for (const auto &compat : Assets().data.resources[cmp.resource].compatibility) {
+					if (Assets().data.resources[compat.first].state == world::Resource::LIQUID) {
+						drink_subtask->Accept(compat.first, value * compat.second);
+					}
+				}
 			}
 		}
 		drink_subtask->WhenComplete([&](Goal &) { drink_subtask = nullptr; });
@@ -83,7 +89,13 @@ void BlobBackgroundTask::CheckStats() {
 		eat_subtask = new IngestGoal(GetCreature(), stats.Hunger());
 		for (const auto &cmp : GetCreature().GetComposition()) {
 			if (Assets().data.resources[cmp.resource].state == world::Resource::SOLID) {
-				eat_subtask->Accept(cmp.resource, 1.0);
+				double value = cmp.value / GetCreature().GetComposition().TotalMass();
+				eat_subtask->Accept(cmp.resource, value);
+				for (const auto &compat : Assets().data.resources[cmp.resource].compatibility) {
+					if (Assets().data.resources[compat.first].state == world::Resource::SOLID) {
+						eat_subtask->Accept(compat.first, value * compat.second);
+					}
+				}
 			}
 		}
 		eat_subtask->WhenComplete([&](Goal &) { eat_subtask = nullptr; });
@@ -286,8 +298,7 @@ void IngestGoal::Tick(double dt) {
 	}
 	if (ingesting) {
 		if (OnSuitableTile() && !GetSituation().Moving()) {
-			// TODO: determine satisfaction factor
-			GetCreature().Ingest(resource, yield * dt);
+			GetCreature().Ingest(resource, yield * GetCreature().GetComposition().Compatibility(Assets().data.resources, resource) * dt);
 			stat.Add(-1.0 * yield * dt);
 			if (stat.Empty()) {
 				SetComplete();
@@ -321,6 +332,7 @@ void IngestGoal::Action() {
 		for (const auto &c : accept) {
 			locate_subtask->Accept(c.resource, c.value);
 		}
+		locate_subtask->SetMinimum(stat.gain * -1.1);
 		locate_subtask->Urgency(Urgency() + 0.1);
 		locate_subtask->WhenComplete([&](Goal &){ locate_subtask = nullptr; });
 		GetCreature().AddGoal(std::unique_ptr<Goal>(locate_subtask));
@@ -350,7 +362,8 @@ LocateResourceGoal::LocateResourceGoal(Creature &c)
 , found(false)
 , target_pos(0.0)
 , searching(false)
-, reevaluate(0.0) {
+, reevaluate(0.0)
+, minimum(0.0) {
 }
 
 LocateResourceGoal::~LocateResourceGoal() noexcept {
@@ -478,7 +491,7 @@ void LocateResourceGoal::SearchVicinity() {
 		}
 	}
 
-	if (best_rating > 0.0) {
+	if (best_rating > minimum) {
 		found = true;
 		searching = false;
 		target_pos = glm::normalize(pos + (double(best_pos.x) * step_x) + (double(best_pos.y) * step_y)) * planet.Radius();
