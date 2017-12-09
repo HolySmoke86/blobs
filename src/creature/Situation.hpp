@@ -53,6 +53,7 @@ public:
 	bool OnPlanet() const noexcept;
 	world::Planet &GetPlanet() const noexcept { return *planet; }
 	bool OnSurface() const noexcept;
+	bool OnGround() const noexcept;
 	const glm::dvec3 &Position() const noexcept { return state.pos; }
 	glm::dvec3 SurfaceNormal() const noexcept;
 	world::Tile &GetTile() const noexcept;
@@ -66,7 +67,6 @@ public:
 	void Move(const glm::dvec3 &dp) noexcept;
 	void Accelerate(const glm::dvec3 &dv) noexcept;
 	void EnforceConstraints(State &) noexcept;
-	void CheckWrap() noexcept;
 
 	void Heading(const glm::dvec3 &h) noexcept { state.dir = h; }
 	const glm::dvec3 &Heading() const noexcept { return state.dir; }

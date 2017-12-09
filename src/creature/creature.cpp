@@ -927,6 +927,10 @@ bool Situation::OnSurface() const noexcept {
 	return type == PLANET_SURFACE;
 }
 
+bool Situation::OnGround() const noexcept {
+	return OnSurface() && glm::length2(state.pos) < (planet->Radius() + 0.05) * (planet->Radius() + 0.05);
+}
+
 glm::dvec3 Situation::SurfaceNormal() const noexcept {
 	return planet->NormalAt(state.pos);
 }
@@ -1059,6 +1063,10 @@ glm::dvec3 Steering::Force(const Situation::State &s) const noexcept {
 			result += TargetVelocity(s, diff * std::min(dist * force, speed) / dist, force);
 		}
 	}
+	// remove vertical component, if any
+	const glm::dvec3 normal(c.GetSituation().GetPlanet().NormalAt(s.pos));
+	result += normal * glm::dot(normal, result);
+	// clamp to max
 	if (glm::length2(result) > max_force * max_force) {
 		result = glm::normalize(result) * max_force;
 	}

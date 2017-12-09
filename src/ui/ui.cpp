@@ -231,7 +231,11 @@ void CreaturePanel::Draw(graphics::Viewport &viewport) noexcept {
 	}
 
 	pos->Text(VectorString(c->GetSituation().Position(), 2));
-	tile->Text(c->GetSituation().GetTileType().label);
+	tile->Text(c->GetSituation().GetTileType().label + (
+		c->GetSituation().OnGround()
+			? (c->GetSituation().Moving() ? " (moving)" : " (standing)")
+			: (c->GetSituation().Moving() ? " (flying)" : " (hovering)")
+	));
 	head->Text(VectorString(c->GetSituation().Heading(), 2));
 
 	const creature::Composition &comp = c->GetComposition();

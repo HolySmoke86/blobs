@@ -340,7 +340,7 @@ void IngestGoal::Action() {
 }
 
 bool IngestGoal::OnSuitableTile() {
-	if (!GetSituation().OnSurface()) {
+	if (!GetSituation().OnGround()) {
 		return false;
 	}
 	const world::TileType &t = GetSituation().GetTileType();
