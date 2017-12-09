@@ -260,7 +260,7 @@ std::string summarize(const Composition &comp, const app::Assets &assets) {
 IngestGoal::IngestGoal(Creature &c, Creature::Stat &stat)
 : Goal(c)
 , stat(stat)
-, accept()
+, accept(Assets().data.resources)
 , locate_subtask(nullptr)
 , ingesting(false)
 , resource(-1)
@@ -298,7 +298,7 @@ void IngestGoal::Tick(double dt) {
 	}
 	if (ingesting) {
 		if (OnSuitableTile() && !GetSituation().Moving()) {
-			GetCreature().Ingest(resource, yield * GetCreature().GetComposition().Compatibility(Assets().data.resources, resource) * dt);
+			GetCreature().Ingest(resource, yield * GetCreature().GetComposition().Compatibility(resource) * dt);
 			stat.Add(-1.0 * yield * dt);
 			if (stat.Empty()) {
 				SetComplete();
@@ -358,7 +358,7 @@ bool IngestGoal::OnSuitableTile() {
 
 LocateResourceGoal::LocateResourceGoal(Creature &c)
 : Goal(c)
-, accept()
+, accept(Assets().data.resources)
 , found(false)
 , target_pos(0.0)
 , searching(false)

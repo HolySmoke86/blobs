@@ -29,9 +29,11 @@
 namespace blobs {
 namespace creature {
 
-Composition::Composition()
-: components()
-, total_mass(0.0) {
+Composition::Composition(const world::Set<world::Resource> &resources)
+: resources(resources)
+, components()
+, total_mass(0.0)
+, state_mass{0.0} {
 }
 
 Composition::~Composition() {
@@ -49,6 +51,7 @@ void Composition::Add(int res, double amount) {
 		if (c->resource == res) {
 			c->value += amount;
 			if (c->value <= 0.0) {
+				amount += c->value;
 				components.erase(c);
 			}
 			found = true;
@@ -59,6 +62,7 @@ void Composition::Add(int res, double amount) {
 		components.emplace_back(res, amount);
 	}
 	std::sort(components.begin(), components.end(), CompositionCompare);
+	state_mass[resources[res].state] += amount;
 	total_mass += amount;
 }
 
@@ -84,14 +88,18 @@ double Composition::Proportion(int res) const noexcept {
 	return Get(res) / TotalMass();
 }
 
-double Composition::Compatibility(const world::Set<world::Resource> &resources, int res) const noexcept {
+double Composition::StateProportion(int res) const noexcept {
+	return Get(res) / StateMass(resources[res].state);
+}
+
+double Composition::Compatibility(int res) const noexcept {
 	if (Has(res)) {
-		return Proportion(res);
+		return StateProportion(res);
 	}
 	double max_compat = -1.0;
 	double min_compat = 1.0;
 	for (const auto &c : components) {
-		double prop = c.value / TotalMass();
+		double prop = c.value / StateMass(resources[res].state);
 		for (const auto &compat : resources[c.resource].compatibility) {
 			double value = compat.second * prop;
 			if (value > max_compat) {
@@ -115,7 +123,7 @@ Creature::Creature(world::Simulation &sim)
 , name()
 , genome()
 , properties()
-, composition()
+, composition(sim.Resources())
 , base_color(1.0)
 , highlight_color(0.0, 0.0, 0.0, 1.0)
 , mass(1.0)
@@ -145,8 +153,8 @@ void Creature::AddMass(int res, double amount) {
 	double nonsolid = 0.0;
 	double volume = 0.0;
 	for (const auto &c : composition) {
-		volume += c.value / sim.Assets().data.resources[c.resource].density;
-		if (sim.Assets().data.resources[c.resource].state != world::Resource::SOLID) {
+		volume += c.value / sim.Resources()[c.resource].density;
+		if (sim.Resources()[c.resource].state != world::Resource::SOLID) {
 			nonsolid += c.value;
 		}
 	}
@@ -162,10 +170,10 @@ void Creature::HighlightColor(const glm::dvec3 &c) noexcept {
 void Creature::Ingest(int res, double amount) noexcept {
 	if (sim.Resources()[res].state == world::Resource::SOLID) {
 		// 30% of solids stays in body
-		AddMass(res, amount * 0.3 * composition.Compatibility(sim.Resources(), res));
+		AddMass(res, amount * 0.3 * composition.Compatibility(res));
 	} else {
-		// 10% of fluids stays in body
-		AddMass(res, amount * 0.1 * composition.Compatibility(sim.Resources(), res));
+		// 5% of fluids stays in body
+		AddMass(res, amount * 0.05 * composition.Compatibility(res));
 	}
 	math::GaloisLFSR &random = sim.Assets().random;
 	if (random.UNorm() < AdaptChance()) {

@@ -2,6 +2,7 @@
 #define BLOBLS_CREATURE_COMPOSITION_HPP_
 
 #include "../world/Set.hpp"
+#include "../world/Resource.hpp"
 
 #include <vector>
 
@@ -23,7 +24,7 @@ public:
 	};
 
 public:
-	Composition();
+	explicit Composition(const world::Set<world::Resource> &);
 	~Composition();
 
 	Composition(const Composition &) = default;
@@ -37,8 +38,10 @@ public:
 	bool Has(int res) const noexcept;
 	double Get(int res) const noexcept;
 	double Proportion(int res) const noexcept;
-	double Compatibility(const world::Set<world::Resource> &, int res) const noexcept;
+	double StateProportion(int res) const noexcept;
+	double Compatibility(int res) const noexcept;
 	double TotalMass() const noexcept { return total_mass; }
+	double StateMass(world::Resource::State s) const noexcept { return state_mass[s]; }
 
 public:
 	std::vector<Component>::size_type size() const noexcept { return components.size(); }
@@ -50,8 +53,10 @@ public:
 	std::vector<Component>::const_iterator cend() noexcept { return components.cend(); }
 
 private:
+	const world::Set<world::Resource> &resources;
 	std::vector<Component> components;
 	double total_mass;
+	double state_mass[4];
 
 };
 

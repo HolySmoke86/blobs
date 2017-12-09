@@ -29,7 +29,7 @@ struct Resource {
 	};
 	// the resource's natural state
 	// TODO: something about temperature and pressure and stuff
-	int state = SOLID;
+	State state = SOLID;
 
 	glm::dvec3 base_color = glm::dvec3(1.0);
 
