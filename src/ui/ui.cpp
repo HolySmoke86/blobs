@@ -316,21 +316,28 @@ RecordsPanel::RecordsPanel(world::Simulation &sim)
 	holders.reserve(sim.Records().size() * (world::Record::MAX + 1));
 	int ri = 0;
 	for (const auto &r : sim.Records()) {
+		Panel *by_panel = new Panel;
+		by_panel
+			->Direction(Panel::VERTICAL);
+		Panel *val_panel = new Panel;
+		val_panel
+			->Direction(Panel::VERTICAL);
+		Panel *tab_panel = new Panel;
+		tab_panel
+			->Direction(Panel::HORIZONTAL)
+			->Spacing(10.0f)
+			->Add(by_panel)
+			->Add(val_panel);
 		Label *rec_label = new Label(sim.Assets().fonts.medium);
 		rec_label->Text(r.name);
-		Label *by_label = new Label(sim.Assets().fonts.medium);
-		by_label->Text("By");
 		Panel *rec_panel = new Panel;
 		rec_panel
 			->Direction(Panel::VERTICAL)
-			->Add(rec_label);
-		Panel *by_panel = new Panel;
-		by_panel
-			->Direction(Panel::VERTICAL)
-			->Add(by_label);
+			->Add(rec_label)
+			->Add(tab_panel);
 		for (int i = 0; i < world::Record::MAX; ++i) {
 			Label *val_label = new Label(sim.Assets().fonts.medium);
-			rec_panel->Add(val_label);
+			val_panel->Add(val_label);
 			records.push_back(val_label);
 			Label *holder_label = new Label(sim.Assets().fonts.medium);
 			by_panel->Add(holder_label);
@@ -340,8 +347,7 @@ RecordsPanel::RecordsPanel(world::Simulation &sim)
 		group_panel
 			->Direction(Panel::HORIZONTAL)
 			->Spacing(10.0f)
-			->Add(rec_panel)
-			->Add(by_panel);
+			->Add(rec_panel);
 		panel.Add(group_panel);
 		++ri;
 	}
