@@ -14,19 +14,58 @@
 namespace blobs {
 namespace world {
 
-std::string Record::ValueString() const {
+int Record::Update(creature::Creature &c, double value, double time) noexcept {
+	int found = -1;
+	for (int i = 0; i < MAX; ++i) {
+		if (value > rank[i].value) {
+			found = i;
+			break;
+		}
+	}
+	if (found < 0) {
+		return -1;
+	}
+	int previous = -1;
+	for (int i = 0; i < MAX; ++i) {
+		if (rank[i].holder == &c) {
+			previous = i;
+			break;
+		}
+	}
+	if (previous < 0) {
+		// move all below down by one
+		std::copy_backward(rank + found, rank + MAX - 1, rank + MAX);
+	} else if (found > previous) {
+		// better than last, but not an improvement
+		// this ensures only one slot occupied per creature
+		return found;
+	} else if (found < previous) {
+		// move all in between down by one
+		std::copy_backward(rank + found, rank + previous, rank + previous + 1);
+	}
+	// insert new
+	rank[found].holder = &c;
+	rank[found].value = value;
+	rank[found].time = time;
+	return found;
+}
+
+std::string Record::ValueString(int i) const {
+	if (i < 0 || i >= MAX || !rank[i].holder) {
+		return "—";
+	}
 	switch (type) {
 		default:
 		case VALUE:
-			return ui::DecimalString(value, 2);
+			return ui::DecimalString(rank[i].value, 2);
 		case LENGTH:
-			return ui::LengthString(value);
+			return ui::LengthString(rank[i].value);
 		case MASS:
-			return ui::MassString(value);
+			return ui::MassString(rank[i].value);
 		case PERCENTAGE:
-			return ui::PercentageString(value);
+			return ui::PercentageString(rank[i].value);
 		case TIME:
-			return ui::TimeString(value);
+			return ui::TimeString(rank[i].value);
 	}
 }
 
@@ -101,76 +140,62 @@ void Simulation::SetDead(creature::Creature *c) {
 }
 
 void Simulation::CheckRecords(creature::Creature &c) noexcept {
-	if (c.Age() > records[0].value) {
-		Record rold(records[0]);
-		records[0].value = c.Age();
-		records[0].time = Time();
-		records[0].holder = &c;
-		if (rold.holder && rold.holder != &c) {
-			LogRecord(rold, records[0]);
+	{ // age
+		creature::Creature *prev = records[0].rank[0].holder;
+		int rank = records[0].Update(c, c.Age(), time);
+		if (rank == 0 && prev && prev != &c) {
+			LogRecord(records[0]);
 		}
 	}
-	if (c.Mass() > records[1].value) {
-		Record rold(records[1]);
-		records[1].value = c.Mass();
-		records[1].time = Time();
-		records[1].holder = &c;
-		if (rold.holder && rold.holder != &c) {
-			LogRecord(rold, records[1]);
+	{ // mass
+		creature::Creature *prev = records[1].rank[0].holder;
+		int rank = records[1].Update(c, c.Mass(), time);
+		if (rank == 0 && prev && prev != &c) {
+			LogRecord(records[1]);
 		}
 	}
-	if (c.Size() > records[2].value) {
-		Record rold(records[2]);
-		records[2].value = c.Size();
-		records[2].time = Time();
-		records[2].holder = &c;
-		if (rold.holder && rold.holder != &c) {
-			LogRecord(rold, records[2]);
+	{ // size
+		creature::Creature *prev = records[2].rank[0].holder;
+		int rank = records[2].Update(c, c.Size(), time);
+		if (rank == 0 && prev && prev != &c) {
+			LogRecord(records[2]);
 		}
 	}
-	if (c.Strength() > records[3].value) {
-		Record rold(records[3]);
-		records[3].value = c.Strength();
-		records[3].time = Time();
-		records[3].holder = &c;
-		if (rold.holder && rold.holder != &c) {
-			LogRecord(rold, records[3]);
+	{ // strength
+		creature::Creature *prev = records[3].rank[0].holder;
+		int rank = records[3].Update(c, c.Strength(), time);
+		if (rank == 0 && prev && prev != &c) {
+			LogRecord(records[3]);
 		}
 	}
-	if (c.Stamina() > records[4].value) {
-		Record rold(records[4]);
-		records[4].value = c.Stamina();
-		records[4].time = Time();
-		records[4].holder = &c;
-		if (rold.holder && rold.holder != &c) {
-			LogRecord(rold, records[4]);
+	{ // stamina
+		creature::Creature *prev = records[4].rank[0].holder;
+		int rank = records[4].Update(c, c.Stamina(), time);
+		if (rank == 0 && prev && prev != &c) {
+			LogRecord(records[4]);
 		}
 	}
-	if (c.Dexerty() > records[5].value) {
-		Record rold(records[5]);
-		records[5].value = c.Dexerty();
-		records[5].time = Time();
-		records[5].holder = &c;
-		if (rold.holder && rold.holder != &c) {
-			LogRecord(rold, records[5]);
+	{ // dexerty
+		creature::Creature *prev = records[5].rank[0].holder;
+		int rank = records[5].Update(c, c.Dexerty(), time);
+		if (rank == 0 && prev && prev != &c) {
+			LogRecord(records[5]);
 		}
 	}
-	if (c.Intelligence() > records[6].value) {
-		Record rold(records[6]);
-		records[6].value = c.Intelligence();
-		records[6].time = Time();
-		records[6].holder = &c;
-		if (rold.holder && rold.holder != &c) {
-			LogRecord(rold, records[6]);
+	{ // intelligence
+		creature::Creature *prev = records[6].rank[0].holder;
+		int rank = records[6].Update(c, c.Intelligence(), time);
+		if (rank == 0 && prev && prev != &c) {
+			LogRecord(records[6]);
 		}
 	}
 }
 
-void Simulation::LogRecord(const Record &rold, const Record &rnew) {
-	Log() << "at age " << ui::TimeString(rnew.holder->Age()) << " "
-		<< rnew.holder->Name() << " broke the " << rnew.name << " record of "
-		<< rold.ValueString() << " by " << rold.holder->Name()
-		<< " (established " << ui::TimeString(rold.time) << ")" << std::endl;
+void Simulation::LogRecord(const Record &r) {
+	Log() << "at age " << ui::TimeString(r.rank[0].holder->Age()) << " "
+		<< r.rank[0].holder->Name() << " broke the " << r.name << " record of "
+		<< r.ValueString(1) << " by " << r.rank[1].holder->Name()
+		<< " (established " << ui::TimeString(r.rank[1].time) << ")" << std::endl;
 }
 
 std::ostream &Simulation::Log() {

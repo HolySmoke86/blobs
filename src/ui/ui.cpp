@@ -180,7 +180,7 @@ CreaturePanel::CreaturePanel(app::Assets &assets)
 		->Padding(glm::vec2(10.0f))
 		->Spacing(10.0f)
 		->Direction(Panel::VERTICAL)
-		->Background(glm::vec4(0.7f, 0.7f, 0.7f, 1.0f));
+		->Background(glm::vec4(1.0f, 1.0f, 1.0f, 0.7f));
 }
 
 CreaturePanel::~CreaturePanel() {
@@ -284,77 +284,82 @@ void CreaturePanel::Draw(graphics::Viewport &viewport) noexcept {
 
 RecordsPanel::RecordsPanel(world::Simulation &sim)
 : sim(sim)
-, live(new Label(sim.Assets().fonts.medium))
 , records()
 , holders()
-, panel() {
-	Label *live_label = new Label(sim.Assets().fonts.medium);
-	live_label->Text("Creatures alive");
+, panel()
+, shown(true) {
+	Label *rank_label = new Label(sim.Assets().fonts.medium);
+	rank_label->Text("Rank");
 
-	Panel *label_panel = new Panel;
-	label_panel
+	Panel *rank_panel = new Panel;
+	rank_panel
 		->Direction(Panel::VERTICAL)
-		->Add(live_label);
+		->Add(rank_label);
 
-	Panel *value_panel = new Panel;
-	value_panel
-		->Direction(Panel::VERTICAL)
-		->Add(live);
-
-	Label *holder_label = new Label(sim.Assets().fonts.medium);
-	holder_label->Text("Holder");
-	Panel *holder_panel = new Panel;
-	holder_panel
-		->Direction(Panel::VERTICAL)
-		->Add(holder_label);
-
-	records.reserve(sim.Records().size());
-	for (const auto &r : sim.Records()) {
-		Label *label = new Label(sim.Assets().fonts.medium);
-		label->Text(r.name + " record");
-		label_panel->Add(label);
-		Label *value = new Label(sim.Assets().fonts.medium);
-		value->Text("none");
-		value_panel->Add(value);
-		records.push_back(value);
-		Label *holder = new Label(sim.Assets().fonts.medium);
-		holder->Text("nobody");
-		holder_panel->Add(holder);
-		holders.push_back(holder);
+	for (int i = 0; i < world::Record::MAX; ++i) {
+		rank_label = new Label(sim.Assets().fonts.medium);
+		rank_label->Text(std::to_string(i + 1));
+		rank_panel->Add(rank_label);
 	}
 
 	panel
 		.Direction(Panel::HORIZONTAL)
 		->Padding(glm::vec2(10.0f))
-		->Spacing(10.0f)
-		->Background(glm::vec4(0.7f, 0.7f, 0.7f, 1.0f))
-		->Add(label_panel)
-		->Add(value_panel)
-		->Add(holder_panel);
+		->Spacing(45.0f)
+		->Background(glm::vec4(1.0f, 1.0f, 1.0f, 0.7f))
+		->Add(rank_panel);
+
+	records.reserve(sim.Records().size() * (world::Record::MAX + 1));
+	holders.reserve(sim.Records().size() * (world::Record::MAX + 1));
+	int ri = 0;
+	for (const auto &r : sim.Records()) {
+		Label *rec_label = new Label(sim.Assets().fonts.medium);
+		rec_label->Text(r.name);
+		Label *by_label = new Label(sim.Assets().fonts.medium);
+		by_label->Text("By");
+		Panel *rec_panel = new Panel;
+		rec_panel
+			->Direction(Panel::VERTICAL)
+			->Add(rec_label);
+		Panel *by_panel = new Panel;
+		by_panel
+			->Direction(Panel::VERTICAL)
+			->Add(by_label);
+		for (int i = 0; i < world::Record::MAX; ++i) {
+			Label *val_label = new Label(sim.Assets().fonts.medium);
+			rec_panel->Add(val_label);
+			records.push_back(val_label);
+			Label *holder_label = new Label(sim.Assets().fonts.medium);
+			by_panel->Add(holder_label);
+			holders.push_back(holder_label);
+		}
+		Panel *group_panel = new Panel;
+		group_panel
+			->Direction(Panel::HORIZONTAL)
+			->Spacing(10.0f)
+			->Add(rec_panel)
+			->Add(by_panel);
+		panel.Add(group_panel);
+		++ri;
+	}
 }
 
 RecordsPanel::~RecordsPanel() {
 }
 
 void RecordsPanel::Draw(graphics::Viewport &viewport) noexcept {
-	live->Text(NumberString(sim.LiveCreatures().size()));
-	int i = 0;
+	if (!shown) return;
+
+	int ri = 0;
 	for (const auto &r : sim.Records()) {
-		if (!r) continue;
-		records[i]->Text(r.ValueString());
-		std::string str(r.holder->Name());
-		bool first = true;
-		for (auto p : r.holder->Parents()) {
-			if (first) {
-				first = false;
-				str += " of ";
-			} else {
-				str += " and ";
+		for (int i = 0; i < world::Record::MAX; ++i) {
+			if (!r.rank[i]) {
+				break;
 			}
-			str += p->Name();
+			records[ri * world::Record::MAX + i]->Text(r.ValueString(i));
+			holders[ri * world::Record::MAX + i]->Text(r.rank[i].holder->Name());
 		}
-		holders[i]->Text(str);
-		++i;
+		++ri;
 	}
 
 	const glm::vec2 margin(20.0f);
@@ -367,9 +372,12 @@ void RecordsPanel::Draw(graphics::Viewport &viewport) noexcept {
 TimePanel::TimePanel(world::Simulation &sim)
 : sim(sim)
 , body(nullptr)
+, live(new Label(sim.Assets().fonts.medium))
 , time(new Label(sim.Assets().fonts.medium))
 , clock(new Label(sim.Assets().fonts.medium))
 , panel() {
+	Label *live_label = new Label(sim.Assets().fonts.medium);
+	live_label->Text("Alive");
 	Label *time_label = new Label(sim.Assets().fonts.medium);
 	time_label->Text("Time");
 	Label *clock_label = new Label(sim.Assets().fonts.medium);
@@ -378,12 +386,14 @@ TimePanel::TimePanel(world::Simulation &sim)
 	Panel *label_panel = new Panel;
 	label_panel
 		->Direction(Panel::VERTICAL)
+		->Add(live_label)
 		->Add(time_label)
 		->Add(clock_label);
 
 	Panel *value_panel = new Panel;
 	value_panel
 		->Direction(Panel::VERTICAL)
+		->Add(live)
 		->Add(time)
 		->Add(clock);
 
@@ -391,7 +401,7 @@ TimePanel::TimePanel(world::Simulation &sim)
 		.Direction(Panel::HORIZONTAL)
 		->Padding(glm::vec2(10.0f))
 		->Spacing(10.0f)
-		->Background(glm::vec4(0.7f, 0.7f, 0.7f, 1.0f))
+		->Background(glm::vec4(1.0f, 1.0f, 1.0f, 0.7f))
 		->Add(label_panel)
 		->Add(value_panel);
 }
@@ -400,6 +410,7 @@ TimePanel::~TimePanel() {
 }
 
 void TimePanel::Draw(graphics::Viewport &viewport) noexcept {
+	live->Text(NumberString(sim.LiveCreatures().size()));
 	time->Text(TimeString(sim.Time()));
 	if (body) {
 		clock->Text(TimeString(std::fmod(sim.Time(), body->RotationalPeriod())));

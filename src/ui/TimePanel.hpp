@@ -27,9 +27,12 @@ public:
 	void UnsetBody() noexcept { body = nullptr; }
 	void Draw(graphics::Viewport &) noexcept;
 
+	void ZIndex(float z) noexcept { panel.ZIndex(z); }
+
 private:
 	world::Simulation &sim;
 	world::Body *body;
+	Label *live;
 	Label *time;
 	Label *clock;
 	Panel panel;

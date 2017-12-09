@@ -40,6 +40,8 @@ public:
 	bool Shown() const noexcept { return c; }
 	const creature::Creature &GetCreature() const noexcept { return *c; }
 
+	void ZIndex(float z) noexcept { panel.ZIndex(z); }
+
 	void Draw(graphics::Viewport &) noexcept;
 
 private:

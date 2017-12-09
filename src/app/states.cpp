@@ -30,6 +30,9 @@ MasterState::MasterState(Assets &assets, world::Simulation &sim) noexcept
 , remain(0)
 , thirds(0)
 , paused(false) {
+	cp.ZIndex(10.0f);
+	rp.ZIndex(20.0f);
+	tp.ZIndex(30.0f);
 }
 
 MasterState::~MasterState() noexcept {
@@ -89,11 +92,13 @@ int MasterState::FrameMS() const noexcept {
 void MasterState::OnKeyDown(const SDL_KeyboardEvent &e) {
 	if (e.keysym.sym == SDLK_p) {
 		paused = !paused;
+	} else if (e.keysym.sym == SDLK_F1) {
+		rp.Toggle();
 	}
 }
 
 void MasterState::OnMouseDown(const SDL_MouseButtonEvent &e) {
-	if (e.button == SDL_BUTTON_RIGHT && cp.Shown()) {
+	if (e.button == SDL_BUTTON_RIGHT) {
 		SDL_SetRelativeMouseMode(SDL_TRUE);
 		cam_dragging = true;
 	}
@@ -139,7 +144,11 @@ void MasterState::OnMouseWheel(const SDL_MouseWheelEvent &e) {
 	constexpr double zoom_scale = -1.0;
 	constexpr double zoom_base = 1.125;
 	cam_orient.z = glm::clamp(cam_orient.z + double(e.x) * roll_scale, PI * -0.5, PI * 0.5);
-	cam_tgt_dist = std::max(cp.GetCreature().Size() * 2.0, cam_tgt_dist * std::pow(zoom_base, double(e.y) * zoom_scale));
+	if (cp.Shown()) {
+		cam_tgt_dist = std::max(cp.GetCreature().Size() * 2.0, cam_tgt_dist * std::pow(zoom_base, double(e.y) * zoom_scale));
+	} else {
+		cam_tgt_dist = std::max(1.0, cam_tgt_dist * std::pow(zoom_base, double(e.y) * zoom_scale));
+	}
 }
 
 void MasterState::OnRender(graphics::Viewport &viewport) {
