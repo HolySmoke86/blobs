@@ -229,7 +229,7 @@ void MasterState::OnRender(graphics::Viewport &viewport) {
 		double sun_radius = sun->Radius();
 		assets.shaders.sun_surface.SetM(
 			cam.Model(*sun) * glm::scale(glm::vec3(sun_radius, sun_radius, sun_radius)));
-		assets.shaders.sun_surface.SetLight(sun->Color(), sun->Luminosity());
+		assets.shaders.sun_surface.SetLight(glm::vec3(sun->Color()), float(sun->Luminosity()));
 		assets.shaders.sun_surface.Draw();
 	}
 
