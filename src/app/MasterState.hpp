@@ -5,6 +5,7 @@
 
 #include "Assets.hpp"
 #include "../graphics/Camera.hpp"
+#include "../ui/BodyPanel.hpp"
 #include "../ui/CreaturePanel.hpp"
 #include "../ui/RecordsPanel.hpp"
 #include "../ui/TimePanel.hpp"
@@ -68,6 +69,7 @@ private:
 	glm::dvec3 cam_orient;
 	bool cam_dragging;
 
+	ui::BodyPanel bp;
 	ui::CreaturePanel cp;
 	ui::RecordsPanel rp;
 	ui::TimePanel tp;

@@ -148,5 +148,37 @@ bool Intersect(
 	return true;
 }
 
+bool Intersect(
+	const Ray &r,
+	const Sphere &s,
+	glm::dvec3 &normal,
+	double &dist
+) noexcept {
+	const glm::dvec3 diff(s.origin - r.Origin());
+	if (glm::dot(diff, r.Direction()) < 0.0) {
+		if (glm::length2(diff) > s.radius * s.radius) return false;
+		if (std::abs(glm::length2(diff) - s.radius * s.radius) < std::numeric_limits<double>::epsilon() * s.radius) {
+			normal = glm::normalize(-diff);
+			dist = 0.0;
+			return true;
+		}
+		const glm::dvec3 pc(r.Direction() * glm::dot(r.Direction(), diff) + r.Origin());
+		double idist = std::sqrt(s.radius * s.radius - glm::length2(pc - s.origin));
+		dist = idist - glm::length(pc - r.Origin());
+		normal = glm::normalize((r.Origin() + (r.Direction() * dist)) - s.origin);
+		return true;
+	}
+	const glm::dvec3 pc(r.Direction() * glm::dot(r.Direction(), diff) + r.Origin());
+	if (glm::length2(s.origin - pc) > s.radius * s.radius) return false;
+	double idist = std::sqrt(s.radius * s.radius - glm::length2(pc - s.origin));
+	if (glm::length2(diff) > s.radius * s.radius) {
+		dist = glm::length(pc - r.Origin()) - idist;
+	} else {
+		dist = glm::length(pc - r.Origin()) + idist;
+	}
+	normal = glm::normalize((r.Origin() + (r.Direction() * dist)) - s.origin);
+	return true;
+}
+
 }
 }

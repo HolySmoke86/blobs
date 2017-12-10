@@ -8,6 +8,7 @@
 namespace blobs {
 namespace ui {
 
+std::string AngleString(double a);
 std::string DecimalString(double n, int p);
 std::string LengthString(double m);
 std::string MassString(double kg);

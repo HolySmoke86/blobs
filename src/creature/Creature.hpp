@@ -177,7 +177,7 @@ public:
 	Steering &GetSteering() noexcept { return steering; }
 	const Steering &GetSteering() const noexcept { return steering; }
 
-	math::AABB CollisionBox() const noexcept;
+	math::AABB CollisionBounds() const noexcept;
 	glm::dmat4 CollisionTransform() const noexcept;
 
 	glm::dmat4 LocalTransform() noexcept;

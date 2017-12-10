@@ -2,8 +2,10 @@
 #define BLOBS_WORLD_BODY_HPP_
 
 #include "Orbit.hpp"
+#include "../math/geometry.hpp"
 #include "../math/glm.hpp"
 
+#include <string>
 #include <vector>
 
 
@@ -47,6 +49,9 @@ public:
 
 	const std::vector<Body *> &Children() const noexcept { return children; }
 
+	const std::string &Name() const noexcept { return name; }
+	void Name(const std::string &n) noexcept { name = n; }
+
 	double Mass() const noexcept { return mass; }
 	void Mass(double m) noexcept { mass = m; }
 
@@ -73,6 +78,10 @@ public:
 	double GravitationalParameter() const noexcept;
 	double OrbitalPeriod() const noexcept;
 	double RotationalPeriod() const noexcept;
+	double SphereOfInfluence() const noexcept;
+
+	math::Sphere CollisionBounds() const noexcept { return math::Sphere{ glm::dvec3(0.0), Radius() }; }
+	const glm::dmat4 &CollisionTransform() const noexcept { return local; }
 
 	const glm::dmat4 &LocalTransform() const noexcept { return local; }
 	const glm::dmat4 &InverseTransform() const noexcept { return inverse_local; }
@@ -106,6 +115,7 @@ private:
 	Simulation *sim;
 	Body *parent;
 	std::vector<Body *> children;
+	std::string name;
 	double mass;
 	double radius;
 	Orbit orbit;

@@ -472,14 +472,13 @@ Situation::Derivative Creature::Step(const Situation::Derivative &ds, double dt)
 	s.vel += ds.acc * dt;
 	glm::dvec3 force(steering.Force(s));
 	// gravity = antinormal * mass * Gm / r²
-	double elevation = situation.GetPlanet().DistanceAt(s.pos);
 	glm::dvec3 normal(situation.GetPlanet().NormalAt(s.pos));
 	force += glm::dvec3(
 		-normal
 		* Mass() * situation.GetPlanet().GravitationalParameter()
-		/ (elevation * elevation));
+		/ glm::length2(s.pos));
 	// if net force is applied and in contact with surface
-	if (!allzero(force) && std::abs(std::abs(elevation) - situation.GetPlanet().Radius()) < 0.001) {
+	if (!allzero(force) && glm::length2(s.pos) < (situation.GetPlanet().Radius() + 0.01) * (situation.GetPlanet().Radius() + 0.01)) {
 		// apply friction = -|normal force| * tangential force * coefficient
 		glm::dvec3 fn(normal * glm::dot(force, normal));
 		glm::dvec3 ft(force - fn);
@@ -550,7 +549,7 @@ void Creature::TickBrain(double dt) {
 	}
 }
 
-math::AABB Creature::CollisionBox() const noexcept {
+math::AABB Creature::CollisionBounds() const noexcept {
 	return { glm::dvec3(size * -0.5), glm::dvec3(size * 0.5) };
 }
 

@@ -115,6 +115,14 @@ double Body::RotationalPeriod() const noexcept {
 	}
 }
 
+double Body::SphereOfInfluence() const noexcept {
+	if (HasParent()) {
+		return orbit.SemiMajorAxis() * std::pow(Mass() / Parent().Mass(), 2.0 / 5.0);
+	} else {
+		return std::numeric_limits<double>::infinity();
+	}
+}
+
 glm::dmat4 Body::ToUniverse() const noexcept {
 	glm::dmat4 m(1.0);
 	const Body *b = this;
@@ -184,13 +192,13 @@ void Body::CheckCollision() noexcept {
 	collisions.clear();
 	auto end = Creatures().end();
 	for (auto i = Creatures().begin(); i != end; ++i) {
-		math::AABB i_box((*i)->CollisionBox());
+		math::AABB i_box((*i)->CollisionBounds());
 		glm::dmat4 i_mat((*i)->CollisionTransform());
 		for (auto j = (i + 1); j != end; ++j) {
 			glm::dvec3 diff((*i)->GetSituation().Position() - (*j)->GetSituation().Position());
 			double max_dist = ((*i)->Size() + (*j)->Size()) * 1.74;
 			if (glm::length2(diff) > max_dist * max_dist) continue;
-			math::AABB j_box((*j)->CollisionBox());
+			math::AABB j_box((*j)->CollisionBounds());
 			glm::dmat4 j_mat((*j)->CollisionTransform());
 			glm::dvec3 normal;
 			double depth;

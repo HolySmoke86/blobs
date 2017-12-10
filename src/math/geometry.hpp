@@ -40,6 +40,7 @@ bool Intersect(
 	glm::dvec3 &normal,
 	double &depth) noexcept;
 
+
 class Ray {
 
 public:
@@ -74,6 +75,32 @@ bool Intersect(
 	const Ray &,
 	const AABB &,
 	const glm::dmat4 &M,
+	glm::dvec3 &normal,
+	double &dist) noexcept;
+
+
+struct Sphere {
+
+	glm::dvec3 origin;
+	double radius;
+
+};
+
+/// matrix may scale, but only uniformly
+inline Sphere operator *(const glm::dmat4 &m, const Sphere &s) noexcept {
+	glm::dvec4 o(m * glm::dvec4(s.origin, 1.0));
+	glm::dvec4 p(m * glm::dvec4(s.origin + glm::dvec3(s.radius, 0.0, 0.0), 1.0));
+	return Sphere{glm::dvec3(o) / o.w, glm::length((glm::dvec3(p) / p.w) - (glm::dvec3(o) / o.w))};
+}
+
+inline std::ostream &operator <<(std::ostream &out, const Sphere &s) {
+	return out << "Sphere(" << s.origin << ", " << s.radius << ")";
+}
+
+/// oriented ray/sphere intersection test
+bool Intersect(
+	const Ray &,
+	const Sphere &,
 	glm::dvec3 &normal,
 	double &dist) noexcept;
 

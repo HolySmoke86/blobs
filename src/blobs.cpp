@@ -20,12 +20,14 @@ int main(int argc, char *argv[]) {
 	app::Assets assets;
 
 	world::Sun sun;
+	sun.Name("Sun");
 	sun.Mass(1.0e14);
 	sun.Radius(20.0);
 	sun.SurfaceTilt(glm::dvec2(PI * 0.25, PI * 0.25));
 	sun.AngularMomentum(1.0e13);
 
 	world::Planet planet(25);
+	planet.Name("Planet");
 	planet.SetParent(sun);
 	planet.Mass(1.0e10);
 	planet.GetOrbit().SemiMajorAxis(941.7);
@@ -34,6 +36,7 @@ int main(int argc, char *argv[]) {
 	planet.AngularMomentum(6.0e10);
 
 	world::Planet moon(3);
+	moon.Name("Moon");
 	moon.SetParent(planet);
 	moon.Mass(1.0e6);
 	moon.GetOrbit().SemiMajorAxis(37.0);
@@ -41,6 +44,7 @@ int main(int argc, char *argv[]) {
 	moon.AngularMomentum(1.0e4);
 
 	world::Planet second_planet(9);
+	second_planet.Name("Second planet");
 	second_planet.SetParent(sun);
 	second_planet.Mass(1.0e9);
 	second_planet.GetOrbit().SemiMajorAxis(350.0);

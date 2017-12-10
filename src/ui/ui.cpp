@@ -1,3 +1,4 @@
+#include "BodyPanel.hpp"
 #include "CreaturePanel.hpp"
 #include "RecordsPanel.hpp"
 #include "string.hpp"
@@ -8,6 +9,7 @@
 #include "../app/Assets.hpp"
 #include "../creature/Creature.hpp"
 #include "../graphics/Viewport.hpp"
+#include "../math/const.hpp"
 #include "../world/Body.hpp"
 #include "../world/Simulation.hpp"
 
@@ -285,6 +287,127 @@ void CreaturePanel::Draw(graphics::Viewport &viewport) noexcept {
 }
 
 
+BodyPanel::BodyPanel(app::Assets &assets)
+: assets(assets)
+, body(nullptr)
+, name(new Label(assets.fonts.large))
+, mass(new Label(assets.fonts.medium))
+, radius(new Label(assets.fonts.medium))
+, soi(new Label(assets.fonts.medium))
+, operiod(new Label(assets.fonts.medium))
+, rperiod(new Label(assets.fonts.medium))
+, atm(new Label(assets.fonts.medium))
+, sma(new Label(assets.fonts.medium))
+, ecc(new Label(assets.fonts.medium))
+, inc(new Label(assets.fonts.medium))
+, asc(new Label(assets.fonts.medium))
+, arg(new Label(assets.fonts.medium))
+, mna(new Label(assets.fonts.medium))
+, panel() {
+	Label *mass_label = new Label(assets.fonts.medium);
+	mass_label->Text("Mass");
+	Label *radius_label = new Label(assets.fonts.medium);
+	radius_label->Text("Radius");
+	Label *soi_label = new Label(assets.fonts.medium);
+	soi_label->Text("SOI");
+	Label *operiod_label = new Label(assets.fonts.medium);
+	operiod_label->Text("Orb. period");
+	Label *rperiod_label = new Label(assets.fonts.medium);
+	rperiod_label->Text("Rot. period");
+	Label *atm_label = new Label(assets.fonts.medium);
+	atm_label->Text("Atmosphere");
+	Label *sma_label = new Label(assets.fonts.medium);
+	sma_label->Text("SMA");
+	Label *ecc_label = new Label(assets.fonts.medium);
+	ecc_label->Text("Eccentricity");
+	Label *inc_label = new Label(assets.fonts.medium);
+	inc_label->Text("Inclination");
+	Label *asc_label = new Label(assets.fonts.medium);
+	asc_label->Text("Asc. node");
+	Label *arg_label = new Label(assets.fonts.medium);
+	arg_label->Text("Arg. Periapsis");
+	Label *mna_label = new Label(assets.fonts.medium);
+	mna_label->Text("Mean anomaly");
+	Panel *label_panel = new Panel;
+	label_panel
+		->Direction(Panel::VERTICAL)
+		->Add(mass_label)
+		->Add(radius_label)
+		->Add(soi_label)
+		->Add(operiod_label)
+		->Add(rperiod_label)
+		->Add(atm_label)
+		->Add(sma_label)
+		->Add(ecc_label)
+		->Add(inc_label)
+		->Add(asc_label)
+		->Add(arg_label)
+		->Add(mna_label);
+	Panel *value_panel = new Panel;
+	value_panel
+		->Direction(Panel::VERTICAL)
+		->Add(mass)
+		->Add(radius)
+		->Add(soi)
+		->Add(operiod)
+		->Add(rperiod)
+		->Add(atm)
+		->Add(sma)
+		->Add(ecc)
+		->Add(inc)
+		->Add(asc)
+		->Add(arg)
+		->Add(mna);
+	Panel *info_panel = new Panel;
+	info_panel
+		->Direction(Panel::HORIZONTAL)
+		->Spacing(10.0f)
+		->Add(label_panel)
+		->Add(value_panel);
+
+	panel
+		.Add(name)
+		->Add(info_panel)
+		->Padding(glm::vec2(10.0f))
+		->Spacing(10.0f)
+		->Direction(Panel::VERTICAL)
+		->Background(glm::vec4(1.0f, 1.0f, 1.0f, 0.7f));
+}
+
+BodyPanel::~BodyPanel() {
+}
+
+void BodyPanel::Show(world::Body &b) {
+	body = &b;
+	name->Text(b.Name());
+	mass->Text(MassString(b.Mass()));
+	radius->Text(LengthString(b.Radius()));
+	soi->Text(LengthString(b.SphereOfInfluence()));
+	operiod->Text(TimeString(b.OrbitalPeriod()));
+	rperiod->Text(TimeString(b.RotationalPeriod()));
+	atm->Text(b.HasAtmosphere() ? assets.data.resources[b.Atmosphere()].label : std::string("none"));
+	sma->Text(LengthString(b.GetOrbit().SemiMajorAxis()));
+	ecc->Text(DecimalString(b.GetOrbit().Eccentricity(), 3));
+	inc->Text(AngleString(b.GetOrbit().Inclination()));
+	asc->Text(AngleString(b.GetOrbit().LongitudeAscending()));
+	arg->Text(AngleString(b.GetOrbit().ArgumentPeriapsis()));
+	mna->Text(AngleString(b.GetOrbit().MeanAnomaly()));
+}
+
+void BodyPanel::Hide() noexcept {
+	body = nullptr;
+}
+
+void BodyPanel::Draw(graphics::Viewport &viewport) noexcept {
+	if (!Shown()) return;
+
+	const glm::vec2 margin(20.0f);
+	panel.Position(glm::vec2(viewport.Width() - margin.x - panel.Size().x, margin.y));
+	panel.Layout();
+	panel.Draw(assets, viewport);
+}
+
+
 RecordsPanel::RecordsPanel(world::Simulation &sim)
 : sim(sim)
 , records()
@@ -434,6 +557,29 @@ void TimePanel::Draw(graphics::Viewport &viewport) noexcept {
 }
 
 
+namespace {
+std::ostream &custom_fixed(std::ostream &out, double n, int d) {
+	double f = n;
+	int p = d;
+	while (f > 1.0 && p > 0) {
+		--p;
+		f *= 0.1;
+	}
+	if (p > 0) {
+		out << std::fixed << std::setprecision(p) << n;
+	} else {
+		out << std::defaultfloat << std::setprecision(d) << n;
+	}
+	return out;
+}
+}
+
+std::string AngleString(double a) {
+	std::stringstream s;
+	s << std::fixed << std::setprecision(2) << std::fmod(a * 180.0 * PI_inv, 360.0) << "°";
+	return s.str();
+}
+
 std::string DecimalString(double n, int p) {
 	std::stringstream s;
 	s << std::fixed << std::setprecision(p) << n;
@@ -442,28 +588,38 @@ std::string DecimalString(double n, int p) {
 
 std::string LengthString(double m) {
 	std::stringstream s;
-	s << std::fixed << std::setprecision(3);
-	if (m > 1500.0) {
-		s << (m * 0.001) << "km";
-	} else if (m < 0.1) {
-		s << (m * 1000.0) << "mm";
+	if (m > 1.5e9) {
+		custom_fixed(s, m * 1.0e-9, 4) << "Gm";
+	} else if (m > 1.5e6) {
+		custom_fixed(s, m * 1.0e-6, 4) << "Mm";
+	} else if (m > 1.5e3) {
+		custom_fixed(s, m * 1.0e-3, 4) << "km";
+	} else if (m < 1.5e-3) {
+		custom_fixed(s, m * 1.0e3, 4) << "mm";
+	} else if (m < 1.5) {
+		custom_fixed(s, m * 1.0e2, 4) << "cm";
 	} else {
-		s << m << "m";
+		custom_fixed(s, m, 4) << "m";
 	}
 	return s.str();
 }
 
 std::string MassString(double kg) {
 	std::stringstream s;
-	s << std::fixed << std::setprecision(3);
-	if (kg > 1500.0) {
-		s << (kg * 0.001) << "t";
+	if (kg > 1.5e12) {
+		custom_fixed(s, kg * 1.0e-12, 4) << "Gt";
+	} else if (kg > 1.5e9) {
+		custom_fixed(s, kg * 1.0e-9, 4) << "Mt";
+	} else if (kg > 1.5e6) {
+		custom_fixed(s, kg * 1.0e-6, 4) << "kt";
+	} else if (kg > 1.5e3) {
+		custom_fixed(s, kg * 1.0e-3, 4) << "t";
+	} else if (kg < 1.0e-3) {
+		custom_fixed(s, kg * 1.0e6, 4) << "mg";
 	} else if (kg < 1.0) {
-		s << (kg * 1000.0) << "g";
-	} else if (kg < 0.001) {
-		s << (kg * 1.0e6) << "mg";
+		custom_fixed(s, kg * 1.0e3, 4) << "g";
 	} else {
-		s << kg << "kg";
+		custom_fixed(s, kg, 4) << "kg";
 	}
 	return s.str();
 }
@@ -480,16 +636,21 @@ std::string PercentageString(double n) {
 
 std::string TimeString(double s) {
 	int is = int(s);
+	int md = 1;
+	int sd = 1;
 	std::stringstream ss;
+	ss << std::setfill('0');
 	if (is >= 3600) {
 		ss << (is / 3600) << "h ";
 		is %= 3600;
+		md = 2;
 	}
 	if (is >= 60) {
-		ss << (is / 60) << "m ";
+		ss << std::setw(md) << (is / 60) << "m ";
 		is %= 60;
+		sd = 2;
 	}
-	ss << is << 's';
+	ss << std::setw(sd) << is << 's';
 	return ss.str();
 }
 

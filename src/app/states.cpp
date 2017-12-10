@@ -11,6 +11,9 @@
 
 #include <glm/gtx/transform.hpp>
 
+#include <iostream>
+#include <glm/gtx/io.hpp>
+
 
 namespace blobs {
 namespace app {
@@ -24,15 +27,17 @@ MasterState::MasterState(Assets &assets, world::Simulation &sim) noexcept
 , cam_tgt_dist(5.0)
 , cam_orient(PI * 0.375, PI * 0.25, 0.0)
 , cam_dragging(false)
+, bp(assets)
 , cp(assets)
 , rp(sim)
 , tp(sim)
 , remain(0)
 , thirds(0)
 , paused(false) {
-	cp.ZIndex(10.0f);
-	rp.ZIndex(20.0f);
-	tp.ZIndex(30.0f);
+	bp.ZIndex(10.0f);
+	cp.ZIndex(20.0f);
+	rp.ZIndex(30.0f);
+	tp.ZIndex(40.0f);
 }
 
 MasterState::~MasterState() noexcept {
@@ -108,21 +113,39 @@ void MasterState::OnMouseUp(const SDL_MouseButtonEvent &e) {
 	if (e.button == SDL_BUTTON_LEFT) {
 		glm::dmat4 inverse(glm::inverse(cam.Projection() * cam.View()));
 		math::Ray ray(inverse * App().GetViewport().ShootPixel(e.x, e.y));
-		creature::Creature *closest = nullptr;
-		double closest_dist = 1.0e24;
+
+		creature::Creature *closest_creature = nullptr;
+		double closest_dist = std::numeric_limits<double>::infinity();
 		for (creature::Creature *c : sim.LiveCreatures()) {
 			glm::dvec3 normal(0.0);
 			double dist = 0.0;
-			if (Intersect(ray, c->CollisionBox(), glm::dmat4(cam.Model(c->GetSituation().GetPlanet())) * c->CollisionTransform(), normal, dist)
+			if (Intersect(ray, c->CollisionBounds(), glm::dmat4(cam.Model(c->GetSituation().GetPlanet())) * c->CollisionTransform(), normal, dist)
 				&& dist < closest_dist) {
-				closest = c;
+				closest_creature = c;
 				closest_dist = dist;
 			}
 		}
-		if (closest) {
-			cp.Show(*closest);
+
+		world::Body *closest_body = nullptr;
+		for (world::Body *b : sim.Bodies()) {
+			glm::dvec3 normal(0.0);
+			double dist = 0.0;
+			if (Intersect(ray, glm::dmat4(cam.Model(*b)) * b->CollisionBounds(), normal, dist) && dist < closest_dist) {
+				closest_creature = nullptr;
+				closest_body = b;
+				closest_dist = dist;
+			}
+		}
+
+		if (closest_creature) {
+			cp.Show(*closest_creature);
+			bp.Hide();
+		} else if (closest_body) {
+			bp.Show(*closest_body);
+			cp.Hide();
 		} else {
 			cp.Hide();
+			bp.Hide();
 		}
 	} else if (e.button == SDL_BUTTON_RIGHT) {
 		SDL_SetRelativeMouseMode(SDL_FALSE);
@@ -223,6 +246,7 @@ void MasterState::OnRender(graphics::Viewport &viewport) {
 	}
 
 	viewport.ClearDepth();
+	bp.Draw(viewport);
 	cp.Draw(viewport);
 	rp.Draw(viewport);
 	tp.Draw(viewport);
