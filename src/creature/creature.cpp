@@ -463,27 +463,31 @@ void Creature::TickState(double dt) {
 	}
 	situation.SetState(state);
 	// work is force times distance
-	DoWork(glm::length(f.acc) * Mass() * glm::length(f.vel) * dt);
+	// exclude gravity for no apparent reason
+	// actually, this should solely be based on steering force
+	DoWork(glm::length(f.acc - situation.GetPlanet().GravityAt(state.pos)) * Mass() * glm::length(f.vel) * dt);
 }
 
 Situation::Derivative Creature::Step(const Situation::Derivative &ds, double dt) const noexcept {
 	Situation::State s = situation.GetState();
 	s.pos += ds.vel * dt;
 	s.vel += ds.acc * dt;
+	situation.EnforceConstraints(s);
 	glm::dvec3 force(steering.Force(s));
 	// gravity = antinormal * mass * Gm / r²
 	glm::dvec3 normal(situation.GetPlanet().NormalAt(s.pos));
 	force += glm::dvec3(
 		-normal
-		* Mass() * situation.GetPlanet().GravitationalParameter()
-		/ glm::length2(s.pos));
+		* (Mass() * situation.GetPlanet().GravitationalParameter()
+		/ glm::length2(s.pos)));
 	// if net force is applied and in contact with surface
-	if (!allzero(force) && glm::length2(s.pos) < (situation.GetPlanet().Radius() + 0.01) * (situation.GetPlanet().Radius() + 0.01)) {
-		// apply friction = -|normal force| * tangential force * coefficient
+	if (!allzero(force) && !allzero(s.vel) && glm::length2(s.pos) < (situation.GetPlanet().Radius() + 0.01) * (situation.GetPlanet().Radius() + 0.01)) {
+		// apply friction
 		glm::dvec3 fn(normal * glm::dot(force, normal));
+		// TODO: friction somehow bigger than force?
 		glm::dvec3 ft(force - fn);
 		double u = 0.4;
-		glm::dvec3 friction(-glm::length(fn) * ft * u);
+		glm::dvec3 friction(-glm::clamp(glm::length(ft), 0.0, glm::length(fn) * u) * glm::normalize(s.vel));
 		force += friction;
 	}
 	return {
@@ -847,7 +851,7 @@ bool Memory::RememberLocation(const Composition &accept, glm::dvec3 &pos) const 
 			c.GetSimulation().Assets().random.SNorm(),
 			c.GetSimulation().Assets().random.SNorm(),
 			c.GetSimulation().Assets().random.SNorm());
-		pos += error * (2.0 * (1.0 - c.IntelligenceFactor()));
+		pos += error * (4.0 * (1.0 - c.IntelligenceFactor()));
 		pos = glm::normalize(pos) * c.GetSituation().GetPlanet().Radius();
 		return true;
 	} else {
@@ -952,11 +956,13 @@ void Situation::Accelerate(const glm::dvec3 &dv) noexcept {
 	EnforceConstraints(state);
 }
 
-void Situation::EnforceConstraints(State &s) noexcept {
+void Situation::EnforceConstraints(State &s) const noexcept {
 	if (OnSurface()) {
 		double r = GetPlanet().Radius();
 		if (glm::length2(s.pos) < r * r) {
-			s.pos = glm::normalize(s.pos) * r;
+			const glm::dvec3 normal(GetPlanet().NormalAt(s.pos));
+			s.pos = normal * r;
+			s.vel -= normal * glm::dot(normal, s.vel);
 		}
 	}
 }
@@ -1064,7 +1070,7 @@ glm::dvec3 Steering::Force(const Situation::State &s) const noexcept {
 	}
 	// remove vertical component, if any
 	const glm::dvec3 normal(c.GetSituation().GetPlanet().NormalAt(s.pos));
-	result += normal * glm::dot(normal, result);
+	result -= normal * glm::dot(normal, result);
 	// clamp to max
 	if (glm::length2(result) > max_force * max_force) {
 		result = glm::normalize(result) * max_force;

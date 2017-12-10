@@ -20,6 +20,17 @@ public:
 	Sun(Sun &&) = delete;
 	Sun &operator =(Sun &&) = delete;
 
+public:
+	void Color(const glm::dvec3 &c) noexcept { color = c; }
+	const glm::dvec3 &Color() const noexcept { return color; }
+
+	void Luminosity(double l) noexcept { luminosity = l; }
+	double Luminosity() const noexcept { return luminosity; }
+
+private:
+	glm::dvec3 color;
+	double luminosity;
+
 };
 
 }

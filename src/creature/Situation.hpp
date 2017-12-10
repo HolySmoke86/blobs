@@ -66,7 +66,7 @@ public:
 	bool Moving() const noexcept { return glm::length2(state.vel) > 0.00001; }
 	void Move(const glm::dvec3 &dp) noexcept;
 	void Accelerate(const glm::dvec3 &dv) noexcept;
-	void EnforceConstraints(State &) noexcept;
+	void EnforceConstraints(State &) const noexcept;
 
 	void Heading(const glm::dvec3 &h) noexcept { state.dir = h; }
 	const glm::dvec3 &Heading() const noexcept { return state.dir; }

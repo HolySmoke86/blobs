@@ -189,12 +189,10 @@ void MasterState::OnRender(graphics::Viewport &viewport) {
 	for (auto sun : sim.Suns()) {
 		// TODO: source sun's light color and strength
 		glm::vec3 pos(cam.View() * cam.Model(*sun)[3]);
-		glm::vec3 col(1.0f, 1.0f, 1.0f);
-		float str = 1.0e6f;
 		assets.shaders.planet_surface.Activate();
-		assets.shaders.planet_surface.SetLight(num_lights, pos, col, str);
+		assets.shaders.planet_surface.SetLight(num_lights, pos, sun->Color(), sun->Luminosity());
 		assets.shaders.creature_skin.Activate();
-		assets.shaders.creature_skin.SetLight(num_lights, pos, col, str);
+		assets.shaders.creature_skin.SetLight(num_lights, pos, sun->Color(), sun->Luminosity());
 		++num_lights;
 		if (num_lights >= graphics::PlanetSurface::MAX_LIGHTS || num_lights >= graphics::CreatureSkin::MAX_LIGHTS) {
 			break;
@@ -231,7 +229,7 @@ void MasterState::OnRender(graphics::Viewport &viewport) {
 		double sun_radius = sun->Radius();
 		assets.shaders.sun_surface.SetM(
 			cam.Model(*sun) * glm::scale(glm::vec3(sun_radius, sun_radius, sun_radius)));
-		assets.shaders.sun_surface.SetLight(glm::vec3(1.0f, 1.0f, 1.0f), 1.0e6f);
+		assets.shaders.sun_surface.SetLight(sun->Color(), sun->Luminosity());
 		assets.shaders.sun_surface.Draw();
 	}
 

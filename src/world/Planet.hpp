@@ -41,6 +41,8 @@ public:
 	double ElevationAt(const glm::dvec3 &p) const noexcept { return glm::length(p) - Radius(); }
 	/// distance to planet center
 	double DistanceAt(const glm::dvec3 &p) const noexcept { return glm::length(p); }
+	/// acceleration due to gravity at given point
+	glm::dvec3 GravityAt(const glm::dvec3 &p) const noexcept { return NormalAt(p) * (-GravitationalParameter() / glm::length2(p)); }
 
 	/// get ground tile
 	Tile &TileAt(const glm::dvec3 &) noexcept;

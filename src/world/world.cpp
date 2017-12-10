@@ -694,7 +694,9 @@ void GenerateTest(const Set<TileType> &tiles, Planet &p) noexcept {
 
 
 Sun::Sun()
-: Body() {
+: Body()
+, color(1.0)
+, luminosity(1.0) {
 }
 
 Sun::~Sun() {
