@@ -568,7 +568,8 @@ std::ostream &custom_fixed(std::ostream &out, double n, int d) {
 	if (p > 0) {
 		out << std::fixed << std::setprecision(p) << n;
 	} else {
-		out << std::defaultfloat << std::setprecision(d) << n;
+		out.unsetf(std::ios_base::floatfield);
+		out << std::setprecision(d) << n;
 	}
 	return out;
 }
