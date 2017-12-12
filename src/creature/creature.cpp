@@ -139,6 +139,11 @@ Creature::Creature(world::Simulation &sim)
 , goals()
 , situation()
 , steering(*this)
+, perception_range(1.0)
+, perception_range_squared(1.0)
+, perception_omni_range(1.0)
+, perception_omni_range_squared(1.0)
+, perception_field(1.0)
 , vao() {
 	sim.SetAlive(this);
 	// all creatures avoid each other for now
@@ -331,7 +336,8 @@ double Creature::Strength() const noexcept {
 }
 
 double Creature::StrengthFactor() const noexcept {
-	return Strength() / (Strength() + 1.0);
+	double str = Strength();
+	return str / (str + 1.0);
 }
 
 double Creature::Stamina() const noexcept {
@@ -339,7 +345,8 @@ double Creature::Stamina() const noexcept {
 }
 
 double Creature::StaminaFactor() const noexcept {
-	return Stamina() / (Stamina() + 1.0);
+	double stm = Stamina();
+	return stm / (stm + 1.0);
 }
 
 double Creature::Dexerty() const noexcept {
@@ -347,7 +354,8 @@ double Creature::Dexerty() const noexcept {
 }
 
 double Creature::DexertyFactor() const noexcept {
-	return Dexerty() / (Dexerty() + 1.0);
+	double dex = Dexerty();
+	return dex / (dex + 1.0);
 }
 
 double Creature::Intelligence() const noexcept {
@@ -355,7 +363,8 @@ double Creature::Intelligence() const noexcept {
 }
 
 double Creature::IntelligenceFactor() const noexcept {
-	return Intelligence() / (Intelligence() + 1.0);
+	double intl = Intelligence();
+	return intl / (intl + 1.0);
 }
 
 double Creature::Lifetime() const noexcept {
@@ -379,25 +388,23 @@ double Creature::OffspringMass() const noexcept {
 }
 
 double Creature::PerceptionRange() const noexcept {
-	return 3.0 * DexertyFactor() + Size();
+	return perception_range;
 }
 
 double Creature::PerceptionOmniRange() const noexcept {
-	return 0.5 * DexertyFactor() + Size();
+	return perception_omni_range;
 }
 
 double Creature::PerceptionField() const noexcept {
-	// this is the cosine of half the angle, so 1.0 is none, -1.0 is perfect
-	return 0.8 - DexertyFactor();
+	return perception_field;
 }
 
 bool Creature::PerceptionTest(const glm::dvec3 &p) const noexcept {
 	const glm::dvec3 diff(p - situation.Position());
-	double omni_range = PerceptionOmniRange();
-	if (glm::length2(diff) < omni_range * omni_range) return true;
-	double range = PerceptionRange();
-	if (glm::length2(diff) > range * range) return false;
-	return glm::dot(glm::normalize(diff), situation.Heading()) > PerceptionField();
+	double ldiff = glm::length2(diff);
+	if (ldiff < perception_omni_range_squared) return true;
+	if (ldiff > perception_range_squared) return false;
+	return glm::dot(diff / std::sqrt(ldiff), situation.Heading()) > perception_field;
 }
 
 double Creature::OffspringChance() const noexcept {
@@ -429,9 +436,20 @@ bool GoalCompare(const std::unique_ptr<Goal> &a, const std::unique_ptr<Goal> &b)
 }
 
 void Creature::Tick(double dt) {
+	Cache();
 	TickState(dt);
 	TickStats(dt);
 	TickBrain(dt);
+}
+
+void Creature::Cache() noexcept {
+	double dex_fact = DexertyFactor();
+	perception_range = 3.0 * dex_fact + size;
+	perception_range_squared = perception_range * perception_range;
+	perception_omni_range = 0.5 * dex_fact + size;
+	perception_omni_range_squared = perception_omni_range * perception_omni_range;
+	// this is the cosine of half the angle, so 1.0 is none, -1.0 is perfect
+	perception_field = 0.8 - dex_fact;
 }
 
 void Creature::TickState(double dt) {

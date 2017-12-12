@@ -187,6 +187,7 @@ public:
 	void Draw(graphics::Viewport &);
 
 private:
+	void Cache() noexcept;
 	void TickState(double dt);
 	void TickStats(double dt);
 	void TickBrain(double dt);
@@ -221,6 +222,13 @@ private:
 
 	Situation situation;
 	Steering steering;
+
+	// cached because steering makes heavy use of this
+	double perception_range;
+	double perception_range_squared;
+	double perception_omni_range;
+	double perception_omni_range_squared;
+	double perception_field;
 
 	struct Attributes {
 		glm::vec3 position;
