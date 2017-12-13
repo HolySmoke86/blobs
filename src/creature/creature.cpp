@@ -6,6 +6,7 @@
 #include "Situation.hpp"
 #include "Steering.hpp"
 
+#include "AttackGoal.hpp"
 #include "BlobBackgroundTask.hpp"
 #include "Goal.hpp"
 #include "IdleGoal.hpp"
@@ -33,6 +34,7 @@ Composition::Composition(const world::Set<world::Resource> &resources)
 : resources(resources)
 , components()
 , total_mass(0.0)
+, total_volume(0.0)
 , state_mass{0.0} {
 }
 
@@ -64,6 +66,7 @@ void Composition::Add(int res, double amount) {
 	std::sort(components.begin(), components.end(), CompositionCompare);
 	state_mass[resources[res].state] += amount;
 	total_mass += amount;
+	total_volume += amount / resources[res].density;
 }
 
 bool Composition::Has(int res) const noexcept {
@@ -591,6 +594,10 @@ glm::dmat4 Creature::CollisionTransform() const noexcept {
 		* glm::translate(glm::dvec3(0.0, half_size, 0.0));
 }
 
+void Creature::OnCollide(Creature &other) {
+	memory.TrackCollision(other);
+}
+
 glm::dmat4 Creature::LocalTransform() noexcept {
 	const double half_size = size * 0.5;
 	return CollisionTransform()
@@ -844,6 +851,7 @@ Memory::~Memory() {
 
 void Memory::Erase() {
 	known_types.clear();
+	known_creatures.clear();
 }
 
 bool Memory::RememberLocation(const Composition &accept, glm::dvec3 &pos) const noexcept {
@@ -874,6 +882,21 @@ bool Memory::RememberLocation(const Composition &accept, glm::dvec3 &pos) const 
 		return true;
 	} else {
 		return false;
+	}
+}
+
+void Memory::TrackCollision(Creature &other) {
+	// TODO: find out whose fault it was
+	// TODO: source values from personality
+	Profile &p = known_creatures[&other];
+	p.annoyance += 0.1;
+	const double annoy_fact = p.annoyance / (p.annoyance + 1.0);
+	if (c.GetSimulation().Assets().random.UNorm() > annoy_fact * 0.1 * (1.0 - c.GetStats().Damage().value)) {
+		AttackGoal *g = new AttackGoal(c, other);
+		g->SetDamageTarget(annoy_fact);
+		g->Urgency(annoy_fact);
+		c.AddGoal(std::unique_ptr<Goal>(g));
+		p.annoyance *= 0.5;
 	}
 }
 

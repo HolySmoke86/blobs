@@ -41,6 +41,8 @@ public:
 	double StateProportion(int res) const noexcept;
 	double Compatibility(int res) const noexcept;
 	double TotalMass() const noexcept { return total_mass; }
+	double TotalVolume() const noexcept { return total_volume; }
+	double TotalDensity() const noexcept { return total_mass / total_volume; }
 	double StateMass(world::Resource::State s) const noexcept { return state_mass[s]; }
 
 public:
@@ -56,6 +58,7 @@ private:
 	const world::Set<world::Resource> &resources;
 	std::vector<Component> components;
 	double total_mass;
+	double total_volume;
 	double state_mass[4];
 
 };

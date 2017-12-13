@@ -208,11 +208,12 @@ void Body::CheckCollision() noexcept {
 		}
 	}
 	for (auto &c : collisions) {
+		c.A().OnCollide(c.B());
+		c.B().OnCollide(c.A());
 		c.A().GetSituation().Move(c.Normal() * (c.Depth() * -0.5));
 		c.B().GetSituation().Move(c.Normal() * (c.Depth() * 0.5));
 		c.A().GetSituation().Accelerate(c.Normal() * -glm::dot(c.Normal(), c.AVel()));
 		c.B().GetSituation().Accelerate(c.Normal() * -glm::dot(c.Normal(), c.BVel()));
-		// TODO: notify participants so they can be annoyed
 	}
 }
 

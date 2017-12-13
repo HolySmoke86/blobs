@@ -1,3 +1,4 @@
+#include "AttackGoal.hpp"
 #include "BlobBackgroundTask.hpp"
 #include "Goal.hpp"
 #include "IdleGoal.hpp"
@@ -21,6 +22,78 @@
 
 namespace blobs {
 namespace creature {
+
+AttackGoal::AttackGoal(Creature &self, Creature &target)
+: Goal(self)
+, target(target)
+, damage_target(0.25)
+, damage_dealt(0.0)
+, cooldown(0.0) {
+}
+
+AttackGoal::~AttackGoal() {
+}
+
+std::string AttackGoal::Describe() const {
+	return "attack " + target.Name();
+}
+
+void AttackGoal::Tick(double dt) {
+	cooldown -= dt;
+}
+
+void AttackGoal::Action() {
+	if (target.Dead() || !GetCreature().PerceptionTest(target.GetSituation().Position())) {
+		SetComplete();
+		return;
+	}
+	const glm::dvec3 diff(GetCreature().GetSituation().Position() - target.GetSituation().Position());
+	const double hit_range = GetCreature().Size() * 0.5 * GetCreature().DexertyFactor();
+	const double hit_dist = hit_range + (0.5 * GetCreature().Size()) + 0.5 * (target.Size());
+	if (GetCreature().GetStats().Damage().Critical()) {
+		// flee
+		GetCreature().GetSteering().Pass(diff * 5.0);
+		GetCreature().GetSteering().DontSeparate();
+		GetCreature().GetSteering().Haste(1.0);
+	} else if (glm::length2(diff) > hit_dist * hit_dist) {
+		// full throttle chase
+		GetCreature().GetSteering().Pass(target.GetSituation().Position());
+		GetCreature().GetSteering().DontSeparate();
+		GetCreature().GetSteering().Haste(1.0);
+	} else {
+		// attack
+		GetCreature().GetSteering().Halt();
+		GetCreature().GetSteering().DontSeparate();
+		GetCreature().GetSteering().Haste(1.0);
+		if (cooldown <= 0.0) {
+			constexpr double impulse = 0.05;
+			const double force = GetCreature().Strength();
+			const double damage =
+				force * impulse
+				* (GetCreature().GetComposition().TotalDensity() / target.GetComposition().TotalDensity())
+				* (GetCreature().Mass() / target.Mass())
+				/ target.Mass();
+			GetCreature().DoWork(force * impulse * glm::length(diff));
+			target.Hurt(damage);
+			target.GetSituation().Accelerate(glm::normalize(diff) * force * -impulse);
+			damage_dealt += damage;
+			if (damage_dealt >= damage_target || target.Dead()) {
+				SetComplete();
+				if (target.Dead()) {
+					GetCreature().GetSimulation().Log() << GetCreature().Name()
+						<< " killed " << target.Name() << std::endl;
+				}
+			}
+			cooldown = 1.0 + (4.0 * (1.0 - GetCreature().DexertyFactor()));
+		}
+	}
+}
+
+void AttackGoal::OnBackground() {
+	// abort if something more important comes up
+	SetComplete();
+}
+
 
 BlobBackgroundTask::BlobBackgroundTask(Creature &c)
 : Goal(c)

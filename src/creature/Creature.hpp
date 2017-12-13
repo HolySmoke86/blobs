@@ -180,6 +180,8 @@ public:
 	math::AABB CollisionBounds() const noexcept;
 	glm::dmat4 CollisionTransform() const noexcept;
 
+	void OnCollide(Creature &other);
+
 	glm::dmat4 LocalTransform() noexcept;
 
 	void BuildVAO();

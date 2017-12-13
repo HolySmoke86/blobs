@@ -35,6 +35,8 @@ public:
 	/// location of the best fitting resource
 	bool RememberLocation(const Composition &, glm::dvec3 &pos) const noexcept;
 
+	void TrackCollision(Creature &);
+
 	void Tick(double dt);
 
 private:
@@ -52,6 +54,11 @@ private:
 		double time_spent;
 	};
 	std::map<int, Stay> known_types;
+	struct Profile {
+		double annoyance = 0.0;
+		double familiarity = 0.0;
+	};
+	std::map<Creature *, Profile> known_creatures;
 
 };
 
