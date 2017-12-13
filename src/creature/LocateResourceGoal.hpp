@@ -29,7 +29,7 @@ private:
 	void SearchVicinity();
 	void Remember();
 	void RandomWalk();
-	bool NearTarget() const noexcept;
+	bool OnTarget() const noexcept;
 
 private:
 	Composition accept;

@@ -466,15 +466,14 @@ void LocateResourceGoal::Action() {
 		if (!searching) {
 			LocateResource();
 		} else {
-			double dist = glm::length2(GetSituation().Position() - target_pos);
-			if (dist < 0.0001) {
+			if (OnTarget()) {
 				searching = false;
 				LocateResource();
 			} else {
 				GetSteering().GoTo(target_pos);
 			}
 		}
-	} else if (NearTarget()) {
+	} else if (OnTarget()) {
 		GetSteering().Halt();
 		if (!GetSituation().Moving()) {
 			SetComplete();
@@ -516,11 +515,12 @@ void LocateResourceGoal::SearchVicinity() {
 	const world::Planet &planet = GetSituation().GetPlanet();
 	const glm::dvec3 &pos = GetSituation().Position();
 	const glm::dvec3 normal(planet.NormalAt(pos));
-	const glm::dvec3 step_x(glm::normalize(glm::cross(normal, glm::dvec3(normal.z, normal.x, normal.y))));
-	const glm::dvec3 step_y(glm::normalize(glm::cross(step_x, normal)));
+	const glm::dvec3 step_x(glm::normalize(glm::cross(normal, glm::dvec3(normal.z, normal.x, normal.y))) * (GetCreature().PerceptionOmniRange() * 0.7));
+	const glm::dvec3 step_y(glm::normalize(glm::cross(step_x, normal)) * (GetCreature().PerceptionOmniRange() * 0.7));
 
-	constexpr int search_radius = 2;
-	double rating[2 * search_radius + 1][2 * search_radius + 1] = {0};
+	const int search_radius = int(GetCreature().PerceptionRange() / (GetCreature().PerceptionOmniRange() * 0.7));
+	double rating[2 * search_radius + 1][2 * search_radius + 1];
+	std::memset(rating, '\0', (2 * search_radius + 1) * (2 * search_radius + 1) * sizeof(double));
 
 	// find close and rich field
 	for (int y = -search_radius; y < search_radius + 1; ++y) {
@@ -596,17 +596,17 @@ void LocateResourceGoal::RandomWalk() {
 	found = false;
 	searching = true;
 	target_pos = GetSituation().Position();
-	target_pos += Random().SNorm() * step_x;
-	target_pos += Random().SNorm() * step_y;
+	target_pos += Random().SNorm() * 3.0 * step_x;
+	target_pos += Random().SNorm() * 3.0 * step_y;
 	// bias towards current heading
 	target_pos += GetSituation().Heading() * 1.5;
 	target_pos = glm::normalize(target_pos) * planet.Radius();
 	GetSteering().GoTo(target_pos);
 }
 
-bool LocateResourceGoal::NearTarget() const noexcept {
+bool LocateResourceGoal::OnTarget() const noexcept {
 	const Situation &s = GetSituation();
-	return s.OnSurface() && glm::length2(s.Position() - target_pos) < 0.5;
+	return s.OnGround() && glm::length2(s.Position() - target_pos) < 0.0001;
 }
 
 
