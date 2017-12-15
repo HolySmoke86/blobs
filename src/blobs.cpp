@@ -73,8 +73,7 @@ int main(int argc, char *argv[]) {
 	blob->BuildVAO();
 
 	app::MasterState state(assets, sim);
-	state.GetCreaturePanel().Show(*blob);
-	state.GetTimePanel().SetBody(planet);
+	state.Show(*blob);
 
 	app::Application app(init.window, init.viewport);
 	app.PushState(&state);

@@ -12,6 +12,9 @@
 
 
 namespace blobs {
+namespace creature {
+	class Creature;
+}
 namespace world {
 	class Body;
 	class Simulation;
@@ -32,6 +35,9 @@ public:
 	MasterState &operator =(MasterState &&) = delete;
 
 public:
+	void Show(creature::Creature &) noexcept;
+	void Show(world::Body &) noexcept;
+
 	graphics::Camera &GetCamera() noexcept { return cam; }
 	const graphics::Camera &GetCamera() const noexcept { return cam; }
 
@@ -64,10 +70,18 @@ private:
 	world::Simulation &sim;
 
 	graphics::Camera cam;
+	glm::dvec3 cam_pos;
+	glm::dvec3 cam_tgt_pos;
+	glm::dvec3 cam_focus;
+	glm::dvec3 cam_tgt_focus;
+	glm::dvec3 cam_up;
+	glm::dvec3 cam_tgt_up;
 	double cam_dist;
-	double cam_tgt_dist;
 	glm::dvec3 cam_orient;
 	bool cam_dragging;
+
+	creature::Creature *shown_creature;
+	world::Body *shown_body;
 
 	ui::BodyPanel bp;
 	ui::CreaturePanel cp;

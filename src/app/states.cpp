@@ -9,6 +9,9 @@
 #include "../world/Simulation.hpp"
 #include "../world/Sun.hpp"
 
+#include <glm/gtx/vector_angle.hpp>
+#include <glm/gtx/euler_angles.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/transform.hpp>
 
 #include <iostream>
@@ -23,10 +26,17 @@ MasterState::MasterState(Assets &assets, world::Simulation &sim) noexcept
 , assets(assets)
 , sim(sim)
 , cam(sim.Root())
+, cam_pos(0.0, 0.0, 1.0)
+, cam_tgt_pos(0.0, 0.0, 1.0)
+, cam_focus(0.0)
+, cam_tgt_focus(0.0)
+, cam_up(0.0, 1.0, 0.0)
+, cam_tgt_up(0.0, 1.0, 0.0)
 , cam_dist(5.0)
-, cam_tgt_dist(5.0)
 , cam_orient(PI * 0.375, PI * 0.25, 0.0)
 , cam_dragging(false)
+, shown_creature(nullptr)
+, shown_body(nullptr)
 , bp(assets)
 , cp(assets)
 , rp(sim)
@@ -41,6 +51,28 @@ MasterState::MasterState(Assets &assets, world::Simulation &sim) noexcept
 }
 
 MasterState::~MasterState() noexcept {
+}
+
+
+void MasterState::Show(creature::Creature &c) noexcept {
+	cam.Reference(c.GetSituation().GetPlanet());
+	cam.TrackOrientation(true);
+	cam_orient.x = std::max(0.0, cam_orient.x);
+	cp.Show(c);
+	bp.Hide();
+	tp.SetBody(c.GetSituation().GetPlanet());
+	shown_creature = &c;
+	shown_body = nullptr;
+}
+
+void MasterState::Show(world::Body &b) noexcept {
+	cam.Reference(b);
+	cam.TrackOrientation(false);
+	bp.Show(b);
+	cp.Hide();
+	tp.SetBody(b);
+	shown_creature = nullptr;
+	shown_body = &b;
 }
 
 
@@ -71,6 +103,10 @@ void MasterState::OnUpdate(int dt) {
 		Tick();
 		--max_tick;
 	}
+	if (max_tick == 0) {
+		// drop remaining
+		remain = 0;
+	}
 }
 
 void MasterState::Tick() {
@@ -81,11 +117,47 @@ void MasterState::Tick() {
 	remain -= FrameMS();
 	thirds = (thirds + 1) % 3;
 
-	double cam_diff = cam_tgt_dist - cam_dist;
-	if (std::abs(cam_diff) > 0.001) {
-		cam_dist += cam_diff * 0.25;
+	// determine where camera should be
+	double actual_dist = cam_dist;
+	if (shown_creature) {
+		cam_tgt_focus = shown_creature->GetSituation().Position();
+		cam_tgt_up = glm::normalize(cam_tgt_focus);
+		actual_dist += shown_creature->Size();
+	} else if (shown_body) {
+		cam_tgt_focus = glm::dvec3(0.0);
+		cam_tgt_up = glm::dvec3(0.0, 1.0, 0.0);
+		actual_dist += shown_body->Radius();
+	}
+
+	glm::dvec3 dir(0.0, 0.0, -actual_dist);
+	glm::dvec3 ref_dir(glm::normalize(glm::cross(cam_tgt_up, glm::dvec3(-cam_tgt_up.z, cam_tgt_up.x, cam_tgt_up.y))));
+	dir =
+		glm::dmat3(ref_dir, cam_tgt_up, glm::cross(ref_dir, cam_tgt_up))
+		* glm::dmat3(glm::eulerAngleYX(-cam_orient.y, -cam_orient.x))
+		* dir;
+	cam_tgt_up = glm::rotate(cam_tgt_up, cam_orient.z, glm::normalize(-dir));
+	cam_tgt_pos = cam_tgt_focus - dir;
+
+	// approach target location
+	glm::dvec3 cam_pos_diff(cam_tgt_pos - cam_pos);
+	if (glm::length2(cam_pos_diff) > 0.000001) {
+		cam_pos += cam_pos_diff * 0.25;
 	} else {
-		cam_dist = cam_tgt_dist;
+		cam_pos = cam_tgt_pos;
+	}
+
+	glm::dvec3 cam_focus_diff(cam_tgt_focus - cam_focus);
+	if (glm::length2(cam_focus_diff) > 0.000001) {
+		cam_focus += cam_focus_diff * 0.25;
+	} else {
+		cam_focus = cam_tgt_focus;
+	}
+
+	double cam_up_diff = glm::angle(cam_up, cam_tgt_up);
+	if (cam_up_diff > 0.001) {
+		cam_up = glm::rotate(cam_up, cam_up_diff * 0.25, glm::normalize(glm::cross(cam_up, cam_tgt_up)));
+	} else {
+		cam_up = cam_tgt_up;
 	}
 }
 
@@ -114,35 +186,33 @@ void MasterState::OnMouseUp(const SDL_MouseButtonEvent &e) {
 		glm::dmat4 inverse(glm::inverse(cam.Projection() * cam.View()));
 		math::Ray ray(inverse * App().GetViewport().ShootPixel(e.x, e.y));
 
-		creature::Creature *closest_creature = nullptr;
+		shown_creature = nullptr;
 		double closest_dist = std::numeric_limits<double>::infinity();
 		for (creature::Creature *c : sim.LiveCreatures()) {
 			glm::dvec3 normal(0.0);
 			double dist = 0.0;
 			if (Intersect(ray, c->CollisionBounds(), glm::dmat4(cam.Model(c->GetSituation().GetPlanet())) * c->CollisionTransform(), normal, dist)
 				&& dist < closest_dist) {
-				closest_creature = c;
+				shown_creature = c;
 				closest_dist = dist;
 			}
 		}
 
-		world::Body *closest_body = nullptr;
+		shown_body = nullptr;
 		for (world::Body *b : sim.Bodies()) {
 			glm::dvec3 normal(0.0);
 			double dist = 0.0;
 			if (Intersect(ray, glm::dmat4(cam.Model(*b)) * b->CollisionBounds(), normal, dist) && dist < closest_dist) {
-				closest_creature = nullptr;
-				closest_body = b;
+				shown_creature = nullptr;
+				shown_body = b;
 				closest_dist = dist;
 			}
 		}
 
-		if (closest_creature) {
-			cp.Show(*closest_creature);
-			bp.Hide();
-		} else if (closest_body) {
-			bp.Show(*closest_body);
-			cp.Hide();
+		if (shown_creature) {
+			Show(*shown_creature);
+		} else if (shown_body) {
+			Show(*shown_body);
 		} else {
 			cp.Hide();
 			bp.Hide();
@@ -157,7 +227,7 @@ void MasterState::OnMouseMotion(const SDL_MouseMotionEvent &e) {
 	constexpr double pitch_scale = PI * 0.001;
 	constexpr double yaw_scale = PI * 0.002;
 	if (cam_dragging) {
-		cam_orient.x = glm::clamp(cam_orient.x + double(e.yrel) * pitch_scale, 0.0, PI * 0.499);
+		cam_orient.x = glm::clamp(cam_orient.x + double(e.yrel) * pitch_scale, shown_creature ? 0.0 : PI * -0.499, PI * 0.499);
 		cam_orient.y = std::fmod(cam_orient.y + double(e.xrel) * yaw_scale, PI * 2.0);
 	}
 }
@@ -167,23 +237,17 @@ void MasterState::OnMouseWheel(const SDL_MouseWheelEvent &e) {
 	constexpr double zoom_scale = -1.0;
 	constexpr double zoom_base = 1.125;
 	cam_orient.z = glm::clamp(cam_orient.z + double(e.x) * roll_scale, PI * -0.5, PI * 0.5);
-	if (cp.Shown()) {
-		cam_tgt_dist = std::max(cp.GetCreature().Size() * 2.0, cam_tgt_dist * std::pow(zoom_base, double(e.y) * zoom_scale));
-	} else {
-		cam_tgt_dist = std::max(1.0, cam_tgt_dist * std::pow(zoom_base, double(e.y) * zoom_scale));
-	}
+	cam_dist = std::max(0.125, cam_dist * std::pow(zoom_base, double(e.y) * zoom_scale));
 }
 
 void MasterState::OnRender(graphics::Viewport &viewport) {
-	if (cp.Shown()) {
-		cam.Radial(cp.GetCreature(), cam_dist, cam_orient);
-		assets.shaders.planet_surface.Activate();
-		assets.shaders.planet_surface.SetV(cam.View());
-		assets.shaders.sun_surface.Activate();
-		assets.shaders.sun_surface.SetV(cam.View());
-		assets.shaders.creature_skin.Activate();
-		assets.shaders.creature_skin.SetV(cam.View());
-	}
+	cam.LookAt(cam_pos, cam_focus, cam_up);
+	assets.shaders.planet_surface.Activate();
+	assets.shaders.planet_surface.SetV(cam.View());
+	assets.shaders.sun_surface.Activate();
+	assets.shaders.sun_surface.SetV(cam.View());
+	assets.shaders.creature_skin.Activate();
+	assets.shaders.creature_skin.SetV(cam.View());
 
 	int num_lights = 0;
 	for (auto sun : sim.Suns()) {

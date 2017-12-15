@@ -8,8 +8,6 @@
 
 #include <cmath>
 #include <GL/glew.h>
-#include <glm/gtx/euler_angles.hpp>
-#include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/transform.hpp>
 
 
@@ -60,33 +58,8 @@ Camera &Camera::Reference(const world::Body &r) noexcept {
 	return *this;
 }
 
-Camera &Camera::Orbital(const glm::vec3 &pos) noexcept {
-	track_orient = false;
-	view = glm::lookAt(pos, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-	return *this;
-}
-
-Camera &Camera::Radial(const creature::Creature &c, double distance, const glm::dvec3 &angle) {
-	const creature::Situation &s = c.GetSituation();
-	glm::dvec3 pos(s.Position());
-	glm::dvec3 up(0.0);
-	glm::dvec3 dir(0.0, 0.0, -distance);
-	if (s.OnSurface()) {
-		Reference(s.GetPlanet());
-		track_orient = true;
-		up = s.GetPlanet().NormalAt(s.Position());
-		glm::dvec3 ref(glm::normalize(glm::cross(up, glm::dvec3(up.z, up.x, up.y))));
-		dir =
-			glm::dmat3(ref, up, glm::cross(ref, up))
-			* glm::dmat3(glm::eulerAngleYX(-angle.y, -angle.x))
-			* dir;
-	} else {
-		up.y = 1.0;
-		dir = glm::dmat3(glm::eulerAngleYX(-angle.y, -angle.x)) * dir;
-	}
-	pos += up * (c.Size() * 0.5);
-	up = glm::rotate(up, angle.z, glm::normalize(-dir));
-	view = glm::lookAt(pos - dir, pos, up);
+Camera &Camera::LookAt(const glm::vec3 &pos, const glm::vec3 &tgt, const glm::vec3 &up) noexcept {
+	view = glm::lookAt(pos, tgt, up);
 	return *this;
 }
 

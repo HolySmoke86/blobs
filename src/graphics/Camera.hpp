@@ -5,9 +5,6 @@
 
 
 namespace blobs {
-namespace creature {
-	class Creature;
-}
 namespace world {
 	class Body;
 }
@@ -34,10 +31,10 @@ public:
 	const world::Body &Reference() const noexcept { return *ref; }
 	Camera &Reference(const world::Body &) noexcept;
 
-	/// look at center, position relative to orbital reference plane for children
-	Camera &Orbital(const glm::vec3 &pos) noexcept;
-	/// look at creature from the side, angle in euler (ZXY in surface reference plane)
-	Camera &Radial(const creature::Creature &, double distance, const glm::dvec3 &angle);
+	Camera &LookAt(const glm::vec3 &pos, const glm::vec3 &tgt, const glm::vec3 &up) noexcept;
+
+	/// track orientation of reference body
+	void TrackOrientation(bool b = true) noexcept { track_orient = b; }
 
 	const glm::mat4 &Projection() const noexcept { return projection; }
 	const glm::mat4 &View() const noexcept { return view; }
