@@ -182,8 +182,8 @@ void Creature::Ingest(int res, double amount) noexcept {
 		// 30% of solids stays in body
 		AddMass(res, amount * 0.3 * composition.Compatibility(res));
 	} else {
-		// 5% of fluids stays in body
-		AddMass(res, amount * 0.05 * composition.Compatibility(res));
+		// 10% of fluids stays in body
+		AddMass(res, amount * 0.1 * composition.Compatibility(res));
 	}
 	math::GaloisLFSR &random = sim.Assets().random;
 	if (random.UNorm() < AdaptChance()) {
@@ -782,7 +782,7 @@ void Spawn(Creature &c, world::Planet &p) {
 	double color_divisor = 0.0;
 
 	if (p.HasAtmosphere()) {
-		c.AddMass(p.Atmosphere(), 0.01);
+		c.AddMass(p.Atmosphere(), 0.005);
 		color_avg += c.GetSimulation().Resources()[p.Atmosphere()].base_color * 0.1;
 		color_divisor += 0.1;
 	}
@@ -857,7 +857,10 @@ void Split(Creature &c) {
 	a->Name(c.GetSimulation().Assets().name.Sequential());
 	c.GetGenome().Configure(*a);
 	for (const auto &cmp : c.GetComposition()) {
-		a->AddMass(cmp.resource, cmp.value * 0.5);
+		// require at least 0.1%
+		if (cmp.value > 0.002) {
+			a->AddMass(cmp.resource, cmp.value * 0.5);
+		}
 	}
 	s.GetPlanet().AddCreature(a);
 	// TODO: duplicate situation somehow
@@ -872,7 +875,10 @@ void Split(Creature &c) {
 	b->Name(c.GetSimulation().Assets().name.Sequential());
 	c.GetGenome().Configure(*b);
 	for (const auto &cmp : c.GetComposition()) {
-		b->AddMass(cmp.resource, cmp.value * 0.5);
+		// require at least 0.1%
+		if (cmp.value > 0.002) {
+			b->AddMass(cmp.resource, cmp.value * 0.5);
+		}
 	}
 	s.GetPlanet().AddCreature(b);
 	b->GetSituation().SetPlanetSurface(

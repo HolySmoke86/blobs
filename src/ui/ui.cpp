@@ -223,7 +223,11 @@ void CreaturePanel::Hide() noexcept {
 void CreaturePanel::Draw(graphics::Viewport &viewport) noexcept {
 	if (!c) return;
 
-	name->Text(c->Name());
+	std::string name_str(c->Name());
+	if (c->Dead()) {
+		name_str += " (deceased)";
+	}
+	name->Text(name_str);
 	age->Text(TimeString(c->Age()));
 	mass->Text(MassString(c->Mass()));
 	size->Text(LengthString(c->Size()));

@@ -285,8 +285,8 @@ void IdleGoal::Action() {
 		GetSteering().ResumeSeparate();
 	}
 
-	// use boredom as chance per minute
-	if (Random().UNorm() < GetStats().Boredom().value * (1.0 / 3600.0)) {
+	// use boredom as chance per 30s
+	if (Random().UNorm() < GetStats().Boredom().value * (1.0 / 1800.0)) {
 		PickActivity();
 	}
 }
@@ -355,8 +355,8 @@ void IngestGoal::Tick(double dt) {
 	}
 	if (ingesting) {
 		if (OnSuitableTile() && !GetSituation().Moving()) {
-			GetCreature().Ingest(resource, yield * GetCreature().GetComposition().Compatibility(resource) * dt);
-			stat.Add(-1.0 * yield * dt);
+			GetCreature().Ingest(resource, yield * dt);
+			stat.Add(-1.0 * yield * GetCreature().GetComposition().Compatibility(resource) * dt);
 			if (stat.Empty()) {
 				SetComplete();
 			}
