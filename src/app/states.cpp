@@ -241,7 +241,7 @@ void MasterState::OnMouseWheel(const SDL_MouseWheelEvent &e) {
 }
 
 void MasterState::OnRender(graphics::Viewport &viewport) {
-	cam.LookAt(cam_pos, cam_focus, cam_up);
+	cam.LookAt(glm::vec3(cam_pos), glm::vec3(cam_focus), glm::vec3(cam_up));
 	assets.shaders.planet_surface.Activate();
 	assets.shaders.planet_surface.SetV(cam.View());
 	assets.shaders.sun_surface.Activate();
