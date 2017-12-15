@@ -61,6 +61,9 @@ struct Genome {
 	math::Distribution highlight_saturation;
 	math::Distribution highlight_lightness;
 
+	math::Distribution skin_back;
+	math::Distribution skin_side;
+
 	void Configure(Creature &) const;
 
 	static Properties<double> Instantiate(

@@ -103,6 +103,12 @@ public:
 	void HighlightColor(const glm::dvec3 &c) noexcept;
 	glm::dvec4 HighlightColor() const noexcept { return highlight_color; }
 
+	void BackSkin(double s) noexcept { skin_back = s; }
+	double BackSkin() const noexcept { return skin_back; }
+
+	void SideSkin(double s) noexcept { skin_side = s; }
+	double SideSkin() const noexcept { return skin_side; }
+
 	void Mass(double m) noexcept { mass = m; }
 	double Mass() const noexcept { return mass; }
 	void Ingest(int res, double amount) noexcept;
@@ -209,6 +215,8 @@ private:
 
 	glm::dvec3 base_color;
 	glm::dvec4 highlight_color;
+	double skin_back;
+	double skin_side;
 
 	double mass;
 	double size;

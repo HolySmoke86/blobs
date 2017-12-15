@@ -190,9 +190,9 @@ void Creature::Ingest(int res, double amount) noexcept {
 		// change color to be slightly more like resource
 		glm::dvec3 color(rgb2hsl(sim.Resources()[res].base_color));
 		// solids affect base color, others highlight
-		double p = sim.Resources()[res].state == world::Resource::SOLID ? 0 : 1;
-		double q = random.UInt(3); // hue, sat, or val
-		double r = random.UInt(2); // mean or deviation
+		int p = sim.Resources()[res].state == world::Resource::SOLID ? 0 : 1;
+		int q = random.UInt(3); // hue, sat, or val
+		int r = random.UInt(2); // mean or deviation
 		math::Distribution *d = nullptr;
 		double ref = 0.0;
 		if (p == 0) {
@@ -234,6 +234,20 @@ void Creature::Ingest(int res, double amount) noexcept {
 		} else {
 			// scale by ±15%, enforce bounds
 			d->StandardDeviation(glm::clamp(d->StandardDeviation() * (1.0 + random.SNorm() * 0.15), 0.0001, 0.5));
+		}
+	}
+	if (sim.Resources()[res].state == world::Resource::LIQUID && random.UNorm() < AdaptChance()) {
+		// change texture randomly
+		// TODO: make change depending on surroundings and/or resource
+		int p = random.UInt(2); // back or side
+		int q = random.UInt(2); // mean or deviation
+		math::Distribution &d = p ? genome.skin_side : genome.skin_back;
+		if (q == 0) {
+			// move ± one standard deviation
+			d.Mean(d.Mean() + (random.SNorm() * d.StandardDeviation()));
+		} else {
+			// scale by ±10%, enforce bounds
+			d.StandardDeviation(glm::clamp(d.StandardDeviation() * (1.0 + random.SNorm() * 0.1), 0.0001, 0.5));
 		}
 	}
 }
@@ -631,7 +645,16 @@ void Creature::BuildVAO() {
 	vao->ReserveAttributes(6 * 4, GL_STATIC_DRAW);
 	{
 		auto attrib = vao->MapAttributes(GL_WRITE_ONLY);
-		const float offset = 1.0f;
+		constexpr float offset = 1.0f;
+		constexpr float max_tex = 5.999f;
+		const float tex[6] = {
+			0.0f, // face
+			float(std::floor(skin_side * max_tex)), // left
+			float(std::floor(skin_back * max_tex)), // top
+			float(std::floor(skin_back * max_tex)), // back
+			float(std::floor(skin_side * max_tex)), // right
+			0.0f, // bottom
+		};
 		for (int surface = 0; surface < 6; ++surface) {
 			const float tex_u_begin = surface < 3 ? 1.0f : 0.0f;
 			const float tex_u_end = surface < 3 ? 0.0f : 1.0f;
@@ -644,7 +667,7 @@ void Creature::BuildVAO() {
 			attrib[4 * surface + 0].normal[(surface + 2) % 3] = surface < 3 ? 1.0f : -1.0f;
 			attrib[4 * surface + 0].texture.x = tex_u_begin;
 			attrib[4 * surface + 0].texture.y = 1.0f;
-			attrib[4 * surface + 0].texture.z = surface;
+			attrib[4 * surface + 0].texture.z = tex[surface];
 
 			attrib[4 * surface + 1].position[(surface + 0) % 3] = -offset;
 			attrib[4 * surface + 1].position[(surface + 1) % 3] =  offset;
@@ -654,7 +677,7 @@ void Creature::BuildVAO() {
 			attrib[4 * surface + 1].normal[(surface + 2) % 3] = surface < 3 ? 1.0f : -1.0f;
 			attrib[4 * surface + 1].texture.x = tex_u_end;
 			attrib[4 * surface + 1].texture.y = 1.0f;
-			attrib[4 * surface + 1].texture.z = surface;
+			attrib[4 * surface + 1].texture.z = tex[surface];
 
 			attrib[4 * surface + 2].position[(surface + 0) % 3] =  offset;
 			attrib[4 * surface + 2].position[(surface + 1) % 3] = -offset;
@@ -664,7 +687,7 @@ void Creature::BuildVAO() {
 			attrib[4 * surface + 2].normal[(surface + 2) % 3] = surface < 3 ? 1.0f : -1.0f;
 			attrib[4 * surface + 2].texture.x = tex_u_begin;
 			attrib[4 * surface + 2].texture.y = 0.0f;
-			attrib[4 * surface + 2].texture.z = surface;
+			attrib[4 * surface + 2].texture.z = tex[surface];
 
 			attrib[4 * surface + 3].position[(surface + 0) % 3] = offset;
 			attrib[4 * surface + 3].position[(surface + 1) % 3] = offset;
@@ -674,7 +697,7 @@ void Creature::BuildVAO() {
 			attrib[4 * surface + 3].normal[(surface + 2) % 3] = surface < 3 ? 1.0f : -1.0f;
 			attrib[4 * surface + 3].texture.x = tex_u_end;
 			attrib[4 * surface + 3].texture.y = 0.0f;
-			attrib[4 * surface + 3].texture.z = surface;
+			attrib[4 * surface + 3].texture.z = tex[surface];
 		}
 	}
 	vao->BindElements();
@@ -786,6 +809,9 @@ void Spawn(Creature &c, world::Planet &p) {
 	genome.highlight_saturation = { 1.0 - hsl.y, 0.01 };
 	genome.highlight_lightness = { 1.0 - hsl.z, 0.01 };
 
+	genome.skin_side = { 0.5, 0.01 };
+	genome.skin_back = { 0.5, 0.01 };
+
 	genome.Configure(c);
 }
 
@@ -817,6 +843,8 @@ void Genome::Configure(Creature &c) const {
 	);
 	c.BaseColor(hsl2rgb(base_color));
 	c.HighlightColor(hsl2rgb(highlight_color));
+	c.BackSkin(glm::clamp(skin_back.FakeNormal(random.SNorm()), 0.0, 1.0));
+	c.SideSkin(glm::clamp(skin_side.FakeNormal(random.SNorm()), 0.0, 1.0));
 	c.SetBackgroundTask(std::unique_ptr<Goal>(new BlobBackgroundTask(c)));
 	c.AddGoal(std::unique_ptr<Goal>(new IdleGoal(c)));
 }
