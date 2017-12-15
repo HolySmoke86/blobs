@@ -187,7 +187,6 @@ void MasterState::OnRender(graphics::Viewport &viewport) {
 
 	int num_lights = 0;
 	for (auto sun : sim.Suns()) {
-		// TODO: source sun's light color and strength
 		glm::vec3 pos(cam.View() * cam.Model(*sun)[3]);
 		assets.shaders.planet_surface.Activate();
 		assets.shaders.planet_surface.SetLight(num_lights, pos, glm::vec3(sun->Color()), float(sun->Luminosity()));

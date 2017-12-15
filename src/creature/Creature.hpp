@@ -3,7 +3,6 @@
 
 #include "Composition.hpp"
 #include "Genome.hpp"
-#include "Goal.hpp"
 #include "Memory.hpp"
 #include "Situation.hpp"
 #include "Steering.hpp"
@@ -11,6 +10,7 @@
 #include "../math/geometry.hpp"
 #include "../math/glm.hpp"
 
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
@@ -29,6 +29,8 @@ namespace world {
 	class Simulation;
 }
 namespace creature {
+
+class Goal;
 
 class Creature {
 
@@ -163,8 +165,8 @@ public:
 	const Memory &GetMemory() const noexcept { return memory; }
 
 	/// constantly active goal. every creature in the simulation is required to have one
-	void SetBackgroundTask(std::unique_ptr<Goal> &&g) { bg_task = std::move(g); }
-	Goal &BackgroundTask() { return *bg_task; }
+	void SetBackgroundTask(std::unique_ptr<Goal> &&g);
+	Goal &BackgroundTask();
 
 	void AddGoal(std::unique_ptr<Goal> &&);
 	const std::vector<std::unique_ptr<Goal>> &Goals() const noexcept { return goals; }
@@ -176,6 +178,8 @@ public:
 
 	Steering &GetSteering() noexcept { return steering; }
 	const Steering &GetSteering() const noexcept { return steering; }
+
+	void HeadingTarget(const glm::dvec3 &t) noexcept { heading_target = t; heading_manual = true; }
 
 	math::AABB CollisionBounds() const noexcept;
 	glm::dmat4 CollisionTransform() const noexcept;
@@ -224,6 +228,8 @@ private:
 
 	Situation situation;
 	Steering steering;
+	glm::dvec3 heading_target;
+	bool heading_manual;
 
 	// cached because steering makes heavy use of this
 	double perception_range;

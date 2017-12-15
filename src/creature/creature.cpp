@@ -142,6 +142,8 @@ Creature::Creature(world::Simulation &sim)
 , goals()
 , situation()
 , steering(*this)
+, heading_target(0.0, 0.0, -1.0)
+, heading_manual(false)
 , perception_range(1.0)
 , perception_range_squared(1.0)
 , perception_omni_range(1.0)
@@ -224,10 +226,10 @@ void Creature::Ingest(int res, double amount) noexcept {
 				} else if (diff > 0.5) {
 					diff -= 1.0;
 				}
-				// move ±15% of distance
-				d->Mean(std::fmod(d->Mean() + diff * random.SNorm() * 0.15, 1.0));
+				// move 0-15% of distance
+				d->Mean(std::fmod(d->Mean() + diff * random.UNorm() * 0.15, 1.0));
 			} else {
-				d->Mean(glm::clamp(d->Mean() + diff * random.SNorm() * 0.15, 0.0, 1.0));
+				d->Mean(glm::clamp(d->Mean() + diff * random.UNorm() * 0.15, 0.0, 1.0));
 			}
 		} else {
 			// scale by ±15%, enforce bounds
@@ -430,6 +432,14 @@ void Creature::AddGoal(std::unique_ptr<Goal> &&g) {
 	goals.emplace_back(std::move(g));
 }
 
+void Creature::SetBackgroundTask(std::unique_ptr<Goal> &&g) {
+	bg_task = std::move(g);
+}
+
+Goal &Creature::BackgroundTask() {
+	return *bg_task;
+}
+
 namespace {
 
 bool GoalCompare(const std::unique_ptr<Goal> &a, const std::unique_ptr<Goal> &b) {
@@ -470,23 +480,27 @@ void Creature::TickState(double dt) {
 	state.pos += f.vel * dt;
 	state.vel += f.acc * dt;
 	situation.EnforceConstraints(state);
-	if (glm::length2(state.vel) > 0.000001) {
-		glm::dvec3 nvel(glm::normalize(state.vel));
-		double ang = glm::angle(nvel, state.dir);
-		double turn_rate = PI * 0.75 * dt;
-		if (ang < turn_rate) {
-			state.dir = glm::normalize(state.vel);
-		} else if (std::abs(ang - PI) < 0.001) {
-			state.dir = glm::rotate(state.dir, turn_rate, situation.GetPlanet().NormalAt(state.pos));
-		} else {
-			state.dir = glm::rotate(state.dir, turn_rate, glm::normalize(glm::cross(state.dir, nvel)));
+
+	if (!heading_manual && glm::length2(state.vel) > 0.000001) {
+		const glm::dvec3 normal(situation.GetPlanet().NormalAt(state.pos));
+		const glm::dvec3 tangent(state.vel - (normal * glm::dot(state.vel, normal)));
+		if (glm::length2(tangent) > 0.000001) {
+			heading_target = glm::normalize(tangent);
 		}
 	}
+	double ang = glm::angle(heading_target, state.dir);
+	double turn_rate = PI * 0.75 * dt;
+	if (ang < turn_rate) {
+		state.dir = heading_target;
+		heading_manual = false;
+	} else {
+		state.dir = glm::rotate(state.dir, turn_rate, glm::normalize(glm::cross(state.dir, heading_target)));
+	}
+
 	situation.SetState(state);
 	// work is force times distance
-	// exclude gravity for no apparent reason
-	// actually, this should solely be based on steering force
-	DoWork(glm::length(f.acc - situation.GetPlanet().GravityAt(state.pos)) * Mass() * glm::length(f.vel) * dt);
+	// keep 10% of gravity as a kind of background burn
+	DoWork(glm::length(f.acc - (0.9 * situation.GetPlanet().GravityAt(state.pos))) * Mass() * glm::length(f.vel) * dt);
 }
 
 Situation::Derivative Creature::Step(const Situation::Derivative &ds, double dt) const noexcept {
@@ -702,6 +716,7 @@ void Spawn(Creature &c, world::Planet &p) {
 	p.AddCreature(&c);
 	c.GetSituation().SetPlanetSurface(p, glm::dvec3(0.0, 0.0, p.Radius()));
 	c.GetSituation().Heading(glm::dvec3(1.0, 0.0, 0.0));
+	c.HeadingTarget(glm::dvec3(1.0, 0.0, 0.0));
 
 	// probe surrounding area for common resources
 	int start = p.SideLength() / 2 - 2;
@@ -820,7 +835,7 @@ void Split(Creature &c) {
 	// TODO: duplicate situation somehow
 	a->GetSituation().SetPlanetSurface(
 		s.GetPlanet(),
-		s.Position() + glm::rotate(s.Heading() * a->Size() * 0.6, PI * 0.5, s.SurfaceNormal()));
+		s.Position() + glm::rotate(s.Heading() * a->Size() * 0.86, PI * 0.5, s.SurfaceNormal()));
 	a->BuildVAO();
 	c.GetSimulation().Log() << a->Name() << " was born" << std::endl;
 
@@ -834,7 +849,7 @@ void Split(Creature &c) {
 	s.GetPlanet().AddCreature(b);
 	b->GetSituation().SetPlanetSurface(
 		s.GetPlanet(),
-		s.Position() + glm::rotate(s.Heading() * b->Size() * 0.6, PI * -0.5, s.SurfaceNormal()));
+		s.Position() + glm::rotate(s.Heading() * b->Size() * 0.86, PI * -0.5, s.SurfaceNormal()));
 	b->BuildVAO();
 	c.GetSimulation().Log() << b->Name() << " was born" << std::endl;
 

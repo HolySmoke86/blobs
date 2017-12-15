@@ -47,24 +47,24 @@ void AttackGoal::Action() {
 		SetComplete();
 		return;
 	}
-	const glm::dvec3 diff(GetCreature().GetSituation().Position() - target.GetSituation().Position());
+	const glm::dvec3 diff(GetSituation().Position() - target.GetSituation().Position());
 	const double hit_range = GetCreature().Size() * 0.5 * GetCreature().DexertyFactor();
 	const double hit_dist = hit_range + (0.5 * GetCreature().Size()) + 0.5 * (target.Size());
-	if (GetCreature().GetStats().Damage().Critical()) {
+	if (GetStats().Damage().Critical()) {
 		// flee
-		GetCreature().GetSteering().Pass(diff * 5.0);
-		GetCreature().GetSteering().DontSeparate();
-		GetCreature().GetSteering().Haste(1.0);
+		GetSteering().Pass(diff * 5.0);
+		GetSteering().DontSeparate();
+		GetSteering().Haste(1.0);
 	} else if (glm::length2(diff) > hit_dist * hit_dist) {
 		// full throttle chase
-		GetCreature().GetSteering().Pass(target.GetSituation().Position());
-		GetCreature().GetSteering().DontSeparate();
-		GetCreature().GetSteering().Haste(1.0);
+		GetSteering().Pass(target.GetSituation().Position());
+		GetSteering().DontSeparate();
+		GetSteering().Haste(1.0);
 	} else {
 		// attack
-		GetCreature().GetSteering().Halt();
-		GetCreature().GetSteering().DontSeparate();
-		GetCreature().GetSteering().Haste(1.0);
+		GetSteering().Halt();
+		GetSteering().DontSeparate();
+		GetSteering().Haste(1.0);
 		if (cooldown <= 0.0) {
 			constexpr double impulse = 0.05;
 			const double force = GetCreature().Strength();
@@ -114,15 +114,15 @@ void BlobBackgroundTask::Tick(double dt) {
 		// TODO: derive breathing ability
 		int gas = Assets().data.resources["air"].id;
 		// TODO: check if in compatible atmosphere
-		double amount = GetCreature().GetStats().Breath().gain * -(1.0 + GetCreature().ExhaustionFactor());
-		GetCreature().GetStats().Breath().Add(amount * dt);
+		double amount = GetStats().Breath().gain * -(1.0 + GetCreature().ExhaustionFactor());
+		GetStats().Breath().Add(amount * dt);
 		// maintain ~1% gas composition
 		double gas_amount = GetCreature().GetComposition().Get(gas);
 		if (gas_amount < GetCreature().GetComposition().TotalMass() * 0.01) {
 			double add = std::min(GetCreature().GetComposition().TotalMass() * 0.025 - gas_amount, -amount * dt);
 			GetCreature().Ingest(gas, add);
 		}
-		if (GetCreature().GetStats().Breath().Empty()) {
+		if (GetStats().Breath().Empty()) {
 			breathing = false;
 		}
 	}
@@ -135,7 +135,7 @@ void BlobBackgroundTask::Action() {
 }
 
 void BlobBackgroundTask::CheckStats() {
-	Creature::Stats &stats = GetCreature().GetStats();
+	Creature::Stats &stats = GetStats();
 
 	if (!breathing && stats.Breath().Bad()) {
 		breathing = true;
@@ -174,13 +174,6 @@ void BlobBackgroundTask::CheckStats() {
 		eat_subtask->WhenComplete([&](Goal &) { eat_subtask = nullptr; });
 		GetCreature().AddGoal(std::unique_ptr<Goal>(eat_subtask));
 	}
-
-	// when in bad shape, don't make much effort
-	if (stats.Damage().Bad() || stats.Exhaustion().Bad() || stats.Fatigue().Critical()) {
-		GetCreature().GetSteering().DontSeparate();
-	} else {
-		GetCreature().GetSteering().ResumeSeparate();
-	}
 }
 
 void BlobBackgroundTask::CheckSplit() {
@@ -217,22 +210,6 @@ Goal::Goal(Creature &c)
 }
 
 Goal::~Goal() noexcept {
-}
-
-Situation &Goal::GetSituation() noexcept {
-	return c.GetSituation();
-}
-
-const Situation &Goal::GetSituation() const noexcept {
-	return c.GetSituation();
-}
-
-Steering &Goal::GetSteering() noexcept {
-	return c.GetSteering();
-}
-
-const Steering &Goal::GetSteering() const noexcept {
-	return c.GetSteering();
 }
 
 app::Assets &Goal::Assets() noexcept {
@@ -301,8 +278,15 @@ std::string IdleGoal::Describe() const {
 }
 
 void IdleGoal::Action() {
+	// when in bad shape, don't make much effort
+	if (GetStats().Damage().Bad() || GetStats().Exhaustion().Bad() || GetStats().Fatigue().Critical()) {
+		GetSteering().DontSeparate();
+	} else {
+		GetSteering().ResumeSeparate();
+	}
+
 	// use boredom as chance per minute
-	if (Random().UNorm() < GetCreature().GetStats().Boredom().value * (1.0 / 3600.0)) {
+	if (Random().UNorm() < GetStats().Boredom().value * (1.0 / 3600.0)) {
 		PickActivity();
 	}
 }
@@ -530,7 +514,6 @@ void LocateResourceGoal::SearchVicinity() {
 			const world::TileType &type = planet.TileTypeAt(tpos);
 			auto yield = type.FindBestResource(accept);
 			if (yield != type.resources.cend()) {
-				// TODO: subtract minimum yield
 				rating[y + search_radius][x + search_radius] = yield->ubiquity * accept.Get(yield->resource);
 				// penalize distance
 				double dist = std::max(0.125, 0.25 * glm::length2(tpos - pos));

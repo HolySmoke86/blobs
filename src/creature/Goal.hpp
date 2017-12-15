@@ -1,6 +1,8 @@
 #ifndef BLOBS_CREATURE_GOAL_HPP_
 #define BLOBS_CREATURE_GOAL_HPP_
 
+#include "Creature.hpp"
+
 #include <functional>
 #include <string>
 
@@ -14,10 +16,6 @@ namespace math {
 }
 namespace creature {
 
-class Creature;
-class Situation;
-class Steering;
-
 class Goal {
 
 public:
@@ -30,10 +28,12 @@ public:
 public:
 	Creature &GetCreature() noexcept { return c; }
 	const Creature &GetCreature() const noexcept { return c; }
-	Situation &GetSituation() noexcept;
-	const Situation &GetSituation() const noexcept;
-	Steering &GetSteering() noexcept;
-	const Steering &GetSteering() const noexcept;
+	Creature::Stats &GetStats() noexcept { return c.GetStats(); }
+	const Creature::Stats &GetStats() const noexcept { return c.GetStats(); }
+	Situation &GetSituation() noexcept { return c.GetSituation(); }
+	const Situation &GetSituation() const noexcept { return c.GetSituation(); }
+	Steering &GetSteering() noexcept { return c.GetSteering(); }
+	const Steering &GetSteering() const noexcept { return c.GetSteering(); }
 	app::Assets &Assets() noexcept;
 	const app::Assets &Assets() const noexcept;
 	math::GaloisLFSR &Random() noexcept;

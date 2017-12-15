@@ -8,6 +8,7 @@
 #include "Meter.hpp"
 #include "../app/Assets.hpp"
 #include "../creature/Creature.hpp"
+#include "../creature/Goal.hpp"
 #include "../graphics/Viewport.hpp"
 #include "../math/const.hpp"
 #include "../world/Body.hpp"
