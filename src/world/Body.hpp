@@ -78,6 +78,10 @@ public:
 	double GravitationalParameter() const noexcept;
 	double OrbitalPeriod() const noexcept;
 	double RotationalPeriod() const noexcept;
+	/// day length relative to parent, not neccessarily a sun
+	/// gives absolute value in seconds
+	/// returns sidereal day for parent-less bodies
+	double DayLength() const noexcept;
 	double SphereOfInfluence() const noexcept;
 
 	math::Sphere CollisionBounds() const noexcept { return math::Sphere{ glm::dvec3(0.0), Radius() }; }

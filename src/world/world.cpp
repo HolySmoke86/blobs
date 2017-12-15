@@ -115,6 +115,16 @@ double Body::RotationalPeriod() const noexcept {
 	}
 }
 
+double Body::DayLength() const noexcept {
+	if (!HasParent()) {
+		return RotationalPeriod();
+	}
+	double year = OrbitalPeriod();
+	double sidereal = RotationalPeriod();
+	double grade = (angular < 0.0 ? -1.0 : 1.0) * (std::abs(axis_tilt.x) > PI * 0.5 ? -1.0 : 1.0);
+	return std::abs((year * sidereal) / ( year + (grade * sidereal)));
+}
+
 double Body::SphereOfInfluence() const noexcept {
 	if (HasParent()) {
 		return orbit.SemiMajorAxis() * std::pow(Mass() / Parent().Mass(), 2.0 / 5.0);

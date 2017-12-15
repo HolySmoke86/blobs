@@ -546,7 +546,7 @@ void TimePanel::Draw(graphics::Viewport &viewport) noexcept {
 	live->Text(NumberString(sim.LiveCreatures().size()));
 	time->Text(TimeString(sim.Time()));
 	if (body) {
-		clock->Text(TimeString(std::fmod(sim.Time(), body->RotationalPeriod())));
+		clock->Text(TimeString(std::fmod(sim.Time(), body->DayLength())) + " / " + TimeString(body->DayLength()));
 	} else {
 		clock->Text("no reference");
 	}
