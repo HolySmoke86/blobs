@@ -4,9 +4,11 @@
 #include "PlanetSurface.hpp"
 #include "Program.hpp"
 #include "Shader.hpp"
+#include "SkyBox.hpp"
 #include "SunSurface.hpp"
 
 #include "ArrayTexture.hpp"
+#include "CubeMap.hpp"
 #include "Texture.hpp"
 #include "../app/init.hpp"
 
@@ -327,6 +329,131 @@ void PlanetSurface::SetLight(int n, const glm::vec3 &pos, const glm::vec3 &color
 
 void PlanetSurface::SetNumLights(int n) noexcept {
 	prog.Uniform(num_lights_handle, std::min(MAX_LIGHTS, n));
+}
+
+
+SkyBox::SkyBox()
+: prog()
+, v(1.0f)
+, p(1.0f)
+, vp(1.0f) {
+	prog.LoadShader(
+		GL_VERTEX_SHADER,
+		"#version 330 core\n"
+
+		"layout(location = 0) in vec3 vtx_position;\n"
+
+		"uniform mat4 VP;\n"
+
+		"out vec3 vtx_viewspace;\n"
+
+		"void main() {\n"
+			"gl_Position = VP * vec4(vtx_position, 1.0);\n"
+			"gl_Position.z = gl_Position.w;\n"
+			"vtx_viewspace = vtx_position;\n"
+		"}\n"
+	);
+	prog.LoadShader(
+		GL_FRAGMENT_SHADER,
+		"#version 330 core\n"
+
+		"in vec3 vtx_viewspace;\n"
+
+		"uniform samplerCube tex_sampler;\n"
+
+		"out vec3 color;\n"
+
+		"void main() {\n"
+			"color = texture(tex_sampler, vtx_viewspace).rgb;\n"
+		"}\n"
+	);
+	prog.Link();
+	if (!prog.Linked()) {
+		prog.Log(std::cerr);
+		throw std::runtime_error("link program");
+	}
+	vp_handle = prog.UniformLocation("VP");
+	sampler_handle = prog.UniformLocation("tex_sampler");
+
+	vao.Bind();
+	vao.BindAttributes();
+	vao.EnableAttribute(0);
+	vao.AttributePointer<glm::vec3>(0, false, 0);
+	vao.ReserveAttributes(8, GL_STATIC_DRAW);
+	{
+		auto attrib = vao.MapAttributes(GL_WRITE_ONLY);
+		attrib[0] = glm::vec3(-1.0f, -1.0f, -1.0f);
+		attrib[1] = glm::vec3(-1.0f, -1.0f,  1.0f);
+		attrib[2] = glm::vec3(-1.0f,  1.0f, -1.0f);
+		attrib[3] = glm::vec3(-1.0f,  1.0f,  1.0f);
+		attrib[4] = glm::vec3( 1.0f, -1.0f, -1.0f);
+		attrib[5] = glm::vec3( 1.0f, -1.0f,  1.0f);
+		attrib[6] = glm::vec3( 1.0f,  1.0f, -1.0f);
+		attrib[7] = glm::vec3( 1.0f,  1.0f,  1.0f);
+	}
+	vao.BindElements();
+	vao.ReserveElements(14, GL_STATIC_DRAW);
+	{
+		auto element = vao.MapElements(GL_WRITE_ONLY);
+		element[ 0] = 1;
+		element[ 1] = 0;
+		element[ 2] = 3;
+		element[ 3] = 2;
+		element[ 4] = 6;
+		element[ 5] = 0;
+		element[ 6] = 4;
+		element[ 7] = 1;
+		element[ 8] = 5;
+		element[ 9] = 3;
+		element[10] = 7;
+		element[11] = 6;
+		element[12] = 5;
+		element[13] = 4;
+	}
+	vao.Unbind();
+}
+
+SkyBox::~SkyBox() {
+}
+
+void SkyBox::Activate() noexcept {
+	prog.Use();
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_BLEND);
+}
+
+void SkyBox::SetV(const glm::mat4 &vv) noexcept {
+	v = vv;
+	v[0].w = 0.0f;
+	v[1].w = 0.0f;
+	v[2].w = 0.0f;
+	v[3] = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+	vp = p * v;
+	prog.Uniform(vp_handle, vp);
+}
+
+void SkyBox::SetP(const glm::mat4 &pp) noexcept {
+	p = pp;
+	vp = p * v;
+	prog.Uniform(vp_handle, vp);
+}
+
+void SkyBox::SetVP(const glm::mat4 &vv, const glm::mat4 &pp) noexcept {
+	p = pp;
+	SetV(vv);
+}
+
+void SkyBox::SetTexture(CubeMap &cm) noexcept {
+	glActiveTexture(GL_TEXTURE0);
+	cm.Bind();
+	prog.Uniform(sampler_handle, GLint(0));
+}
+
+void SkyBox::Draw() const noexcept {
+	vao.Bind();
+	vao.DrawTriangleStrip(14);
 }
 
 

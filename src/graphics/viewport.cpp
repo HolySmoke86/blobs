@@ -81,6 +81,12 @@ glm::mat4 Camera::Model(const world::Body &b) const noexcept {
 	}
 }
 
+glm::mat4 Camera::Universe() const noexcept {
+	return glm::mat4(track_orient
+		? ref->InverseTransform() * ref->ToUniverse()
+		: ref->ToUniverse());
+}
+
 void Camera::UpdateProjection() noexcept {
 	projection = glm::infinitePerspective(fov, aspect, near);
 }

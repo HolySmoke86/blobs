@@ -6,8 +6,10 @@
 #include "../graphics/ArrayTexture.hpp"
 #include "../graphics/Canvas.hpp"
 #include "../graphics/CreatureSkin.hpp"
+#include "../graphics/CubeMap.hpp"
 #include "../graphics/Font.hpp"
 #include "../graphics/PlanetSurface.hpp"
+#include "../graphics/SkyBox.hpp"
 #include "../graphics/SunSurface.hpp"
 #include "../math/GaloisLFSR.hpp"
 #include "../world/Resource.hpp"
@@ -29,6 +31,7 @@ struct Assets {
 	std::string data_path;
 	std::string font_path;
 	std::string skin_path;
+	std::string sky_path;
 	std::string tile_path;
 
 	math::GaloisLFSR random;
@@ -49,6 +52,7 @@ struct Assets {
 	struct {
 		graphics::ArrayTexture tiles;
 		graphics::ArrayTexture skins;
+		graphics::CubeMap sky;
 	} textures;
 
 	struct {
@@ -57,6 +61,7 @@ struct Assets {
 		graphics::PlanetSurface planet_surface;
 		graphics::SunSurface sun_surface;
 		graphics::CreatureSkin creature_skin;
+		graphics::SkyBox sky_box;
 	} shaders;
 
 	Assets();
@@ -73,6 +78,7 @@ struct Assets {
 
 	void LoadTileTexture(const std::string &name, graphics::ArrayTexture &, int layer) const;
 	void LoadSkinTexture(const std::string &name, graphics::ArrayTexture &, int layer) const;
+	void LoadSkyTexture(const std::string &name, graphics::CubeMap &) const;
 
 };
 

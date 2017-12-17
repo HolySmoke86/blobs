@@ -39,6 +39,7 @@ public:
 	const glm::mat4 &Projection() const noexcept { return projection; }
 	const glm::mat4 &View() const noexcept { return view; }
 	glm::mat4 Model(const world::Body &) const noexcept;
+	glm::mat4 Universe() const noexcept;
 
 private:
 	void UpdateProjection() noexcept;

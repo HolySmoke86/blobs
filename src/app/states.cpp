@@ -89,6 +89,8 @@ void MasterState::OnResize(int w, int h) {
 	assets.shaders.sun_surface.SetVP(cam.View(), cam.Projection());
 	assets.shaders.creature_skin.Activate();
 	assets.shaders.creature_skin.SetVP(cam.View(), cam.Projection());
+	assets.shaders.sky_box.Activate();
+	assets.shaders.sky_box.SetVP(cam.View() * cam.Universe(), cam.Projection());
 }
 
 void MasterState::OnUpdate(int dt) {
@@ -244,6 +246,8 @@ void MasterState::OnRender(graphics::Viewport &viewport) {
 	cam.LookAt(glm::vec3(cam_pos), glm::vec3(cam_focus), glm::vec3(cam_up));
 	assets.shaders.planet_surface.Activate();
 	assets.shaders.planet_surface.SetV(cam.View());
+	assets.shaders.sky_box.Activate();
+	assets.shaders.sky_box.SetV(cam.View() * cam.Universe());
 	assets.shaders.sun_surface.Activate();
 	assets.shaders.sun_surface.SetV(cam.View());
 	assets.shaders.creature_skin.Activate();
@@ -305,6 +309,10 @@ void MasterState::OnRender(graphics::Viewport &viewport) {
 		assets.shaders.creature_skin.SetHighlightColor(glm::vec4(c->HighlightColor()));
 		c->Draw(viewport);
 	}
+
+	assets.shaders.sky_box.Activate();
+	assets.shaders.sky_box.SetTexture(assets.textures.sky);
+	assets.shaders.sky_box.Draw();
 
 	viewport.ClearDepth();
 	bp.Draw(viewport);

@@ -175,6 +175,7 @@ Assets::Assets()
 , data_path(path + "data/")
 , font_path(path + "fonts/")
 , skin_path(path + "skins/")
+, sky_path(path + "skies/")
 , tile_path(path + "tiles/")
 , random(0x6283B64CEFE57925)
 , fonts{
@@ -223,6 +224,11 @@ Assets::Assets()
 	LoadSkinTexture("spots", textures.skins, 4);
 	LoadSkinTexture("circles", textures.skins, 5);
 	textures.skins.FilterTrilinear();
+
+	textures.sky.Bind();
+	LoadSkyTexture("blue", textures.sky);
+	textures.sky.FilterTrilinear();
+	textures.sky.WrapEdge();
 }
 
 Assets::~Assets() {
@@ -378,6 +384,72 @@ void Assets::LoadSkinTexture(const string &name, graphics::ArrayTexture &tex, in
 	}
 	try {
 		tex.Data(layer, *srf);
+	} catch (...) {
+		SDL_FreeSurface(srf);
+		throw;
+	}
+	SDL_FreeSurface(srf);
+}
+
+void Assets::LoadSkyTexture(const string &name, graphics::CubeMap &cm) const {
+	string full = sky_path + name;
+	string right = full + "-right.png";
+	string left = full + "-left.png";
+	string top = full + "-top.png";
+	string bottom = full + "-bottom.png";
+	string back = full + "-back.png";
+	string front = full + "-front.png";
+
+	SDL_Surface *srf = nullptr;
+
+	if (!(srf = IMG_Load(right.c_str()))) throw SDLError("IMG_Load");
+	try {
+		cm.Data(graphics::CubeMap::RIGHT, *srf);
+	} catch (...) {
+		SDL_FreeSurface(srf);
+		throw;
+	}
+	SDL_FreeSurface(srf);
+
+	if (!(srf = IMG_Load(left.c_str()))) throw SDLError("IMG_Load");
+	try {
+		cm.Data(graphics::CubeMap::LEFT, *srf);
+	} catch (...) {
+		SDL_FreeSurface(srf);
+		throw;
+	}
+	SDL_FreeSurface(srf);
+
+	if (!(srf = IMG_Load(top.c_str()))) throw SDLError("IMG_Load");
+	try {
+		cm.Data(graphics::CubeMap::TOP, *srf);
+	} catch (...) {
+		SDL_FreeSurface(srf);
+		throw;
+	}
+	SDL_FreeSurface(srf);
+
+	if (!(srf = IMG_Load(bottom.c_str()))) throw SDLError("IMG_Load");
+	try {
+		cm.Data(graphics::CubeMap::BOTTOM, *srf);
+	} catch (...) {
+		SDL_FreeSurface(srf);
+		throw;
+	}
+	SDL_FreeSurface(srf);
+
+	if (!(srf = IMG_Load(back.c_str()))) throw SDLError("IMG_Load");
+	try {
+		cm.Data(graphics::CubeMap::BACK, *srf);
+	} catch (...) {
+		SDL_FreeSurface(srf);
+		throw;
+	}
+	SDL_FreeSurface(srf);
+
+	if (!(srf = IMG_Load(front.c_str()))) throw SDLError("IMG_Load");
+	try {
+		cm.Data(graphics::CubeMap::FRONT, *srf);
 	} catch (...) {
 		SDL_FreeSurface(srf);
 		throw;
