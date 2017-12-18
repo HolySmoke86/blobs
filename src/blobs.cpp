@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
 	sun.Radius(200.0);
 	sun.Color(glm::dvec3(1.0));
 	sun.Luminosity(1.0e8);
-	sun.SurfaceTilt(glm::dvec2(PI * 0.25, PI * 0.25));
+	sun.AxialTilt(glm::dvec2(PI * 0.25, PI * 0.25));
 	sun.AngularMomentum(1.0e18);
 
 	world::Planet planet(25);
@@ -33,7 +33,6 @@ int main(int argc, char *argv[]) {
 	planet.SetParent(sun);
 	planet.Mass(1.0e13);
 	planet.GetOrbit().SemiMajorAxis(8184.0);
-	planet.SurfaceTilt(glm::dvec2(PI * 0.25, PI * 0.25));
 	planet.AxialTilt(glm::dvec2(PI * 0.127, 0.0));
 	planet.AngularMomentum(6.5e13);
 
@@ -50,7 +49,6 @@ int main(int argc, char *argv[]) {
 	second_planet.SetParent(sun);
 	second_planet.Mass(1.0e12);
 	second_planet.GetOrbit().SemiMajorAxis(4350.0);
-	second_planet.SurfaceTilt(glm::dvec2(PI * 0.125, PI * 0.25));
 	second_planet.AxialTilt(glm::dvec2(PI * 0.95, 0.0));
 	second_planet.AngularMomentum(1.0e12);
 

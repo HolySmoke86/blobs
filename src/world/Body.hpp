@@ -61,9 +61,6 @@ public:
 	Orbit &GetOrbit() noexcept { return orbit; }
 	const Orbit &GetOrbit() const noexcept { return orbit; }
 
-	const glm::dvec2 &SurfaceTilt() const noexcept { return surface_tilt; }
-	void SurfaceTilt(const glm::dvec2 &t) noexcept { surface_tilt = t; }
-
 	const glm::dvec2 &AxialTilt() const noexcept { return axis_tilt; }
 	void AxialTilt(const glm::dvec2 &t) noexcept { axis_tilt = t; }
 
@@ -123,7 +120,6 @@ private:
 	double mass;
 	double radius;
 	Orbit orbit;
-	glm::dvec2 surface_tilt;
 	glm::dvec2 axis_tilt;
 	double rotation;
 	double angular;

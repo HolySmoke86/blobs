@@ -42,7 +42,6 @@ Body::Body()
 , mass(1.0)
 , radius(1.0)
 , orbit()
-, surface_tilt(0.0, 0.0)
 , axis_tilt(0.0, 0.0)
 , rotation(0.0)
 , angular(0.0)
@@ -189,12 +188,8 @@ void Body::Cache() noexcept {
 		orbital = glm::eulerAngleXY(axis_tilt.x, axis_tilt.y);
 		inverse_orbital = glm::eulerAngleYX(-axis_tilt.y, -axis_tilt.x);
 	}
-	local =
-		glm::eulerAngleY(rotation)
-		* glm::eulerAngleXY(surface_tilt.x, surface_tilt.y);
-	inverse_local =
-		glm::eulerAngleYX(-surface_tilt.y, -surface_tilt.x)
-		* glm::eulerAngleY(-rotation);
+	local = glm::eulerAngleY(rotation);
+	inverse_local = glm::eulerAngleY(-rotation);
 }
 
 void Body::CheckCollision() noexcept {
@@ -606,7 +601,7 @@ void GenerateEarthlike(const Set<TileType> &tiles, Planet &p) noexcept {
 	constexpr double highland_thresh = 0.4;
 	constexpr double mountain_thresh = 0.5;
 
-	const glm::dvec3 axis(glm::dvec4(0.0, 1.0, 0.0, 0.0) * glm::eulerAngleXY(p.SurfaceTilt().x, p.SurfaceTilt().y));
+	const glm::dvec3 axis(0.0, 1.0, 0.0);
 	const double cap_thresh = std::abs(std::cos(p.AxialTilt().x));
 	const double equ_thresh = std::abs(std::sin(p.AxialTilt().x)) / 2.0;
 	const double fzone_start = equ_thresh - (equ_thresh - cap_thresh) / 3.0;
