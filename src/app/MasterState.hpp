@@ -41,6 +41,9 @@ public:
 	graphics::Camera &GetCamera() noexcept { return cam; }
 	const graphics::Camera &GetCamera() const noexcept { return cam; }
 
+	ui::BodyPanel &GetBodyPanel() noexcept { return bp; }
+	const ui::BodyPanel &GetBodyPanel() const noexcept { return bp; }
+
 	ui::CreaturePanel &GetCreaturePanel() noexcept { return cp; }
 	const ui::CreaturePanel &GetCreaturePanel() const noexcept { return cp; }
 

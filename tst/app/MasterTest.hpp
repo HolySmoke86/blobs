@@ -14,6 +14,7 @@ class MasterTest
 CPPUNIT_TEST_SUITE(MasterTest);
 
 CPPUNIT_TEST(testOneSecond);
+CPPUNIT_TEST(testBasicInteraction);
 
 CPPUNIT_TEST_SUITE_END();
 
@@ -22,6 +23,7 @@ public:
 	void tearDown();
 
 	void testOneSecond();
+	void testBasicInteraction();
 
 };
 
