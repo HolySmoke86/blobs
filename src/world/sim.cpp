@@ -69,9 +69,8 @@ std::string Record::ValueString(int i) const {
 	}
 }
 
-Simulation::Simulation(Body &r, app::Assets &assets)
-: root(r)
-, assets(assets)
+Simulation::Simulation(app::Assets &assets)
+: assets(assets)
 , bodies()
 , planets()
 , suns()
@@ -79,7 +78,6 @@ Simulation::Simulation(Body &r, app::Assets &assets)
 , dead()
 , time(0.0)
 , records(7) {
-	AddBody(r);
 	records[0].name = "Age";
 	records[0].type = Record::TIME;
 	records[1].name = "Mass";
@@ -124,6 +122,15 @@ void Simulation::AddPlanet(Planet &p) {
 void Simulation::AddSun(Sun &s) {
 	AddBody(s);
 	suns.insert(&s);
+}
+
+Planet &Simulation::PlanetByName(const std::string &name) {
+	for (auto &p : planets) {
+		if (p->Name() == name) {
+			return *p;
+		}
+	}
+	throw std::runtime_error("planet named \"" + name + "\" not found");
 }
 
 void Simulation::SetAlive(creature::Creature *c) {

@@ -6,6 +6,9 @@
 #include "../graphics/Viewport.hpp"
 #include "../io/Token.hpp"
 #include "../io/TokenStreamReader.hpp"
+#include "../world/Planet.hpp"
+#include "../world/Simulation.hpp"
+#include "../world/Sun.hpp"
 
 #include <fstream>
 #include <SDL.h>
@@ -455,6 +458,139 @@ void Assets::LoadSkyTexture(const string &name, graphics::CubeMap &cm) const {
 		throw;
 	}
 	SDL_FreeSurface(srf);
+}
+
+void Assets::LoadUniverse(const string &name, world::Simulation &sim) const {
+	std::ifstream universe_file(data_path + name);
+	io::TokenStreamReader universe_reader(universe_file);
+	ReadBody(universe_reader, sim);
+	universe_reader.Skip(io::Token::SEMICOLON);
+}
+
+world::Body *Assets::ReadBody(io::TokenStreamReader &in, world::Simulation &sim) const {
+	std::unique_ptr<world::Body> body;
+	string name;
+	in.ReadIdentifier(name);
+	if (name == "Sun") {
+		world::Sun *sun = new world::Sun;
+		body.reset(sun);
+		sim.AddSun(*sun);
+		in.Skip(io::Token::ANGLE_BRACKET_OPEN);
+		while (in.Peek().type != io::Token::ANGLE_BRACKET_CLOSE) {
+			in.ReadIdentifier(name);
+			in.Skip(io::Token::EQUALS);
+			ReadSunProperty(name, in, *sun, sim);
+			in.Skip(io::Token::SEMICOLON);
+		}
+		in.Skip(io::Token::ANGLE_BRACKET_CLOSE);
+		in.Skip(io::Token::SEMICOLON);
+	} else if (name == "Planet") {
+		in.Skip(io::Token::PARENTHESIS_OPEN);
+		int sidelength = in.GetInt();
+		in.Skip(io::Token::PARENTHESIS_CLOSE);
+		world::Planet *planet = new world::Planet(sidelength);
+		sim.AddPlanet(*planet);
+		body.reset(planet);
+		in.Skip(io::Token::ANGLE_BRACKET_OPEN);
+		while (in.Peek().type != io::Token::ANGLE_BRACKET_CLOSE) {
+			in.ReadIdentifier(name);
+			in.Skip(io::Token::EQUALS);
+			ReadPlanetProperty(name, in, *planet, sim);
+			in.Skip(io::Token::SEMICOLON);
+		}
+		in.Skip(io::Token::ANGLE_BRACKET_CLOSE);
+	} else {
+		throw std::runtime_error("unknown body class " + name);
+	}
+	return body.release();
+}
+
+void Assets::ReadSunProperty(const std::string &name, io::TokenStreamReader &in, world::Sun &sun, world::Simulation &sim) const {
+	if (name == "color") {
+		glm::dvec3 color(0.0);
+		in.ReadVec(color);
+		sun.Color(color);
+	} else if (name == "luminosity") {
+		sun.Luminosity(in.GetDouble());
+	} else {
+		ReadBodyProperty(name, in, sun, sim);
+	}
+}
+
+void Assets::ReadPlanetProperty(const std::string &name, io::TokenStreamReader &in, world::Planet &planet, world::Simulation &sim) const {
+	if (name == "generate") {
+		string gen;
+		in.ReadIdentifier(gen);
+		if (gen == "earthlike") {
+			world::GenerateEarthlike(data.tile_types, planet);
+		} else if (gen == "test") {
+			world::GenerateTest(data.tile_types, planet);
+		} else {
+			throw std::runtime_error("unknown surface generator " + gen);
+		}
+	} else if (name == "atmosphere") {
+		string atm;
+		in.ReadIdentifier(atm);
+		planet.Atmosphere(data.resources[atm].id);
+	} else {
+		ReadBodyProperty(name, in, planet, sim);
+	}
+}
+
+void Assets::ReadBodyProperty(const std::string &name, io::TokenStreamReader &in, world::Body &body, world::Simulation &sim) const {
+	if (name == "name") {
+		string value;
+		in.ReadString(value);
+		body.Name(value);
+	} else if (name == "mass") {
+		body.Mass(in.GetDouble());
+	} else if (name == "radius") {
+		body.Radius(in.GetDouble());
+	} else if (name == "axial_tilt") {
+		glm::dvec2 tilt(0.0);
+		in.ReadVec(tilt);
+		body.AxialTilt(tilt);
+	} else if (name == "rotation") {
+		body.Rotation(in.GetDouble());
+	} else if (name == "angular_momentum") {
+		body.AngularMomentum(in.GetDouble());
+	} else if (name == "orbit") {
+		in.Skip(io::Token::ANGLE_BRACKET_OPEN);
+		while (in.Peek().type != io::Token::ANGLE_BRACKET_CLOSE) {
+			string oname;
+			in.ReadIdentifier(oname);
+			in.Skip(io::Token::EQUALS);
+			if (oname == "SMA" || oname == "semi_major_axis") {
+				body.GetOrbit().SemiMajorAxis(in.GetDouble());
+			} else if (oname == "ECC" || oname == "eccentricity") {
+				body.GetOrbit().Eccentricity(in.GetDouble());
+			} else if (oname == "INC" || oname == "inclination") {
+				body.GetOrbit().Inclination(in.GetDouble());
+			} else if (oname == "ASC" || oname == "ascending_node" || oname == "longitude_ascending") {
+				body.GetOrbit().LongitudeAscending(in.GetDouble());
+			} else if (oname == "ARG" || oname == "APE" || oname == "argument_periapsis") {
+				body.GetOrbit().ArgumentPeriapsis(in.GetDouble());
+			} else if (oname == "MNA" || oname == "mean_anomaly") {
+				body.GetOrbit().MeanAnomaly(in.GetDouble());
+			} else {
+				throw std::runtime_error("unknown orbit property " + oname);
+			}
+			in.Skip(io::Token::SEMICOLON);
+		}
+		in.Skip(io::Token::ANGLE_BRACKET_CLOSE);
+	} else if (name == "children") {
+		in.Skip(io::Token::BRACKET_OPEN);
+		while (in.Peek().type != io::Token::BRACKET_CLOSE) {
+			world::Body *b = ReadBody(in, sim);
+			b->SetParent(body);
+			if (in.Peek().type == io::Token::COMMA) {
+				in.Skip(io::Token::COMMA);
+			}
+		}
+		in.Skip(io::Token::BRACKET_CLOSE);
+	} else {
+		throw std::runtime_error("unknown body property " + name);
+	}
 }
 
 }

@@ -13,7 +13,8 @@ class AssetTest
 
 CPPUNIT_TEST_SUITE(AssetTest);
 
-CPPUNIT_TEST(testLoadAll);
+CPPUNIT_TEST(testLoadBasic);
+CPPUNIT_TEST(testLoadUniverse);
 
 CPPUNIT_TEST_SUITE_END();
 
@@ -21,7 +22,8 @@ public:
 	void setUp();
 	void tearDown();
 
-	void testLoadAll();
+	void testLoadBasic();
+	void testLoadUniverse();
 
 };
 

@@ -25,7 +25,7 @@ class TileType;
 class Simulation {
 
 public:
-	explicit Simulation(Body &root, app::Assets &);
+	explicit Simulation(app::Assets &);
 	~Simulation();
 
 	Simulation(const Simulation &) = delete;
@@ -36,9 +36,6 @@ public:
 
 public:
 	void Tick(double dt);
-
-	Body &Root() noexcept { return root; }
-	const Body &Root() const noexcept { return root; }
 
 	app::Assets &Assets() noexcept { return assets; }
 	const app::Assets &Assets() const noexcept { return assets; }
@@ -52,6 +49,7 @@ public:
 	const std::set<Body *> &Bodies() const noexcept { return bodies; }
 	const std::set<Planet *> &Planets() const noexcept { return planets; }
 	const std::set<Sun *> &Suns() const noexcept { return suns; }
+	Planet &PlanetByName(const std::string &);
 
 	void SetAlive(creature::Creature *);
 	std::vector<creature::Creature *> &LiveCreatures() noexcept { return alive; }
@@ -70,7 +68,6 @@ public:
 	std::ostream &Log();
 
 private:
-	Body &root;
 	app::Assets &assets;
 
 	std::set<Body *> bodies;

@@ -25,7 +25,7 @@ MasterState::MasterState(Assets &assets, world::Simulation &sim) noexcept
 : State()
 , assets(assets)
 , sim(sim)
-, cam(sim.Root())
+, cam(**sim.Suns().begin())
 , cam_pos(0.0, 0.0, 1.0)
 , cam_tgt_pos(0.0, 0.0, 1.0)
 , cam_focus(0.0)

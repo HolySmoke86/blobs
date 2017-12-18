@@ -2,6 +2,7 @@
 
 #include "app/Assets.hpp"
 #include "app/init.hpp"
+#include "world/Simulation.hpp"
 
 CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(blobs::app::test::AssetTest, "headed");
 
@@ -17,7 +18,7 @@ void AssetTest::tearDown() {
 }
 
 
-void AssetTest::testLoadAll() {
+void AssetTest::testLoadBasic() {
 	Init init(false, 1);
 	Assets assets;
 
@@ -67,6 +68,27 @@ void AssetTest::testLoadAll() {
 	CPPUNIT_ASSERT_EQUAL_MESSAGE(
 		"small font has wrong family",
 		std::string("DejaVu Sans"), std::string(assets.fonts.small.FamilyName())
+	);
+}
+
+void AssetTest::testLoadUniverse() {
+	Init init(false, 1);
+	Assets assets;
+
+	world::Simulation sim(assets);
+	assets.LoadUniverse("universe", sim);
+
+	CPPUNIT_ASSERT_EQUAL_MESSAGE(
+		"wrong number of suns in default universe",
+		std::set<world::Sun *>::size_type(1), sim.Suns().size()
+	);
+	CPPUNIT_ASSERT_EQUAL_MESSAGE(
+		"wrong number of planets in default universe",
+		std::set<world::Planet *>::size_type(3), sim.Planets().size()
+	);
+	CPPUNIT_ASSERT_NO_THROW_MESSAGE(
+		"spawn planet does not exist",
+		sim.PlanetByName("Planet")
 	);
 }
 

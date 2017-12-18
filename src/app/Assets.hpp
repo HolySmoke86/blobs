@@ -23,6 +23,12 @@ namespace blobs {
 namespace io {
 	class TokenStreamReader;
 }
+namespace world {
+	class Body;
+	class Planet;
+	class Simulation;
+	class Sun;
+}
 namespace app {
 
 struct Assets {
@@ -79,6 +85,12 @@ struct Assets {
 	void LoadTileTexture(const std::string &name, graphics::ArrayTexture &, int layer) const;
 	void LoadSkinTexture(const std::string &name, graphics::ArrayTexture &, int layer) const;
 	void LoadSkyTexture(const std::string &name, graphics::CubeMap &) const;
+
+	void LoadUniverse(const std::string &name, world::Simulation &) const;
+	world::Body *ReadBody(io::TokenStreamReader &, world::Simulation &) const;
+	void ReadBodyProperty(const std::string &name, io::TokenStreamReader &, world::Body &, world::Simulation &) const;
+	void ReadPlanetProperty(const std::string &name, io::TokenStreamReader &, world::Planet &, world::Simulation &) const;
+	void ReadSunProperty(const std::string &name, io::TokenStreamReader &, world::Sun &, world::Simulation &) const;
 
 };
 
