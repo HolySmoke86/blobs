@@ -11,6 +11,7 @@
 #include "Goal.hpp"
 #include "IdleGoal.hpp"
 #include "../app/Assets.hpp"
+#include "../graphics/color.hpp"
 #include "../math/const.hpp"
 #include "../ui/string.hpp"
 #include "../world/Body.hpp"
@@ -25,6 +26,9 @@
 
 #include <iostream>
 #include <glm/gtx/io.hpp>
+
+using blobs::graphics::hsl2rgb;
+using blobs::graphics::rgb2hsl;
 
 
 namespace blobs {
