@@ -60,7 +60,7 @@ public:
 	// center point of tile on surface at elevation
 	glm::dvec3 TileCenter(int surface, int x, int y, double elevation = 0.0) const noexcept;
 
-	void BuildVAO(const Set<TileType> &);
+	void BuildVAO();
 	void Draw(app::Assets &, graphics::Viewport &) override;
 
 private:
@@ -88,6 +88,9 @@ private:
 		glm::vec3 position;
 		glm::vec3 normal;
 		glm::vec3 tex_coord;
+		float shiny;
+		float glossy;
+		float metallic;
 	};
 	std::unique_ptr<graphics::SimpleVAO<Attributes, unsigned int>> vao;
 

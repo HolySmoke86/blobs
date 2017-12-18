@@ -34,6 +34,7 @@ public:
 	void SetBaseColor(const glm::vec3 &) noexcept;
 	void SetHighlightColor(const glm::vec4 &) noexcept;
 	void SetTexture(ArrayTexture &) noexcept;
+	void SetAmbient(const glm::vec3 &) noexcept;
 	void SetLight(int n, const glm::vec3 &pos, const glm::vec3 &color, float strength) noexcept;
 	void SetNumLights(int n) noexcept;
 
@@ -61,6 +62,7 @@ private:
 	GLuint base_color_handle;
 	GLuint highlight_color_handle;
 	GLuint sampler_handle;
+	GLuint ambient_handle;
 	GLuint num_lights_handle;
 	GLuint light_handle[MAX_LIGHTS * 3];
 

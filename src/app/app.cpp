@@ -331,6 +331,12 @@ void Assets::ReadTileTypes(io::TokenStreamReader &in) {
 				in.ReadString(data.tile_types[id].label);
 			} else if (name == "texture") {
 				data.tile_types[id].texture = in.GetInt();
+			} else if (name == "shiny") {
+				data.tile_types[id].shiny = in.GetDouble();
+			} else if (name == "glossy") {
+				data.tile_types[id].glossy = in.GetDouble();
+			} else if (name == "metallic") {
+				data.tile_types[id].metallic = in.GetDouble();
 			} else if (name == "yield") {
 				in.Skip(io::Token::BRACKET_OPEN);
 				while (in.Peek().type != io::Token::BRACKET_CLOSE) {

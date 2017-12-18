@@ -19,6 +19,10 @@ struct TileType {
 	int id;
 	int texture;
 
+	double shiny = 5.0;
+	double glossy = 0.5;
+	double metallic = 0.0;
+
 	struct Yield {
 		int resource;
 		double ubiquity;

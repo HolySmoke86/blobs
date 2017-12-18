@@ -194,6 +194,9 @@ PlanetSurface::PlanetSurface()
 		"layout(location = 0) in vec3 vtx_position;\n"
 		"layout(location = 1) in vec3 vtx_normal;\n"
 		"layout(location = 2) in vec3 vtx_tex_uv;\n"
+		"layout(location = 3) in float vtx_shiny;\n"
+		"layout(location = 4) in float vtx_glossy;\n"
+		"layout(location = 5) in float vtx_metallic;\n"
 
 		"uniform mat4 M;\n"
 		"uniform mat4 MV;\n"
@@ -202,12 +205,18 @@ PlanetSurface::PlanetSurface()
 		"out vec3 vtx_viewspace;\n"
 		"out vec3 nrm_viewspace;\n"
 		"out vec3 frag_tex_uv;\n"
+		"out float frag_shiny;\n"
+		"out float frag_glossy;\n"
+		"out float frag_metallic;\n"
 
 		"void main() {\n"
 			"gl_Position = MVP * vec4(vtx_position, 1.0);\n"
 			"vtx_viewspace = (MV * vec4(vtx_position, 1.0)).xyz;\n"
 			"nrm_viewspace = (MV * vec4(vtx_position, 0.0)).xyz;\n"
 			"frag_tex_uv = vtx_tex_uv;\n"
+			"frag_shiny = vtx_shiny;\n"
+			"frag_glossy = vtx_glossy;\n"
+			"frag_metallic = vtx_metallic;\n"
 		"}\n"
 	);
 	prog.LoadShader(
@@ -223,8 +232,12 @@ PlanetSurface::PlanetSurface()
 		"in vec3 vtx_viewspace;\n"
 		"in vec3 nrm_viewspace;\n"
 		"in vec3 frag_tex_uv;\n"
+		"in float frag_shiny;\n"
+		"in float frag_glossy;\n"
+		"in float frag_metallic;\n"
 
 		"uniform sampler2DArray tex_sampler;\n"
+		"uniform vec3 ambient;\n"
 		"uniform int num_lights;\n"
 		"uniform LightSource light[8];\n"
 
@@ -232,19 +245,19 @@ PlanetSurface::PlanetSurface()
 
 		"void main() {\n"
 			"vec3 normal = normalize(nrm_viewspace);\n"
+			"vec3 view_dir = vec3(0.0, 0.0, 1.0);\n"
 			"vec3 tex_color = texture(tex_sampler, frag_tex_uv).rgb;\n"
-			"vec3 total_light = tex_color * vec3(0.1, 0.1, 0.1);\n"
+			"vec3 spec_color = mix(vec3(frag_glossy), tex_color, frag_metallic);\n"
+			"vec3 total_light = tex_color * ambient;\n"
 			"for (int i = 0; i < num_lights; ++i) {\n"
 				"vec3 to_light = light[i].position - vtx_viewspace;\n"
 				"float distance = length(to_light) + length(vtx_viewspace);\n"
 				"vec3 light_dir = normalize(to_light);\n"
 				"float attenuation = light[i].strength / (distance * distance);\n"
 				"vec3 diffuse = attenuation * max(0.0, dot(normal, light_dir)) * light[i].color * tex_color;\n"
-				"vec3 view_dir = vec3(0.0, 0.0, 1.0);\n"
-				"vec3 specular = vec3(0.0, 0.0, 0.0);\n"
-				"if (dot(normal, light_dir) >= 0.0) {\n"
-					"attenuation * light[i].color * pow(max(0.0, dot(reflect(-light_dir, normal), view_dir)), 25.0);\n"
-				"}\n"
+				"vec3 specular = attenuation * light[i].color"
+					" * mix(spec_color, vec3(1.0), pow(1.0 - max(0.0, dot(normalize(light_dir + view_dir), view_dir)), 5.0))"
+					" * pow(max(0.0, dot(reflect(-light_dir, normal), view_dir)), frag_shiny);\n"
 				"total_light = total_light + diffuse + specular;\n"
 			"}\n"
 			"color = total_light;\n"
@@ -259,6 +272,7 @@ PlanetSurface::PlanetSurface()
 	mv_handle = prog.UniformLocation("MV");
 	mvp_handle = prog.UniformLocation("MVP");
 	sampler_handle = prog.UniformLocation("tex_sampler");
+	ambient_handle = prog.UniformLocation("ambient");
 	num_lights_handle = prog.UniformLocation("num_lights");
 	for (int i = 0; i < MAX_LIGHTS; ++i) {
 		light_handle[3 * i + 0]  = prog.UniformLocation("light[" + std::to_string(i) + "].position");
@@ -319,6 +333,10 @@ void PlanetSurface::SetTexture(ArrayTexture &tex) noexcept {
 	glActiveTexture(GL_TEXTURE0);
 	tex.Bind();
 	prog.Uniform(sampler_handle, GLint(0));
+}
+
+void PlanetSurface::SetAmbient(const glm::vec3 &a) noexcept {
+	prog.Uniform(ambient_handle, a);
 }
 
 void PlanetSurface::SetLight(int n, const glm::vec3 &pos, const glm::vec3 &color, float strength) noexcept {
@@ -703,26 +721,27 @@ CreatureSkin::CreatureSkin()
 		"uniform vec3 base_color;\n"
 		"uniform vec4 highlight_color;\n"
 		"uniform sampler2DArray tex_sampler;\n"
+		"uniform vec3 ambient;\n"
 		"uniform int num_lights;\n"
 		"uniform LightSource light[8];\n"
 
 		"out vec3 color;\n"
 
 		"void main() {\n"
+			"vec3 view_dir = vec3(0.0, 0.0, 1.0);\n"
 			"vec4 tex_color = texture(tex_sampler, frag_tex_uv);\n"
 			"vec3 mat_color = mix(base_color, highlight_color.rgb, tex_color.r * tex_color.a * highlight_color.a);\n"
-			"vec3 total_light = mat_color * vec3(0.1, 0.1, 0.1);\n"
+			"vec3 spec_color = vec3(0.5);\n"
+			"vec3 total_light = mat_color * ambient;\n"
 			"for (int i = 0; i < num_lights; ++i) {\n"
 				"vec3 to_light = light[i].position - vtx_viewspace;\n"
 				"float distance = length(to_light) + length(vtx_viewspace);\n"
 				"vec3 light_dir = normalize(to_light);\n"
 				"float attenuation = light[i].strength / (distance * distance);\n"
 				"vec3 diffuse = attenuation * max(0.0, dot(normal, light_dir)) * light[i].color * mat_color;\n"
-				"vec3 view_dir = vec3(0.0, 0.0, 1.0);\n"
-				"vec3 specular = vec3(0.0, 0.0, 0.0);\n"
-				"if (dot(normal, light_dir) >= 0.0) {\n"
-					"attenuation * light[i].color * pow(max(0.0, dot(reflect(-light_dir, normal), view_dir)), 25.0);\n"
-				"}\n"
+				"vec3 specular = attenuation * light[i].color"
+					" * mix(spec_color, vec3(1.0), pow(1.0 - max(0.0, dot(normalize(light_dir + view_dir), view_dir)), 5.0))"
+					" * pow(max(0.0, dot(reflect(-light_dir, normal), view_dir)), 5.0);\n"
 				"total_light = total_light + diffuse + specular;\n"
 			"}\n"
 			"color = total_light;\n"
@@ -739,6 +758,7 @@ CreatureSkin::CreatureSkin()
 	base_color_handle = prog.UniformLocation("base_color");
 	highlight_color_handle = prog.UniformLocation("highlight_color");
 	sampler_handle = prog.UniformLocation("tex_sampler");
+	ambient_handle = prog.UniformLocation("ambient");
 	num_lights_handle = prog.UniformLocation("num_lights");
 	for (int i = 0; i < MAX_LIGHTS; ++i) {
 		light_handle[3 * i + 0]  = prog.UniformLocation("light[" + std::to_string(i) + "].position");
@@ -807,6 +827,10 @@ void CreatureSkin::SetTexture(ArrayTexture &tex) noexcept {
 	glActiveTexture(GL_TEXTURE0);
 	tex.Bind();
 	prog.Uniform(sampler_handle, GLint(0));
+}
+
+void CreatureSkin::SetAmbient(const glm::vec3 &a) noexcept {
+	prog.Uniform(ambient_handle, a);
 }
 
 void CreatureSkin::SetLight(int n, const glm::vec3 &pos, const glm::vec3 &color, float strength) noexcept {

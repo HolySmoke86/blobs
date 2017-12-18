@@ -246,12 +246,14 @@ void MasterState::OnRender(graphics::Viewport &viewport) {
 	cam.LookAt(glm::vec3(cam_pos), glm::vec3(cam_focus), glm::vec3(cam_up));
 	assets.shaders.planet_surface.Activate();
 	assets.shaders.planet_surface.SetV(cam.View());
+	assets.shaders.planet_surface.SetAmbient(glm::vec3(0.04, 0.05, 0.06));
 	assets.shaders.sky_box.Activate();
 	assets.shaders.sky_box.SetV(cam.View() * cam.Universe());
 	assets.shaders.sun_surface.Activate();
 	assets.shaders.sun_surface.SetV(cam.View());
 	assets.shaders.creature_skin.Activate();
 	assets.shaders.creature_skin.SetV(cam.View());
+	assets.shaders.creature_skin.SetAmbient(glm::vec3(0.04, 0.05, 0.06));
 
 	int num_lights = 0;
 	for (auto sun : sim.Suns()) {

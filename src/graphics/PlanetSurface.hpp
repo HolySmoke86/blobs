@@ -32,6 +32,7 @@ public:
 	void SetVP(const glm::mat4 &v, const glm::mat4 &p) noexcept;
 	void SetMVP(const glm::mat4 &m, const glm::mat4 &v, const glm::mat4 &p) noexcept;
 	void SetTexture(ArrayTexture &) noexcept;
+	void SetAmbient(const glm::vec3 &) noexcept;
 	void SetLight(int n, const glm::vec3 &pos, const glm::vec3 &color, float strength) noexcept;
 	void SetNumLights(int n) noexcept;
 
@@ -56,6 +57,7 @@ private:
 	GLuint mv_handle;
 	GLuint mvp_handle;
 	GLuint sampler_handle;
+	GLuint ambient_handle;
 
 	GLuint num_lights_handle;
 	GLuint light_handle[MAX_LIGHTS * 3];

@@ -469,16 +469,22 @@ glm::dvec3 Planet::TileCenter(int srf, int x, int y, double e) const noexcept {
 	return glm::normalize(cubeunmap(srf, u, v)) * (Radius() + e);
 }
 
-void Planet::BuildVAO(const Set<TileType> &ts) {
+void Planet::BuildVAO() {
 	vao.reset(new graphics::SimpleVAO<Attributes, unsigned int>);
 	vao->Bind();
 	vao->BindAttributes();
 	vao->EnableAttribute(0);
 	vao->EnableAttribute(1);
 	vao->EnableAttribute(2);
+	vao->EnableAttribute(3);
+	vao->EnableAttribute(4);
+	vao->EnableAttribute(5);
 	vao->AttributePointer<glm::vec3>(0, false, offsetof(Attributes, position));
 	vao->AttributePointer<glm::vec3>(1, false, offsetof(Attributes, normal));
 	vao->AttributePointer<glm::vec3>(2, false, offsetof(Attributes, tex_coord));
+	vao->AttributePointer<float>(3, false, offsetof(Attributes, shiny));
+	vao->AttributePointer<float>(4, false, offsetof(Attributes, glossy));
+	vao->AttributePointer<float>(5, false, offsetof(Attributes, metallic));
 	vao->ReserveAttributes(TilesTotal() * 4, GL_STATIC_DRAW);
 	{
 		auto attrib = vao->MapAttributes(GL_WRITE_ONLY);
@@ -504,7 +510,8 @@ void Planet::BuildVAO(const Set<TileType> &ts) {
 					pos[3][(surface + 1) % 3] = float(y + 1) - offset;
 					pos[3][(surface + 2) % 3] = offset;
 
-					float tex = ts[TileAt(surface, x, y).type].texture;
+					const TileType &t = TypeAt(surface, x, y);
+					float tex = t.texture;
 					const float tex_v_begin = surface < 3 ? 1.0f : 0.0f;
 					const float tex_v_end = surface < 3 ? 0.0f : 1.0f;
 
@@ -513,24 +520,36 @@ void Planet::BuildVAO(const Set<TileType> &ts) {
 					attrib[4 * index + 0].tex_coord[0] = 0.0f;
 					attrib[4 * index + 0].tex_coord[1] = tex_v_begin;
 					attrib[4 * index + 0].tex_coord[2] = tex;
+					attrib[4 * index + 0].shiny = t.shiny;
+					attrib[4 * index + 0].glossy = t.glossy;
+					attrib[4 * index + 0].metallic = t.metallic;
 
 					attrib[4 * index + 1].position = glm::normalize(pos[1]) * (surface < 3 ? offset : -offset);
 					attrib[4 * index + 1].normal = pos[1];
 					attrib[4 * index + 1].tex_coord[0] = 0.0f;
 					attrib[4 * index + 1].tex_coord[1] = tex_v_end;
 					attrib[4 * index + 1].tex_coord[2] = tex;
+					attrib[4 * index + 1].shiny = t.shiny;
+					attrib[4 * index + 1].glossy = t.glossy;
+					attrib[4 * index + 1].metallic = t.metallic;
 
 					attrib[4 * index + 2].position = glm::normalize(pos[2]) * (surface < 3 ? offset : -offset);
 					attrib[4 * index + 2].normal = pos[2];
 					attrib[4 * index + 2].tex_coord[0] = 1.0f;
 					attrib[4 * index + 2].tex_coord[1] = tex_v_begin;
 					attrib[4 * index + 2].tex_coord[2] = tex;
+					attrib[4 * index + 2].shiny = t.shiny;
+					attrib[4 * index + 2].glossy = t.glossy;
+					attrib[4 * index + 2].metallic = t.metallic;
 
 					attrib[4 * index + 3].position = glm::normalize(pos[3]) * (surface < 3 ? offset : -offset);
 					attrib[4 * index + 3].normal = pos[3];
 					attrib[4 * index + 3].tex_coord[0] = 1.0f;
 					attrib[4 * index + 3].tex_coord[1] = tex_v_end;
 					attrib[4 * index + 3].tex_coord[2] = tex;
+					attrib[4 * index + 3].shiny = t.shiny;
+					attrib[4 * index + 3].glossy = t.glossy;
+					attrib[4 * index + 3].metallic = t.metallic;
 				}
 			}
 		}
@@ -680,7 +699,7 @@ void GenerateEarthlike(const Set<TileType> &tiles, Planet &p) noexcept {
 			}
 		}
 	}
-	p.BuildVAO(tiles);
+	p.BuildVAO();
 }
 
 void GenerateTest(const Set<TileType> &tiles, Planet &p) noexcept {
@@ -695,7 +714,7 @@ void GenerateTest(const Set<TileType> &tiles, Planet &p) noexcept {
 			}
 		}
 	}
-	p.BuildVAO(tiles);
+	p.BuildVAO();
 }
 
 
