@@ -112,6 +112,14 @@ void StringTest::testMass() {
 		std::string("18.00t"), MassString(18000.0)
 	);
 	CPPUNIT_ASSERT_EQUAL_MESSAGE(
+		"bad format of kiloton string",
+		std::string("50.00kt"), MassString(50000000.0)
+	);
+	CPPUNIT_ASSERT_EQUAL_MESSAGE(
+		"bad format of megaton string",
+		std::string("1400Mt"), MassString(1400000000000.0)
+	);
+	CPPUNIT_ASSERT_EQUAL_MESSAGE(
 		"bad format of gigaton string",
 		std::string("50.00Gt"), MassString(50000000000000.0)
 	);
