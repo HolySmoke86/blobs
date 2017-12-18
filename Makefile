@@ -146,6 +146,8 @@ headless-test: blobs.test
 coverage: blobs.cover
 	@echo run: blobs.cover
 	@./blobs.cover
+	@echo run: blobs.cover --headless
+	@./blobs.cover --headless
 
 codecov: coverage
 	@echo run: codecov.io
