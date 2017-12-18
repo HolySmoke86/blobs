@@ -39,6 +39,7 @@ void Application::PushState(State *s) {
 	++s->ref_count;
 	if (s->ref_count == 1) {
 		s->OnEnter();
+		s->OnResize(viewport.Width(), viewport.Height());
 	}
 	s->OnResume();
 }
@@ -66,6 +67,7 @@ State *Application::SwitchState(State *s_new) {
 	}
 	if (s_new->ref_count == 1) {
 		s_new->OnEnter();
+		s_new->OnResize(viewport.Width(), viewport.Height());
 	}
 	s_new->OnResume();
 	return s_old;
