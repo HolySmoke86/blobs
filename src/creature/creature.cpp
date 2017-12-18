@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/vector_angle.hpp>
 

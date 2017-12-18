@@ -4,10 +4,12 @@
 #include "IdleGoal.hpp"
 #include "IngestGoal.hpp"
 #include "LocateResourceGoal.hpp"
+#include "LookAroundGoal.hpp"
 #include "StrollGoal.hpp"
 
 #include "Creature.hpp"
 #include "../app/Assets.hpp"
+#include "../math/const.hpp"
 #include "../ui/string.hpp"
 #include "../world/Planet.hpp"
 #include "../world/Resource.hpp"
@@ -18,6 +20,7 @@
 #include <iostream>
 #include <sstream>
 #include <glm/gtx/io.hpp>
+#include <glm/gtx/rotate_vector.hpp>
 
 
 namespace blobs {
@@ -285,14 +288,19 @@ void IdleGoal::Action() {
 		GetSteering().ResumeSeparate();
 	}
 
-	// use boredom as chance per 30s
-	if (Random().UNorm() < GetStats().Boredom().value * (1.0 / 1800.0)) {
+	// use boredom as chance per 15s
+	if (Random().UNorm() < GetStats().Boredom().value * (1.0 / 900.0)) {
 		PickActivity();
 	}
 }
 
 void IdleGoal::PickActivity() {
-	GetCreature().AddGoal(std::unique_ptr<Goal>(new StrollGoal(GetCreature())));
+	int n = Random().UInt(2);
+	if (n == 0) {
+		GetCreature().AddGoal(std::unique_ptr<Goal>(new StrollGoal(GetCreature())));
+	} else {
+		GetCreature().AddGoal(std::unique_ptr<Goal>(new LookAroundGoal(GetCreature())));
+	}
 }
 
 
@@ -590,6 +598,44 @@ void LocateResourceGoal::RandomWalk() {
 bool LocateResourceGoal::OnTarget() const noexcept {
 	const Situation &s = GetSituation();
 	return s.OnGround() && glm::length2(s.Position() - target_pos) < 0.0001;
+}
+
+
+LookAroundGoal::LookAroundGoal(Creature &c)
+: Goal(c)
+, timer(0.0) {
+}
+
+LookAroundGoal::~LookAroundGoal() {
+}
+
+std::string LookAroundGoal::Describe() const {
+	return "look around";
+}
+
+void LookAroundGoal::Enable() {
+	GetSteering().Halt();
+}
+
+void LookAroundGoal::Tick(double dt) {
+	timer -= dt;
+}
+
+void LookAroundGoal::Action() {
+	if (timer < 0.0) {
+		PickDirection();
+		timer = 1.0 + (Random().UNorm() * 4.0);
+	}
+}
+
+void LookAroundGoal::OnBackground() {
+	SetComplete();
+}
+
+void LookAroundGoal::PickDirection() noexcept {
+	double r = Random().SNorm();
+	r *= std::abs(r) * 0.5 * PI;
+	GetCreature().HeadingTarget(glm::rotate(GetSituation().Heading(), r, GetSituation().SurfaceNormal()));
 }
 
 
