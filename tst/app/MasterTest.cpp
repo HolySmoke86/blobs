@@ -1,3 +1,5 @@
+#include "MasterTest.hpp"
+
 #include "app/Application.hpp"
 #include "app/Assets.hpp"
 #include "app/init.hpp"
@@ -5,11 +7,23 @@
 #include "creature/Creature.hpp"
 #include "world/Simulation.hpp"
 
-using namespace blobs;
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION(blobs::app::test::MasterTest, "headed");
 
-int main(int argc, char *argv[]) {
-	app::Init init(true, 8);
-	app::Assets assets;
+
+namespace blobs {
+namespace app {
+namespace test {
+
+void MasterTest::setUp() {
+}
+
+void MasterTest::tearDown() {
+}
+
+
+void MasterTest::testOneSecond() {
+	Init init(false, 1);
+	Assets assets;
 
 	world::Simulation sim(assets);
 	assets.LoadUniverse("universe", sim);
@@ -26,7 +40,13 @@ int main(int argc, char *argv[]) {
 
 	app::Application app(init.window, init.viewport);
 	app.PushState(&state);
-	app.Run();
 
-	return 0;
+	// just run it for one second and check if anything segfaults or throws
+	for (int t = 0; t < 1000; t += 17) {
+		app.Loop(17);
+	}
+}
+
+}
+}
 }
