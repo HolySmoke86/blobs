@@ -82,8 +82,8 @@ void FilesystemTest::testDirectory() {
 	const string test_file = test_subsubdir + "\\c.txt";
 #else
 	const string test_subdir = test_dir + "/a";
-	const string test_subsubdir = test_subdir + "/b";
-	const string test_file = test_subsubdir + "/c";
+	const string test_subsubdir = test_subdir + "/b/";
+	const string test_file = test_subsubdir + "c";
 #endif
 
 	CPPUNIT_ASSERT_MESSAGE(
@@ -117,6 +117,9 @@ void FilesystemTest::testDirectory() {
 		"failed to create test subdirs",
 		make_dirs(test_subsubdir));
 	CPPUNIT_ASSERT_MESSAGE(
+		"creating an existing dir should silently succeed",
+		make_dirs(test_subsubdir));
+	CPPUNIT_ASSERT_MESSAGE(
 		"created directory is a file",
 		!is_file(test_subdir));
 	CPPUNIT_ASSERT_MESSAGE(
@@ -136,10 +139,13 @@ void FilesystemTest::testDirectory() {
 	CPPUNIT_ASSERT_MESSAGE(
 		"failed to create test file",
 		is_file(test_file));
+	CPPUNIT_ASSERT_MESSAGE(
+		"creating a dir where a regular file is should fail",
+		!make_dirs(test_file));
 
 	CPPUNIT_ASSERT_MESSAGE(
-		"failed to remove test subdir",
-		remove_dir(test_subdir));
+		"failed to remove test dir",
+		remove_dir(test_dir));
 	CPPUNIT_ASSERT_MESSAGE(
 		"removed directory became a file",
 		!is_file(test_subdir));

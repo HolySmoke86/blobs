@@ -186,6 +186,9 @@ bool remove_dir(const std::string &path) {
 #else
 
 	DIR *dir = opendir(path.c_str());
+	if (!dir) {
+		return errno == ENOENT;
+	}
 	for (dirent *entry = readdir(dir); entry != nullptr; entry = readdir(dir)) {
 		if (
 			strncmp(entry->d_name, ".", 2) == 0 ||
