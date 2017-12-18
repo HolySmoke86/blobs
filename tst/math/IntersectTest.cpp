@@ -243,6 +243,35 @@ void IntersectTest::testRaySphereIntersection() {
 		glm::dvec3(1.0, 0.0, 0.0), normal
 	);
 
+	ray.Origin({ 0.5, 0.0, 0.0 }); // a tad to the right
+	CPPUNIT_ASSERT_MESSAGE(
+		"ray does not intersect sphere at origin",
+		Intersect(ray, sphere, normal, dist)
+	);
+	CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
+		"distance along ray to unit sphere at origin is not 0.5",
+		0.5, dist, epsilon
+	);
+	AssertEqual(
+		"bad intersection normal",
+		glm::dvec3(1.0, 0.0, 0.0), normal
+	);
+
+	// corner case: ray origin exactly on sphere (should "intersect")
+	ray.Origin({ 1.0, 0.0, 0.0 });
+	CPPUNIT_ASSERT_MESSAGE(
+		"ray touching sphere does not intersect it",
+		Intersect(ray, sphere, normal, dist)
+	);
+	CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
+		"distance along ray touching unit sphere is not 0.0",
+		0.0, dist, epsilon
+	);
+	AssertEqual(
+		"bad intersection normal",
+		glm::dvec3(1.0, 0.0, 0.0), normal
+	);
+
 	ray.Origin({ 2.0, 0.0, 0.0 }); // move outside
 	CPPUNIT_ASSERT_MESSAGE(
 		"ray pointing away from sphere intersects it for some reason",
