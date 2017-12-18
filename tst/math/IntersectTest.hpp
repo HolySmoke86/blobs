@@ -15,6 +15,7 @@ CPPUNIT_TEST_SUITE(IntersectTest);
 
 CPPUNIT_TEST(testRayBoxIntersection);
 CPPUNIT_TEST(testBoxBoxIntersection);
+CPPUNIT_TEST(testRaySphereIntersection);
 
 CPPUNIT_TEST_SUITE_END();
 
@@ -24,6 +25,7 @@ public:
 
 	void testRayBoxIntersection();
 	void testBoxBoxIntersection();
+	void testRaySphereIntersection();
 
 };
 

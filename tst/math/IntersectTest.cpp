@@ -223,6 +223,72 @@ void IntersectTest::testBoxBoxIntersection() {
 	);
 }
 
+void IntersectTest::testRaySphereIntersection() {
+	const double epsilon = std::numeric_limits<double>::epsilon();
+	Ray ray{ { 0.0, 0.0, 0.0 }, { 1.0, 0.0, 0.0 } }; // at origin, pointing right
+	Sphere sphere{ { 0.0, 0.0, 0.0 }, 1.0 }; // unit sphere at origin
+
+	glm::dvec3 normal(0.0);
+	double dist = 0.0;
+	CPPUNIT_ASSERT_MESSAGE(
+		"ray at origin does not intersect sphere at origin",
+		Intersect(ray, sphere, normal, dist)
+	);
+	CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
+		"distance along ray to unit sphere, both at origin, is not 1",
+		1.0, dist, epsilon
+	);
+	AssertEqual(
+		"bad intersection normal",
+		glm::dvec3(1.0, 0.0, 0.0), normal
+	);
+
+	ray.Origin({ 2.0, 0.0, 0.0 }); // move outside
+	CPPUNIT_ASSERT_MESSAGE(
+		"ray pointing away from sphere intersects it for some reason",
+		!Intersect(ray, sphere, normal, dist)
+	);
+
+	ray.Direction({ -1.0, 0.0, 0.0 }); // flip it around
+	CPPUNIT_ASSERT_MESSAGE(
+		"negative X ray does not intersect sphere",
+		Intersect(ray, sphere, normal, dist)
+	);
+	CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
+		"distance along ray to unit sphere at origin is not 1",
+		1.0, dist, epsilon
+	);
+	AssertEqual(
+		"bad intersection normal",
+		glm::dvec3(1.0, 0.0, 0.0), normal
+	);
+
+	// sphere at 3,0,0; ray at 0,4,0 pointing directly at it
+	// should be 5 units apart, minus one for the radius
+	ray.Origin({ 0.0, 4.0, 0.0 });
+	ray.Direction(glm::normalize(glm::dvec3(3.0, -4.0, 0.0)));
+	sphere.origin = { 3.0, 0.0, 0.0 };
+	CPPUNIT_ASSERT_MESSAGE(
+		"diagonal ray does not intersect sphere",
+		Intersect(ray, sphere, normal, dist)
+	);
+	CPPUNIT_ASSERT_DOUBLES_EQUAL_MESSAGE(
+		"distance along ray to unit sphere is not 4",
+		4.0, dist, epsilon
+	);
+	AssertEqual(
+		"bad intersection normal",
+		glm::normalize(glm::dvec3(-3.0, 4.0, 0.0)), normal
+	);
+
+	// point the ray straight down, so it misses
+	ray.Direction({ 0.0, -1.0, 0.0});
+	CPPUNIT_ASSERT_MESSAGE(
+		"vertical ray should not intersect sphere",
+		!Intersect(ray, sphere, normal, dist)
+	);
+}
+
 }
 }
 }
