@@ -258,7 +258,7 @@ void IntersectTest::testRaySphereIntersection() {
 	);
 
 	// corner case: ray origin exactly on sphere (should "intersect")
-	ray.Origin({ 1.0, 0.0, 0.0 });
+	ray = glm::translate(glm::dvec3(0.5, 0, 0)) * ray;
 	CPPUNIT_ASSERT_MESSAGE(
 		"ray touching sphere does not intersect it",
 		Intersect(ray, sphere, normal, dist)
@@ -296,6 +296,7 @@ void IntersectTest::testRaySphereIntersection() {
 	// should be 5 units apart, minus one for the radius
 	ray.Origin({ 0.0, 4.0, 0.0 });
 	ray.Direction(glm::normalize(glm::dvec3(3.0, -4.0, 0.0)));
+	sphere = glm::translate(glm::dvec3(3.0, 0, 0)) * sphere;
 	sphere.origin = { 3.0, 0.0, 0.0 };
 	CPPUNIT_ASSERT_MESSAGE(
 		"diagonal ray does not intersect sphere",
