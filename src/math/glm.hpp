@@ -5,6 +5,9 @@
 #  define GLM_FORCE_RADIANS 1
 #endif
 
+// wait what? quaternions are experimental -.-
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include <algorithm>
 #include <limits>
 #include <glm/glm.hpp>
