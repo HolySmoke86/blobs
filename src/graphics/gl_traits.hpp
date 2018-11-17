@@ -72,7 +72,6 @@ template<> struct gl_traits<double> {
 
 // composite types
 
-template<>
 template<class T, glm::precision P>
 struct gl_traits<glm::tvec1<T, P>> {
 	static constexpr GLint size = 1;
@@ -83,7 +82,6 @@ constexpr GLint gl_traits<glm::tvec1<T, P>>::size;
 template<class T, glm::precision P>
 constexpr GLenum gl_traits<glm::tvec1<T, P>>::type;
 
-template<>
 template<class T, glm::precision P>
 struct gl_traits<glm::tvec2<T, P>> {
 	static constexpr GLint size = 2;
@@ -94,7 +92,6 @@ constexpr GLint gl_traits<glm::tvec2<T, P>>::size;
 template<class T, glm::precision P>
 constexpr GLenum gl_traits<glm::tvec2<T, P>>::type;
 
-template<>
 template<class T, glm::precision P>
 struct gl_traits<glm::tvec3<T, P>> {
 	static constexpr GLint size = 3;
@@ -105,7 +102,6 @@ constexpr GLint gl_traits<glm::tvec3<T, P>>::size;
 template<class T, glm::precision P>
 constexpr GLenum gl_traits<glm::tvec3<T, P>>::type;
 
-template<>
 template<class T, glm::precision P>
 struct gl_traits<glm::tvec4<T, P>> {
 	static constexpr GLint size = 4;
